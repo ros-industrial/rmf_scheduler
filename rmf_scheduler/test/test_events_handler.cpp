@@ -27,7 +27,7 @@ TEST(TestEventsHandler, BasicCRUD) {
     "First Event for testing",  // description
     "robot_task",               // type
     0,                          // start time
-    10,                         // end time
+    10,                         // duration
     event_id,                   // id
     "",                         // series id
     ""                          // dag id

@@ -30,7 +30,7 @@ namespace rmf_scheduler
 namespace test_utils
 {
 
-std::vector<rmf_scheduler::Event> random_event_generator(
+inline std::vector<rmf_scheduler::Event> random_event_generator(
   uint64_t start_time,
   uint64_t end_time,
   int sample_size)
@@ -58,7 +58,7 @@ std::vector<rmf_scheduler::Event> random_event_generator(
   return events;
 }
 
-bool is_event_equal(const Event & lhs, const Event & rhs)
+inline bool is_event_equal(const Event & lhs, const Event & rhs)
 {
   return
     lhs.description == rhs.description &&
@@ -70,7 +70,7 @@ bool is_event_equal(const Event & lhs, const Event & rhs)
     lhs.dag_id == rhs.dag_id;
 }
 
-bool is_event_vector_equal(
+inline bool is_event_vector_equal(
   const std::vector<rmf_scheduler::Event> & lhs,
   const std::vector<rmf_scheduler::Event> & rhs)
 {
@@ -94,6 +94,12 @@ bool is_event_vector_equal(
   }
   return result;
 }
+
+inline double to_ms(uint64_t ns)
+{
+  return static_cast<double>(ns) / 1e6;
+}
+
 
 }  // namespace test_utils
 
