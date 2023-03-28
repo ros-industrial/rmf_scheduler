@@ -32,6 +32,11 @@ const EventsHandler::EventList & EventsHandler::get_all_events() const
   return event_list_;
 }
 
+const EventsHandler::StartTimeLookup & EventsHandler::get_lookup() const
+{
+  return start_time_lookup_;
+}
+
 std::vector<Event> EventsHandler::lookup_events(
   uint64_t start_time,
   uint64_t end_time) const
@@ -47,13 +52,41 @@ std::vector<Event> EventsHandler::lookup_events(
   return looked_up_events;
 }
 
+std::vector<Event> EventsHandler::lookup_next_events(
+  uint64_t start_time) const
+{
+  StartTimeLookup::const_iterator itr, itr_low;
+  itr_low = start_time_lookup_.lower_bound(start_time);
+
+  std::vector<Event> looked_up_events;
+  for (itr = itr_low; itr != start_time_lookup_.cend(); itr++) {
+    looked_up_events.push_back(event_list_.at(itr->second));
+  }
+  return looked_up_events;
+}
+
+std::vector<Event> EventsHandler::lookup_earliest_events() const
+{
+  if (event_list_.empty()) {
+    return {};
+  }
+
+  std::vector<Event> looked_up_events;
+  auto itr = start_time_lookup_.cbegin();
+  auto range = start_time_lookup_.equal_range(itr->first);
+  for (auto i = range.first; i != range.second; ++i) {
+    looked_up_events.push_back(event_list_.at(i->second));
+  }
+  return looked_up_events;
+}
+
 void EventsHandler::add_event(const Event & event)
 {
   if (has_event(event.id)) {
     throw EventsHandlerIDException(
-            event.id,
             "add_event error."
-            "Event ID already exist");
+            "Event ID [%s] already exist",
+            event.id.c_str());
   }
   event_list_[event.id] = event;
   add_lookup(event);
@@ -64,9 +97,9 @@ void EventsHandler::update_event(
 {
   if (!has_event(event.id)) {
     throw EventsHandlerIDException(
-            event.id,
             "update_event error. "
-            "Event ID doesn't exist");
+            "Event ID [%s] doesn't exist",
+            event.id.c_str());
   }
 
   // Update lookup table if task start time is changed
@@ -78,6 +111,27 @@ void EventsHandler::update_event(
 
   // Update event in the list
   event_list_[event.id] = event;
+}
+
+void EventsHandler::delete_event(const std::string & id)
+{
+  const auto & event = event_list_.at(id);
+  delete_lookup(event);
+  event_list_.erase(id);
+}
+
+void EventsHandler::delete_events(
+  uint64_t start_time,
+  uint64_t end_time)
+{
+  StartTimeLookup::const_iterator itr, itr_low, itr_up;
+  itr_low = start_time_lookup_.lower_bound(start_time);
+  itr_up = start_time_lookup_.upper_bound(end_time);
+
+  for (itr = itr_low; itr != itr_up; itr++) {
+    event_list_.erase(itr->second);
+    start_time_lookup_.erase(itr);
+  }
 }
 
 void EventsHandler::add_lookup(const Event & event)

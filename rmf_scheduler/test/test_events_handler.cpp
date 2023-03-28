@@ -14,39 +14,41 @@
 
 #include "gtest/gtest.h"
 #include "rmf_scheduler/events_handler.hpp"
-#include "rmf_scheduler/event_utils.hpp"
+#include "rmf_scheduler/test_utils.hpp"
 
 TEST(TestEventsHandler, BasicCRUD) {
   using namespace rmf_scheduler;  // NOLINT(build/namespaces)
-  EventsHandler events_handler;
+  EventsHandler eh;
 
   // Add one event
+  std::string event_id = "abcdefg12345";
+
   Event event1 {
     "First Event for testing",  // description
     "robot_task",               // type
     0,                          // start time
     10,                         // end time
-    "abcdefg12345",             // id
+    event_id,                   // id
     "",                         // series id
     ""                          // dag id
   };
 
-  events_handler.add_event(event1);
+  eh.add_event(event1);
 
   // Check if event is added correctly
-  EXPECT_TRUE(events_handler.has_event("abcdefg12345"));
+  EXPECT_TRUE(eh.has_event(event_id));
 
   EXPECT_TRUE(
-    utils::is_equal(
+    test_utils::is_event_equal(
       event1,
-      events_handler.get_event("abcdefg12345")
+      eh.get_event(event_id)
   ));
 
-  const auto & all_events = events_handler.get_all_events();
+  const auto & all_events = eh.get_all_events();
   EXPECT_TRUE(
-    utils::is_equal(
+    test_utils::is_event_equal(
       event1,
-      all_events.at("abcdefg12345")
+      all_events.at(event_id)
   ));
 
   // Update added event
@@ -55,26 +57,71 @@ TEST(TestEventsHandler, BasicCRUD) {
     "robot_task",
     0,
     10,
-    "abcdefg12345",  // id stays the same
+    event_id,  // id stays the same
     "dks",
     "aaa"
   };
 
-  events_handler.update_event(event1_new);
+  eh.update_event(event1_new);
 
   // Check if event is updated correctly
-  EXPECT_TRUE(events_handler.has_event("abcdefg12345"));
+  EXPECT_TRUE(eh.has_event(event_id));
 
   EXPECT_TRUE(
-    utils::is_equal(
+    test_utils::is_event_equal(
       event1_new,
-      events_handler.get_event("abcdefg12345")
+      eh.get_event(event_id)
   ));
 
-  const auto & new_all_events = events_handler.get_all_events();
+  const auto & new_all_events = eh.get_all_events();
   EXPECT_TRUE(
-    utils::is_equal(
+    test_utils::is_event_equal(
       event1_new,
-      new_all_events.at("abcdefg12345")
+      new_all_events.at(event_id)
   ));
+
+  // Delete added event
+  eh.delete_event(event_id);
+
+  // Check if event is deleted
+  EXPECT_FALSE(eh.has_event(event_id));
+
+  const auto & empty_all_events = eh.get_all_events();
+  EXPECT_TRUE(empty_all_events.empty());
+}
+
+TEST(TestEventsHandler, StartTimeLookupBasic)
+{
+  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+
+  // Generate randomized events
+  auto events_vector = test_utils::random_event_generator(
+    0,
+    100,
+    1000);
+
+  EventsHandler eh;
+
+  for (auto & event : events_vector) {
+    eh.add_event(event);
+  }
+
+  // Test lookup events
+  // Compare results between linear approach vs hash multi map approach
+  uint64_t lower_bound = 20;
+  uint64_t upper_bound = 44;
+  auto result_eh = eh.lookup_events(lower_bound, upper_bound);
+  std::vector<Event> result_greedy;
+  for (auto & event : events_vector) {
+    if (event.start_time >= lower_bound && event.start_time <= upper_bound) {
+      result_greedy.push_back(event);
+    }
+  }
+
+  EXPECT_TRUE(
+    test_utils::is_event_vector_equal(
+      result_eh,
+      result_greedy
+    )
+  );
 }

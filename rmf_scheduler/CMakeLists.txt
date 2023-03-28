@@ -32,7 +32,15 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-#install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+  ${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+)
+
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
 
 ament_export_include_directories(
   include
@@ -41,6 +49,8 @@ ament_export_dependencies(
   rclcpp
 )
 
-ament_export_libraries()
+ament_export_libraries(
+  ${PROJECT_NAME}
+)
 
 ament_package()

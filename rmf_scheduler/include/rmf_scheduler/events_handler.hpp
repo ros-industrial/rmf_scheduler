@@ -15,7 +15,9 @@
 #ifndef RMF_SCHEDULER__EVENTS_HANDLER_HPP_
 #define RMF_SCHEDULER__EVENTS_HANDLER_HPP_
 
-#include <stdexcept>
+#include <cstdarg>
+
+#include <exception>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -38,9 +40,16 @@ public:
 
   const EventList & get_all_events() const;
 
+  const StartTimeLookup & get_lookup() const;
+
   std::vector<Event> lookup_events(
     uint64_t start_time,
     uint64_t end_time) const;
+
+  std::vector<Event> lookup_next_events(
+    uint64_t start_time) const;
+
+  std::vector<Event> lookup_earliest_events() const;
 
   void add_event(const Event &);
 
@@ -62,17 +71,31 @@ private:
   StartTimeLookup start_time_lookup_;
 };
 
-class EventsHandlerIDException : public std::runtime_error
+class EventsHandlerIDException : public std::exception
 {
 public:
-  EventsHandlerIDException(
-    const std::string & id,
-    const std::string & msg)
-  : std::runtime_error('[' + id + "]: " + msg)
+  EventsHandlerIDException(const char * msg, ...)
   {
+    buffer_ = new char[4096];
+    va_list args;
+    va_start(args, msg);
+    vsprintf(buffer_, msg, args);
+    va_end(args);
   }
-};
 
+  ~EventsHandlerIDException()
+  {
+    delete buffer_;
+  }
+
+  const char * what() const noexcept
+  {
+    return buffer_;
+  }
+
+private:
+  char * buffer_;
+};
 
 }  // namespace rmf_scheduler
 
