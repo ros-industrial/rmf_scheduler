@@ -17,6 +17,7 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
+  SHARED
   src/events_handler.cpp
   src/system_time_executor.cpp
   src/system_time_utils.cpp
