@@ -1,0 +1,5 @@
+repositories:
+  rmf_api_msgs:
+    type: git
+    url: git@gitlab.com:ROSI-AP/rosi-ap_commercial/cag/rmf_api_msgs.git
+    version: develop-cag-p3
