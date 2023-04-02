@@ -165,21 +165,21 @@ void TaskEstimateClient::validate_response(
 
 
 void TaskEstimateClient::handle_response(
-  const rmf_task_msgs::msg::ApiResponse::SharedPtr msg)
+  const rmf_task_msgs::msg::ApiResponse & msg)
 {
-  if (request_id_set.find(msg->request_id) == request_id_set.end()) {
+  if (request_id_set.find(msg.request_id) == request_id_set.end()) {
     return;
   }
 
   static const auto validator =
     make_validator(rmf_api_msgs::schemas::task_estimate_response);
 
-  nlohmann::json response = nlohmann::json::parse(msg->json_msg);
+  nlohmann::json response = nlohmann::json::parse(msg.json_msg);
 
   validate_response(
-    response, validator, msg->request_id);
+    response, validator, msg.request_id);
 
-  response_map[msg->request_id] = response;
+  response_map[msg.request_id] = response;
 }
 
 rclcpp::Node::SharedPtr TaskEstimateClient::node()

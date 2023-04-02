@@ -56,7 +56,7 @@ private:
     std::string request_id);
 
   void handle_response(
-    const rmf_task_msgs::msg::ApiResponse::SharedPtr request);
+    const rmf_task_msgs::msg::ApiResponse & request);
 
 public:
   static std::shared_ptr<TaskEstimateClient> make(rclcpp::Node::SharedPtr node);
