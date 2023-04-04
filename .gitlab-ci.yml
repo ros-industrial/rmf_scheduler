@@ -57,3 +57,20 @@ humble-nightly-clang:
     - apt-get update && apt-get install -y git
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
+
+# Build API Documentation
+doxygen-docs:
+  image: ubuntu:latest
+
+  before_script:
+    - apt-get -qq update
+    - apt-get -y -qq install doxygen graphviz
+
+  script:
+    - (mkdir -p docs/doxygen/build && cd ./.doxygen && doxygen)
+
+  artifacts:
+    paths:
+      - docs/doxygen/build/html/
+    expire_in: 1 day
+
