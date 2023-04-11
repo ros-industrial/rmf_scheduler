@@ -21,9 +21,11 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include "event.hpp"
+#include "rmf_scheduler/event.hpp"
+#include "rmf_scheduler/exception.hpp"
 
 namespace rmf_scheduler
 {
@@ -71,30 +73,15 @@ private:
   StartTimeLookup start_time_lookup_;
 };
 
-class EventsHandlerIDException : public std::exception
+class EventsHandlerIDException : public ExceptionTemplate
 {
 public:
-  EventsHandlerIDException(const char * msg, ...)
+  template<typename ... Args>
+  EventsHandlerIDException(const char * msg, Args && ... args)
+  : ExceptionTemplate(msg, std::forward<Args>(args) ...)
   {
-    buffer_ = new char[4096];
-    va_list args;
-    va_start(args, msg);
-    vsprintf(buffer_, msg, args);
-    va_end(args);
+    add_prefix("EventsHandlerIDException:\n  ");
   }
-
-  ~EventsHandlerIDException()
-  {
-    delete buffer_;
-  }
-
-  const char * what() const noexcept
-  {
-    return buffer_;
-  }
-
-private:
-  char * buffer_;
 };
 
 }  // namespace rmf_scheduler

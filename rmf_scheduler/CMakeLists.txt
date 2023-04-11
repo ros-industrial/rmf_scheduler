@@ -4,12 +4,13 @@ project(rmf_scheduler)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(taskflow_vendor REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 endif()
 
 include_directories(
@@ -18,6 +19,8 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   SHARED
+  src/dag.cpp
+  src/dag_executor.cpp
   src/events_handler.cpp
   src/system_time_executor.cpp
   src/system_time_utils.cpp
@@ -25,6 +28,7 @@ add_library(${PROJECT_NAME}
 
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
+  taskflow_vendor
 )
 
 if(BUILD_TESTING)

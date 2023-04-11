@@ -124,11 +124,11 @@ void EventsHandler::delete_events(
   uint64_t start_time,
   uint64_t end_time)
 {
-  StartTimeLookup::const_iterator itr, itr_low, itr_up;
+  StartTimeLookup::const_iterator itr_low, itr_up;
   itr_low = start_time_lookup_.lower_bound(start_time);
   itr_up = start_time_lookup_.upper_bound(end_time);
 
-  for (itr = itr_low; itr != itr_up; itr++) {
+  for (auto itr = itr_low; itr != itr_up; itr++) {
     event_list_.erase(itr->second);
     start_time_lookup_.erase(itr);
   }

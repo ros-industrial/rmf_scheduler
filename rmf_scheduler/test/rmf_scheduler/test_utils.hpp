@@ -95,6 +95,21 @@ inline bool is_event_vector_equal(
   return result;
 }
 
+/// Only work with hashable standard types
+template<typename T>
+inline bool is_vector_equal(
+  const std::vector<T> & lhs,
+  const std::vector<T> & rhs)
+{
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  std::unordered_multiset<T> s1(lhs.begin(), lhs.end());
+  std::unordered_multiset<T> s2(rhs.begin(), rhs.end());
+
+  return s1 == s2;
+}
+
 inline double to_ms(uint64_t ns)
 {
   return static_cast<double>(ns) / 1e6;
