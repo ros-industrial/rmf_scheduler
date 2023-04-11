@@ -27,15 +27,23 @@ int main(int argc, char * argv[])
   task_request["category"] = "compose";
   task_request["unix_millis_earliest_start_time"] = 0;
   task_request["description"]["category"] = "go_to_place";
-  task_request["additional"] = "something random";
   task_request["description"]["phases"] = phases;
 
   estimate_request["request"]["task_request"] = task_request;
 
   std::cout << "Sending estimate request" << std::endl;
-  std::string request_id = client->publish_request(estimate_request);
-  std::cout << "Got request id of [" << request_id << "]." << std::endl;
-  rclcpp::spin(client->node());
+  auto response_future = client->async_send_request(estimate_request);
+  std::cout << "Sent estimate request" << std::endl;
+
+  // Check if optional has value and get future value
+  if (!response_future.valid()) {
+    std::cout << "Future not valid" << std::endl;
+    return 1;
+  }
+
+  rclcpp::spin_until_future_complete(client->node(), response_future);
+  auto response = response_future.get();
+  std::cout << "Got response: " << response.dump() << std::endl;
   rclcpp::shutdown();
   return 0;
 }

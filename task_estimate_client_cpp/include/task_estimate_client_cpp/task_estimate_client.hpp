@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <optional>
+#include <future>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -23,9 +24,7 @@ private:
 
   std::unordered_map<std::string, nlohmann::json> schema_dictionary = {};
 
-  std::set<std::string> request_id_set = {};
-
-  std::unordered_map<std::string, nlohmann::json> response_map = {};
+  std::unordered_map<std::string, std::promise<nlohmann::json>> response_map = {};
 
   rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr request_publisher;
 
@@ -45,7 +44,7 @@ private:
     const nlohmann::json_schema::json_validator & validator,
     std::string & error) const;
 
-  void validate_and_publish_estimate_request(
+  bool validate_and_publish_estimate_request(
     const nlohmann::json & request_json,
     const nlohmann::json_schema::json_validator & validator,
     const std::string & request_id);
@@ -61,12 +60,10 @@ private:
 public:
   static std::shared_ptr<TaskEstimateClient> make(rclcpp::Node::SharedPtr node);
 
-  std::string publish_request(const nlohmann::json & request_json);
+  std::shared_future<nlohmann::json> async_send_request(
+    const nlohmann::json & request_json);
 
   rclcpp::Node::SharedPtr node();
-
-  std::optional<nlohmann::json> get_response(const std::string & request_id);
-
 };
 
 using TaskEstimateClientPtr = std::shared_ptr<TaskEstimateClient>;

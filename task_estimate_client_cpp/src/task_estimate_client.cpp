@@ -93,12 +93,11 @@ bool TaskEstimateClient::validate_json(
   return true;
 }
 
-void TaskEstimateClient::validate_and_publish_estimate_request(
+bool TaskEstimateClient::validate_and_publish_estimate_request(
   const nlohmann::json & request_json,
   const nlohmann::json_schema::json_validator & validator,
   const std::string & request_id)
 {
-
   // Get validation error if any
   std::string error;
   if (!validate_json(request_json, validator, error)) {
@@ -107,17 +106,19 @@ void TaskEstimateClient::validate_and_publish_estimate_request(
       "Error in request to [%s]: %s",
       request_id.c_str(),
       error.c_str());
-    return;
+    return false;
   }
 
   // Check if request id is unique
-  if (!this->request_id_set.insert(request_id).second) {
+  if (!(response_map.find(request_id) == response_map.end())) {
     RCLCPP_ERROR(
       _node->get_logger(),
       "Error in request to [%s]: Request ID not unique!",
       request_id.c_str());
-    return;
+    return false;
   }
+  std::promise<nlohmann::json> p;
+  response_map.emplace(request_id, std::move(p));
 
   // Publish request
   this->request_publisher->publish(
@@ -125,9 +126,11 @@ void TaskEstimateClient::validate_and_publish_estimate_request(
     .json_msg(request_json.dump())
     .request_id(request_id)
   );
+
+  return true;
 }
 
-std::string TaskEstimateClient::publish_request(
+std::shared_future<nlohmann::json> TaskEstimateClient::async_send_request(
   const nlohmann::json & request_json)
 {
   static const auto validator =
@@ -135,8 +138,11 @@ std::string TaskEstimateClient::publish_request(
 
   const std::string request_id = "estimate-task-" + std::to_string(count++);
 
-  validate_and_publish_estimate_request(request_json, validator, request_id);
-  return request_id;
+  if (!validate_and_publish_estimate_request(request_json, validator, request_id)) {
+    return {};
+  }
+
+  return std::shared_future<nlohmann::json>(response_map[request_id].get_future());
 }
 
 // Response Handling
@@ -167,7 +173,7 @@ void TaskEstimateClient::validate_response(
 void TaskEstimateClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & msg)
 {
-  if (request_id_set.find(msg.request_id) == request_id_set.end()) {
+  if (response_map.find(msg.request_id) == response_map.end()) {
     return;
   }
 
@@ -179,23 +185,11 @@ void TaskEstimateClient::handle_response(
   validate_response(
     response, validator, msg.request_id);
 
-  response_map[msg.request_id] = response;
+  response_map[msg.request_id].set_value(response);
+  response_map.erase(msg.request_id);
 }
 
 rclcpp::Node::SharedPtr TaskEstimateClient::node()
 {
   return _node;
-}
-
-std::optional<nlohmann::json> TaskEstimateClient::get_response(
-  const std::string & request_id)
-{
-  for (auto r = response_map.begin(); r != response_map.end(); r++) {
-    if (r->first == request_id) {
-      return r->second;
-    }
-  }
-
-  return {};
-
 }
