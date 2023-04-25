@@ -35,8 +35,14 @@ TaskEstimateClientPtr TaskEstimateClient::make(rclcpp::Node::SharedPtr node)
 
   const std::vector<nlohmann::json> schemas = {
     rmf_api_msgs::schemas::task_request,
+    rmf_api_msgs::schemas::dispatch_task_request,
+    rmf_api_msgs::schemas::dispatch_task_response,
+    rmf_api_msgs::schemas::robot_task_request,
+    rmf_api_msgs::schemas::robot_task_response,
     rmf_api_msgs::schemas::task_estimate_request,
-    rmf_api_msgs::schemas::task_estimate_response
+    rmf_api_msgs::schemas::task_estimate_response,
+    rmf_api_msgs::schemas::task_state,
+    rmf_api_msgs::schemas::error,
   };
 
   for (const auto & schema: schemas) {
@@ -93,10 +99,11 @@ bool TaskEstimateClient::validate_json(
   return true;
 }
 
-bool TaskEstimateClient::validate_and_publish_estimate_request(
+bool TaskEstimateClient::validate_and_publish_request(
   const nlohmann::json & request_json,
   const nlohmann::json_schema::json_validator & validator,
-  const std::string & request_id)
+  const std::string & request_id,
+  const std::string & response_schema_id)
 {
   // Get validation error if any
   std::string error;
@@ -118,7 +125,7 @@ bool TaskEstimateClient::validate_and_publish_estimate_request(
     return false;
   }
   std::promise<nlohmann::json> p;
-  response_map.emplace(request_id, std::move(p));
+  response_map.emplace(request_id, std::make_pair(response_schema_id, std::move(p)));
 
   // Publish request
   this->request_publisher->publish(
@@ -136,13 +143,44 @@ std::shared_future<nlohmann::json> TaskEstimateClient::async_send_request(
   static const auto validator =
     make_validator(rmf_api_msgs::schemas::task_estimate_request);
 
-  const std::string request_id = "estimate-task-" + std::to_string(count++);
+  const std::string request_id = "estimate-task-" + std::to_string(estimate_count++);
+  const std::string response_schema_id =
+    rmf_api_msgs::schemas::task_estimate_response["$id"].get<std::string>();
 
-  if (!validate_and_publish_estimate_request(request_json, validator, request_id)) {
+  if (!validate_and_publish_request(request_json, validator, request_id, response_schema_id)) {
     return {};
   }
 
-  return std::shared_future<nlohmann::json>(response_map[request_id].get_future());
+  return std::shared_future<nlohmann::json>(response_map[request_id].second.get_future());
+}
+
+std::shared_future<nlohmann::json> TaskEstimateClient::async_dispatch_request(
+  const nlohmann::json & request_json)
+{
+  std::string response_schema_id;
+  nlohmann::json validator_schema;
+
+  // Check if it is a dispatch task request
+  if (request_json.find("fleet") != request_json.end() &&
+    request_json.find("robot") != request_json.end())
+  {
+    RCLCPP_DEBUG(_node->get_logger(), "Robot task request");
+    validator_schema = rmf_api_msgs::schemas::robot_task_request;
+    response_schema_id = rmf_api_msgs::schemas::robot_task_response["$id"].get<std::string>();
+  } else {
+    RCLCPP_DEBUG(_node->get_logger(), "Dispatch task request");
+    validator_schema = rmf_api_msgs::schemas::dispatch_task_request;
+    response_schema_id = rmf_api_msgs::schemas::dispatch_task_response["$id"].get<std::string>();
+  }
+
+  std::string request_id = "task-request-" + std::to_string(task_count++);
+  const auto validator = make_validator(validator_schema);
+
+  if (!validate_and_publish_request(request_json, validator, request_id, response_schema_id)) {
+    return {};
+  }
+
+  return std::shared_future<nlohmann::json>(response_map[request_id].second.get_future());
 }
 
 // Response Handling
@@ -178,14 +216,14 @@ void TaskEstimateClient::handle_response(
   }
 
   static const auto validator =
-    make_validator(rmf_api_msgs::schemas::task_estimate_response);
+    make_validator(schema_dictionary[response_map[msg.request_id].first]);
 
   nlohmann::json response = nlohmann::json::parse(msg.json_msg);
 
   validate_response(
     response, validator, msg.request_id);
 
-  response_map[msg.request_id].set_value(response);
+  response_map[msg.request_id].second.set_value(response);
   response_map.erase(msg.request_id);
 }
 

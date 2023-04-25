@@ -31,19 +31,26 @@ int main(int argc, char * argv[])
 
   estimate_request["request"]["task_request"] = task_request;
 
-  std::cout << "Sending estimate request" << std::endl;
-  auto response_future = client->async_send_request(estimate_request);
-  std::cout << "Sent estimate request" << std::endl;
 
-  // Check if optional has value and get future value
-  if (!response_future.valid()) {
-    std::cout << "Future not valid" << std::endl;
-    return 1;
+  std::vector<std::shared_future<nlohmann::json>> vector;
+
+  for (int i = 0; i < 5; i++) {
+    std::cout << "Sending estimate request" << std::endl;
+    auto response_future = client->async_send_request(estimate_request);
+    vector.push_back(response_future);
+    std::cout << "Sent estimate request" << std::endl;
   }
 
-  rclcpp::spin_until_future_complete(client->node(), response_future);
-  auto response = response_future.get();
-  std::cout << "Got response: " << response.dump() << std::endl;
+  for (int i = 0; i < 5; i++) {
+    // Check if optional has value and get future value
+    if (!vector[i].valid()) {
+      std::cout << "There is no future" << std::endl;
+      return 1;
+    }
+    rclcpp::spin_until_future_complete(client->node(), vector[i]);
+    auto response = vector[i].get();
+    std::cout << "Got response: " << response.dump() << std::endl;
+  }
   rclcpp::shutdown();
   return 0;
 }

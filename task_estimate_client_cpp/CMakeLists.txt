@@ -48,7 +48,26 @@ add_executable(test_go_to_place
   test/test_go_to_place.cpp
 )
 
+# Test script for dispatching GoToPlace task
+add_executable(test_dispatch
+  test/test_dispatch.cpp
+)
+
+# Test script for sending dispatch task, robot task and estimate requests
+add_executable(test_send_all
+  test/test_send_all.cpp
+)
+
+
 target_link_libraries(test_go_to_place
+  task_estimate_client_cpp
+)
+
+target_link_libraries(test_dispatch
+  task_estimate_client_cpp
+)
+
+target_link_libraries(test_send_all
   task_estimate_client_cpp
 )
 
@@ -62,6 +81,8 @@ endif()
 install(
   TARGETS
     test_go_to_place
+    test_dispatch
+    test_send_all
     task_estimate_client_cpp
   EXPORT task_estimate_client_cpp
   RUNTIME DESTINATION lib/task_estimate_client_cpp
