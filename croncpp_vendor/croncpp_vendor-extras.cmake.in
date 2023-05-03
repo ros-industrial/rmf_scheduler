@@ -1,0 +1,11 @@
+find_package(croncpp QUIET)
+  
+if(NOT croncpp_FOUND)
+  # add the local Modules directory to the modules path
+  set(croncpp_DIR "${@PROJECT_NAME@_DIR}/../../../opt/croncpp_vendor/lib/cmake/croncpp")
+  message(STATUS "Setting croncpp_DIR to: '${croncpp_DIR}'")
+
+  find_package(croncpp CONFIG REQUIRED QUIET)
+endif()
+
+set(croncpp_vendor_LIBRARIES croncpp::croncpp)

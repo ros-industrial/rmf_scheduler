@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 #include "rmf_scheduler/system_time_utils.hpp"
 
@@ -45,6 +48,27 @@ uint64_t time_max()
 {
   return to_ns(std::chrono::system_clock::time_point::max());
 }
+
+char * to_localtime(uint64_t ns)
+{
+  time_t t = ns / 1e9;
+  return std::asctime(std::localtime(&t));
+}
+
+uint64_t from_localtime(
+  const std::string & localtime,
+  const std::string & fmt)
+{
+  std::tm t = {};
+  std::istringstream ss(localtime);
+  ss >> std::get_time(&t, fmt.c_str());
+  if (ss.fail()) {
+    return 0;
+  }
+  time_t t_s = std::mktime(&t);
+  return static_cast<uint64_t>(t_s) * 1e9;
+}
+
 
 }  // namespace utils
 }  // namespace rmf_scheduler

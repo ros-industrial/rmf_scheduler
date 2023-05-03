@@ -5,6 +5,7 @@ project(rmf_scheduler)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(taskflow_vendor REQUIRED)
+find_package(croncpp_vendor REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -22,6 +23,7 @@ add_library(${PROJECT_NAME}
   src/dag.cpp
   src/dag_executor.cpp
   src/events_handler.cpp
+  src/series.cpp
   src/system_time_executor.cpp
   src/system_time_utils.cpp
 )
@@ -29,6 +31,7 @@ add_library(${PROJECT_NAME}
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
   taskflow_vendor
+  croncpp_vendor
 )
 
 if(BUILD_TESTING)

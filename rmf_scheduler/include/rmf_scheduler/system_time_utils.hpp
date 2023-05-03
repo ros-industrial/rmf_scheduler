@@ -16,6 +16,7 @@
 #define RMF_SCHEDULER__SYSTEM_TIME_UTILS_HPP_
 
 #include <chrono>
+#include <string>
 
 namespace rmf_scheduler
 {
@@ -31,6 +32,12 @@ std::chrono::system_clock::time_point to_chrono_time_point(
 uint64_t now();
 
 uint64_t time_max();
+
+char * to_localtime(uint64_t ns);
+
+uint64_t from_localtime(
+  const std::string & localtime,
+  const std::string & fmt = "%b %d %H:%M:%S %Y");
 
 }  // namespace utils
 }  // namespace rmf_scheduler
