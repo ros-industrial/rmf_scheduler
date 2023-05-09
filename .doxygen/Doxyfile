@@ -31,6 +31,7 @@ EXTRACT_STATIC         = YES
 INPUT                  = ./doxygen.md \
                          ../rmf_scheduler/include \ 
                          ../task_estimate_client_cpp/include \ 
+                         ../conflict_resolver/include \ 
 USE_MDFILE_AS_MAINPAGE = ./doxygen.md
 RECURSIVE              = YES
 EXCLUDE                =
