@@ -32,6 +32,7 @@ std::string gen_uuid()
 
 Series::Series()
 : cron_(std::make_unique<cron::cronexpr>()),
+  tz_("UTC"),
   until_(0),
   id_prefix_("")
 {
@@ -40,6 +41,7 @@ Series::Series()
 Series::Series(const Series & rhs)
 {
   cron_ = std::make_unique<cron::cronexpr>(*rhs.cron_);
+  tz_ = rhs.tz_;
   until_ = rhs.until_;
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
@@ -49,6 +51,7 @@ Series::Series(const Series & rhs)
 Series & Series::operator=(const Series & rhs)
 {
   cron_ = std::make_unique<cron::cronexpr>(*rhs.cron_);
+  tz_ = rhs.tz_;
   until_ = rhs.until_;
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
@@ -59,6 +62,7 @@ Series & Series::operator=(const Series & rhs)
 Series::Series(Series && rhs)
 {
   cron_ = std::move(rhs.cron_);
+  tz_ = rhs.tz_;
   until_ = rhs.until_;
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
@@ -68,6 +72,7 @@ Series::Series(Series && rhs)
 Series & Series::operator=(Series && rhs)
 {
   cron_ = std::move(rhs.cron_);
+  tz_ = rhs.tz_;
   until_ = rhs.until_;
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
@@ -90,9 +95,17 @@ Series::Series(const Series::Description & description)
     exception_ids_.emplace(exception_id);
   }
 
-  // Create a temporary cron to validate
+  // Create to validate
   // existing occurrence if it has more than 1 occurrence
-  cron_ = std::make_unique<cron::cronexpr>(cron::make_cron(description.cron));
+  try {
+    cron_ = std::make_unique<cron::cronexpr>(cron::make_cron(description.cron));
+  } catch (const cron::bad_cronexpr & e) {
+    throw SeriesInvalidCronException(
+            "Cannot create series. "
+            "Invalid cron: %s", e.what());
+  }
+
+  tz_ = description.timezone;
 
   for (auto itr : description.occurrences) {
     // Validate if the timing matches the cron
@@ -116,12 +129,22 @@ Series::Series(
   const std::string & id,
   uint64_t time,
   const std::string & cron,
+  const std::string & timezone,
   uint64_t until,
   const std::string & id_prefix)
-: cron_(std::make_unique<cron::cronexpr>(cron::make_cron(cron))),
-  until_(until),
+: until_(until),
   id_prefix_(id_prefix)
 {
+  // Create cron to validate
+  // existing occurrence if it has more than 1 occurrence
+  try {
+    cron_ = std::make_unique<cron::cronexpr>(cron::make_cron(cron));
+  } catch (const cron::bad_cronexpr & e) {
+    throw SeriesInvalidCronException(
+            "Cannot create series. "
+            "Invalid cron: %s", e.what());
+  }
+  tz_ = timezone;
   if (!_validate_time(time, cron_)) {
     throw SeriesInvalidCronException(
             "Cannot create series. "
@@ -152,6 +175,7 @@ Series::Description Series::description() const
     description.occurrences.emplace_back(Occurrence{itr.first, itr.second});
   }
   description.cron = cron();
+  description.timezone = tz_;
   description.until = until_;
   for (auto & itr : exception_ids_) {
     description.exception_ids.push_back(itr);
@@ -205,6 +229,7 @@ std::vector<Series::Occurrence> Series::expand_until(uint64_t time)
   }
 
   auto last_itr = occurrence_ids_.rbegin();
+  utils::set_timezone(tz_.c_str());
 
   time_t last_time = last_itr->first / 1e9;
   time_t until_time = time / 1e9;
@@ -239,7 +264,8 @@ void Series::update_occurrence_id(
 void Series::update_cron_from(
   uint64_t time,
   uint64_t new_start_time,
-  std::string new_cron)
+  std::string new_cron,
+  std::string timezone)
 {
   if (new_cron == cron()) {
     return;
@@ -273,12 +299,15 @@ void Series::update_cron_from(
             itr->second.c_str(), new_cron.c_str());
   }
 
+  tz_ = timezone;
+
   cron_ = std::move(temp_cron);
   time_t cron_time_s = new_start_time / 1e9;
   std::vector<Occurrence> new_occurrences {{new_start_time, itr->second}};
   itr = occurrence_ids_.erase(itr);
 
   // Create new occurrences based on old
+  utils::set_timezone(tz_.c_str());
   while (itr != occurrence_ids_.end()) {
     cron_time_s = cron::cron_next(*cron_, cron_time_s);
     if (exception_ids_.find(itr->second) == exception_ids_.end()) {
@@ -359,6 +388,7 @@ void Series::delete_occurrence(uint64_t time)
   // if the occurrence is the last element
   // insert one additional time at the end
   if (time == last_occurrence.time) {
+    utils::set_timezone(tz_.c_str());
     time_t current_time_s = time / 1e9;
     time_t next_time_s = cron::cron_next(*cron_, current_time_s);
     uint64_t next_time =
@@ -386,6 +416,7 @@ bool Series::_validate_time(
   uint64_t time,
   const std::unique_ptr<cron::cronexpr> & cron) const
 {
+  utils::set_timezone(tz_.c_str());
   uint64_t time_s_to_validate = time / 1e9;
 
   // Roll back 1s

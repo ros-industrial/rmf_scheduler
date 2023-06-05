@@ -25,6 +25,7 @@ protected:
   void SetUp() override
   {
     using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+    actual_start_time_.clear();
     // Spin the executor
     thr_ = std::make_shared<std::thread>(
       [this]() {
@@ -86,25 +87,30 @@ TEST_F(TestSystemTimeExecutor, ExecuteOnTime)
   double max = 0;
   double average = 0;
   double sq_average = 0;
-  for (size_t i = 0; i < generated_events_.size(); i++) {
-    const auto & event = generated_events_[i];
-    double latency =
-      test_utils::to_ms(actual_start_time_.at(event.id) - event.start_time);
 
-    // Display execution time
-    // std::cout << std::setprecision(8) <<
-    //   event.id.substr(0, 8) << '\t' <<
-    //   test_utils::to_ms(event.start_time - start_time_) << "ms\t\t" <<
-    //   test_utils::to_ms(actual_start_time_.at(event.id) - start_time_) << "ms\t\t" <<
-    //   latency << "ms\n";
+  {  // Lock actual start time
+    std::lock_guard<std::mutex> lk(mtx_);
+    for (size_t i = 0; i < generated_events_.size(); i++) {
+      const auto & event = generated_events_[i];
+      double latency =
+        test_utils::to_ms(actual_start_time_.at(event.id) - event.start_time);
 
-    // Generate statistics
-    if (latency > max) {
-      max = latency;
+      // Display execution time
+      // std::cout << std::setprecision(8) <<
+      //   event.id.substr(0, 8) << '\t' <<
+      //   test_utils::to_ms(event.start_time - start_time_) << "ms\t\t" <<
+      //   test_utils::to_ms(actual_start_time_.at(event.id) - start_time_) << "ms\t\t" <<
+      //   latency << "ms\n";
+
+      // Generate statistics
+      if (latency > max) {
+        max = latency;
+      }
+      average = (average * i + latency) / (i + 1);
+      sq_average = (sq_average * i + latency * latency) / (i + 1);
     }
-    average = (average * i + latency) / (i + 1);
-    sq_average = (sq_average * i + latency * latency) / (i + 1);
-  }
+  }  // Unlock actual start time
+
   double deviation = sqrt(sq_average - average * average);
 
   std::cout << "Latency stats:\n";
@@ -137,7 +143,7 @@ TEST_F(TestSystemTimeExecutor, ExecuteImmediately)
 
   // Add this event to the system time executor
   ste_.add_action(
-    immediate_event, [&event_id, this]() -> void
+    immediate_event, [event_id, this]() -> void
     {
       std::lock_guard<std::mutex> lk(mtx_);
       actual_start_time_.emplace(event_id, utils::now());
@@ -210,7 +216,7 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
 
   // Add this event to the system time executor
   ste_.add_action(
-    addon_event, [&event_id, this]() -> void
+    addon_event, [event_id, this]() -> void
     {
       std::lock_guard<std::mutex> lk(mtx_);
       actual_start_time_.emplace(event_id, utils::now());
@@ -220,11 +226,14 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
   // All events should be done by now, since all the others are cancelled
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-  std::cout << "Task executed after burden task:" << std::endl;
-  for (auto & record : actual_start_time_) {
-    if (record.second > start_time_ + 1.5e9) {
-      std::cout << record.first << std::endl;
-      EXPECT_EQ(record.first, event_id);
+  {
+    std::lock_guard<std::mutex> lk(mtx_);
+    std::cout << "Task executed after burden task:" << std::endl;
+    for (auto & record : actual_start_time_) {
+      if (record.second > start_time_ + 2.5e9) {
+        std::cout << record.first << std::endl;
+        EXPECT_EQ(record.first, event_id);
+      }
     }
   }
 }

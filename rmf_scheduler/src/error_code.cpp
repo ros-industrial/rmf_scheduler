@@ -12,38 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMF_SCHEDULER__SYSTEM_TIME_UTILS_HPP_
-#define RMF_SCHEDULER__SYSTEM_TIME_UTILS_HPP_
-
-#include <chrono>
-#include <string>
+#include "nlohmann/json.hpp"
+#include "rmf_scheduler/error_code.hpp"
 
 namespace rmf_scheduler
 {
-namespace utils
+std::string ErrorCode::json() const
 {
+  return nlohmann::json {
+    {"value", val},
+    {"detail", detail}
+  }.dump();
+}
 
-uint64_t to_ns(
-  const std::chrono::system_clock::time_point & time_point);
-
-std::chrono::system_clock::time_point to_chrono_time_point(
-  uint64_t time_point);
-
-uint64_t now();
-
-uint64_t time_max();
-
-char * to_localtime(uint64_t ns);
-
-uint64_t from_localtime(
-  const std::string & localtime,
-  const std::string & fmt = "%b %d %H:%M:%S %Y");
-
-char * get_default_timezone();
-
-void set_timezone(const char * tz);
-
-}  // namespace utils
 }  // namespace rmf_scheduler
-
-#endif  // RMF_SCHEDULER__SYSTEM_TIME_UTILS_HPP_

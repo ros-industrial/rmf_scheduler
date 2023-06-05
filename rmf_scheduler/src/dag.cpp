@@ -60,7 +60,7 @@ void DAG::add_node(
   const std::string & id)
 {
   if (has_node(id)) {
-    throw DAGIDException("add_node: DAG node [%s] already exists", id.c_str());
+    throw DAGIDException(id.c_str(), "add_node: DAG node [%s] already exists", id.c_str());
   }
 
   tf::Task task = taskflow_->placeholder();
@@ -88,7 +88,7 @@ void DAG::add_dependency(
   auto node_itr = node_list_.find(id);
   if (node_itr == node_list_.end()) {
     throw DAGIDException(
-            "add_dependency: DAG node [%s] doesn't exist", id.c_str());
+            id.c_str(), "add_dependency: DAG node [%s] doesn't exist", id.c_str());
   }
 
   // Check if dependent nodes exist
@@ -97,6 +97,7 @@ void DAG::add_dependency(
     auto deps_itr = node_list_.find(deps_id);
     if (deps_itr == node_list_.end()) {
       throw DAGIDException(
+              id.c_str(),
               "add_dependency: DAG dependant node [%s] doesn't exist", deps_id.c_str());
     }
     dep_nodes.emplace(deps_id, *deps_itr->second);
@@ -239,6 +240,40 @@ bool DAG::_is_cyclic_until(
   return false;
 }
 
+std::vector<std::string> DAG::entry_nodes() const
+{
+  std::vector<std::string> result_ids;
+  taskflow_->for_each_task(
+    [&result_ids](tf::Task task) {
+      if (task.num_dependents() == 0) {
+        result_ids.push_back(task.name());
+      }
+    });
+  return result_ids;
+}
+
+std::vector<std::string> DAG::end_nodes() const
+{
+  std::vector<std::string> result_ids;
+  taskflow_->for_each_task(
+    [&result_ids](tf::Task task) {
+      if (task.num_successors() == 0) {
+        result_ids.push_back(task.name());
+      }
+    });
+  return result_ids;
+}
+
+std::vector<std::string> DAG::all_nodes() const
+{
+  std::vector<std::string> result_ids;
+  result_ids.reserve(taskflow_->num_tasks());
+  taskflow_->for_each_task(
+    [&result_ids](tf::Task task) {
+      result_ids.push_back(task.name());
+    });
+  return result_ids;
+}
 
 std::string DAG::dot() const
 {

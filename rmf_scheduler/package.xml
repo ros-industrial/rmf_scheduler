@@ -10,9 +10,12 @@
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rmf_api_msgs</buildtool_depend>
 
   <build_depend>croncpp_vendor</build_depend>
   <build_depend>taskflow_vendor</build_depend>
+  <build_depend>nlohmann-json-dev</build_depend>
+  <build_depend>nlohmann_json_schema_validator_vendor</build_depend>
   <depend>rclcpp</depend>
   <test_depend>graphviz-dev</test_depend>
 

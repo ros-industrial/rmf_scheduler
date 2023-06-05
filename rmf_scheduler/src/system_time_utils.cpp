@@ -69,6 +69,14 @@ uint64_t from_localtime(
   return static_cast<uint64_t>(t_s) * 1e9;
 }
 
+void set_timezone(const char * tz)
+{
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+  setenv("TZ", tz, 1);
+  tzset();
+#endif
+}
+
 
 }  // namespace utils
 }  // namespace rmf_scheduler

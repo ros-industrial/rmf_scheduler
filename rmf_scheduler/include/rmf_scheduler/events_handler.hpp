@@ -73,15 +73,17 @@ private:
   StartTimeLookup start_time_lookup_;
 };
 
-class EventsHandlerIDException : public ExceptionTemplate
+class EventsHandlerIDException : public IDException
 {
 public:
   template<typename ... Args>
-  EventsHandlerIDException(const char * msg, Args && ... args)
-  : ExceptionTemplate(msg, std::forward<Args>(args) ...)
+  EventsHandlerIDException(const char * id, const char * msg, Args && ... args)
+  : IDException(id, msg, std::forward<Args>(args) ...)
   {
     add_prefix("EventsHandlerIDException:\n  ");
   }
+
+  ~EventsHandlerIDException() = default;
 };
 
 }  // namespace rmf_scheduler

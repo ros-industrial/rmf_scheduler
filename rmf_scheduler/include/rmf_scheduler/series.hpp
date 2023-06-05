@@ -48,6 +48,7 @@ public:
   {
     std::vector<Occurrence> occurrences;
     std::string cron;
+    std::string timezone;
     uint64_t until;
     std::vector<std::string> exception_ids;
     std::string id_prefix;
@@ -68,6 +69,7 @@ public:
     const std::string & id,
     uint64_t time,
     const std::string & cron,
+    const std::string & timezone,
     uint64_t until = UINT64_MAX,
     const std::string & id_prefix = "");
 
@@ -92,7 +94,8 @@ public:
   void update_cron_from(
     uint64_t time,
     uint64_t new_start_time,
-    std::string new_cron);
+    std::string new_cron,
+    std::string timezone);
 
   void update_occurrence_time(
     uint64_t time,
@@ -111,6 +114,8 @@ private:
   bool _validate_time(uint64_t time, const std::unique_ptr<cron::cronexpr> &) const;
 
   std::unique_ptr<cron::cronexpr> cron_;
+
+  std::string tz_;
 
   uint64_t until_;
 
@@ -141,6 +146,17 @@ public:
   : ExceptionTemplate(msg, std::forward<Args>(args) ...)
   {
     add_prefix("SeriesInvalidCronException: ");
+  }
+};
+
+class SeriesIDException : public IDException
+{
+public:
+  template<typename ... Args>
+  SeriesIDException(const char * id, const char * msg, Args && ... args)
+  : IDException(id, msg, std::forward<Args>(args) ...)
+  {
+    add_prefix("SeriesIDException:\n  ");
   }
 };
 

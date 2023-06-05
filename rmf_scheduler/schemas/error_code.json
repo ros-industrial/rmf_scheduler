@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/raw/main/rmf_scheduler/schemas/error_code.json",
+  "title": "Error Code",
+  "type": "object",
+  "properties": {
+    "value": { "type": "integer" },
+    "detail": { "type": "object" }
+  },
+  "required": ["value"]
+}

@@ -19,6 +19,7 @@
 #include "rmf_scheduler/dag.hpp"
 #include "rmf_scheduler/dag_executor.hpp"
 #include "rmf_scheduler/test_utils.hpp"
+#include "rmf_scheduler/sanitizer_macro.hpp"
 #include "graphviz/gvc.h"
 
 class TestDAG : public ::testing::Test
@@ -60,6 +61,15 @@ TEST_F(TestDAG, BasicDAGCRUD) {
         itr.second, dag_description_.at(itr.first)
     ));
   }
+
+  // Validate entry and ending node
+  EXPECT_TRUE(
+    test_utils::is_vector_equal(
+      dag_.entry_nodes(), std::vector<std::string>{"task1"}));
+
+  EXPECT_TRUE(
+    test_utils::is_vector_equal(
+      dag_.end_nodes(), std::vector<std::string>{"task2"}));
 
   // Add a new node
   dag_.add_node("task5");
@@ -106,6 +116,11 @@ TEST_F(TestDAG, BasicDAGCRUD) {
   }
 }
 
+// Graphviz leaks due to its upstream dependencies
+// https://gitlab.com/graphviz/graphviz/-/issues/1461
+// Disable address sanitizer
+#ifndef __SANITIZE_ADDRESS__
+#ifndef __SANITIZE_THREAD__
 TEST_F(TestDAG, DAGDOT) {
   auto dot = dag_.dot();
   GVC_t * gvc = gvContext();
@@ -117,6 +132,8 @@ TEST_F(TestDAG, DAGDOT) {
   agclose(g);
   gvFreeContext(gvc);
 }
+#endif
+#endif
 
 TEST_F(TestDAG, DAGCheckCyclic) {
   // Original graph is not cyclic

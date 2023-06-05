@@ -34,6 +34,47 @@ humble-nightly-gcc-coverage:
     - chmod +x codecov
     - ./codecov -f ./coverage.info
 
+humble-nightly-gcc-asan:
+  image:
+    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "humble"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    UPSTREAM_WORKSPACE: "deps.repos"
+    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
+
+humble-nightly-gcc-tsan:
+  image:
+    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "humble"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    UPSTREAM_WORKSPACE: "deps.repos"
+    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
 
 humble-nightly-clang:
   image:

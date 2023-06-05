@@ -90,6 +90,12 @@ public:
    */
   bool is_cyclic() const;
 
+  std::vector<std::string> entry_nodes() const;
+
+  std::vector<std::string> end_nodes() const;
+
+  std::vector<std::string> all_nodes() const;
+
   std::string dot() const;
 
   Description description() const;
@@ -111,12 +117,12 @@ private:
 };
 
 
-class DAGIDException : public ExceptionTemplate
+class DAGIDException : public IDException
 {
 public:
   template<typename ... Args>
-  DAGIDException(const char * msg, Args && ... args)
-  : ExceptionTemplate(msg, std::forward<Args>(args) ...)
+  DAGIDException(const char * id, const char * msg, Args && ... args)
+  : IDException(id, msg, std::forward<Args>(args) ...)
   {
     add_prefix("DAGIDException:\n  ");
   }

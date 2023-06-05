@@ -22,12 +22,14 @@ protected:
   void SetUp() override
   {
     using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+    utils::set_timezone("Asia/Singapore");
     uint64_t start_time = utils::from_localtime("Jan 2 10:15:00 2023");
     uint64_t end_time = utils::from_localtime("Oct 3 10:15:00 2023");
     series_ = Series(
       "event-1",
       start_time,
       "0 15 10 ? * MON-FRI",    // 10:15 AM every Monday - Friday
+      "Asia/Singapore",         // default timezone
       end_time,
       "event-");
   }
@@ -194,7 +196,8 @@ TEST_F(TestSeries, UpdateCron)
   series_.update_cron_from(
     utils::from_localtime("Jan 4 10:15:00 2023"),
     utils::from_localtime("Jan 4 18:32:12 2023"),
-    "12 32 18 ? * MON,TUE,WED,FRI");
+    "12 32 18 ? * MON,TUE,WED,FRI",
+    "Asia/Singapore");
 
   auto description = series_.description();
 
@@ -223,7 +226,8 @@ TEST_F(TestSeries, UpdateCron)
   series_.update_cron_from(
     utils::from_localtime("Jan 4 00:00:00 2023"),
     utils::from_localtime("Jan 4 19:00:18 2023"),
-    "18 00 19 ? * TUE,WED,FRI");
+    "18 00 19 ? * TUE,WED,FRI",
+    "Asia/Singapore");
 
   description = series_.description();
 

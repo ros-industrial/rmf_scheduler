@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/raw/main/rmf_scheduler/schemas/event.json",
+  "title": "Event for Task Scheduler",
+  "description": "Event description",
+  "type": "object",
+  "properties": {
+    "description": { "type": "string" },
+    "type": { "type": "string" },
+    "start_time": { "type": "number" },
+    "duration": {"type": "number"},
+    "series_id": { "type": "string" },
+    "dependency_id": { "type": "string" },
+    "event_details": { "type": "object" }
+  },
+  "required": ["description", "type", "start_time", "event_details"],
+  "additionalProperties": false
+}

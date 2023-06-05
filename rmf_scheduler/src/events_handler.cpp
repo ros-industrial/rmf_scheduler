@@ -84,6 +84,7 @@ void EventsHandler::add_event(const Event & event)
 {
   if (has_event(event.id)) {
     throw EventsHandlerIDException(
+            event.id.c_str(),
             "add_event error."
             "Event ID [%s] already exist",
             event.id.c_str());
@@ -97,6 +98,7 @@ void EventsHandler::update_event(
 {
   if (!has_event(event.id)) {
     throw EventsHandlerIDException(
+            event.id.c_str(),
             "update_event error. "
             "Event ID [%s] doesn't exist",
             event.id.c_str());
