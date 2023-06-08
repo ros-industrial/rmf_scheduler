@@ -58,7 +58,7 @@ TEST(TestScheduler, AddScheduleJSONException)
   );
 
   // Minimal viable empty schedule
-  error_code = scheduler->add_schedule("{\"events\":{}}");
+  error_code = scheduler->add_schedule(R"({"events":{}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
 
@@ -66,15 +66,15 @@ TEST(TestScheduler, AddScheduleJSONException)
   auto valid_str =
     test_utils::init_json_from_file("json/valid.json");
   // This time should be valid
-  error_code = scheduler->add_schedule(valid_str);
+  error_code = scheduler->add_schedule(nlohmann::json::parse(valid_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
 
-  auto all_schedule_str = scheduler->get_schedule("{}");
+  auto all_schedule_str = scheduler->get_schedule(R"({})"_json);
   std::cout << test_utils::to_pretty_json(all_schedule_str) << std::endl;
 
   // This time should spit out Event ID invalid error code
-  error_code = scheduler->add_schedule(valid_str);
+  error_code = scheduler->add_schedule(nlohmann::json::parse(valid_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -83,7 +83,8 @@ TEST(TestScheduler, AddScheduleJSONException)
     ErrorCode::INVALID_EVENT);
 
   // This should spit out Dependency ID invalid error code
-  error_code = scheduler->add_schedule("{\"events\":{}, \"dependencies\": {\"dag-1\":{}}}");
+  error_code = scheduler->add_schedule(
+    R"({"events":{}, "dependencies": {"dag-1":{}}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -93,8 +94,9 @@ TEST(TestScheduler, AddScheduleJSONException)
 
   // This should spit out Series ID invalid error code
   error_code = scheduler->add_schedule(
-    "{\"events\":{}, \"series\": {\"series-1\":{\"cron\": \"\","
-    "\"timezone\":\"UTC\",\"occurrences\":[]}}}");
+    R"({"events":{}, "series":
+      {"series-1":{"cron": "",
+      "timezone":"UTC","occurrences":[]}}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -109,7 +111,8 @@ TEST(TestScheduler, AddScheduleJSONException)
   // Invalid dependency graph cyclic
   auto cyclic_dag_schedule_json_str =
     test_utils::init_json_from_file("json/cyclic_dag.json");
-  error_code = scheduler->add_schedule(cyclic_dag_schedule_json_str);
+  error_code = scheduler->add_schedule(
+    nlohmann::json::parse(cyclic_dag_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -121,7 +124,8 @@ TEST(TestScheduler, AddScheduleJSONException)
   auto series_empty_schedule_json_str =
     test_utils::init_json_from_file("json/series_empty.json");
 
-  error_code = scheduler->add_schedule(series_empty_schedule_json_str);
+  error_code = scheduler->add_schedule(
+    nlohmann::json::parse(series_empty_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -134,7 +138,8 @@ TEST(TestScheduler, AddScheduleJSONException)
   auto invalid_cron_schedule_json_str =
     test_utils::init_json_from_file("json/invalid_cron.json");
 
-  error_code = scheduler->add_schedule(invalid_cron_schedule_json_str);
+  error_code = scheduler->add_schedule(
+    nlohmann::json::parse(invalid_cron_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,

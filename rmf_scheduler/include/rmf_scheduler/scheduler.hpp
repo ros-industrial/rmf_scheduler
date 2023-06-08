@@ -24,12 +24,15 @@
 #include <utility>
 #include <vector>
 
+#include "nlohmann/json.hpp"
+
 #include "rmf_scheduler/exception.hpp"
 #include "rmf_scheduler/dag.hpp"
 #include "rmf_scheduler/series.hpp"
 #include "rmf_scheduler/events_handler.hpp"
 #include "rmf_scheduler/error_code.hpp"
 #include "rmf_scheduler/system_time_executor.hpp"
+
 
 namespace rmf_scheduler
 {
@@ -85,7 +88,7 @@ public:
    * \param[in] request_json json string for the new schedule
    * \return error code
    */
-  ErrorCode add_schedule(const std::string & request_json);
+  ErrorCode add_schedule(const nlohmann::json & request_json);
 
   /// Add a complete new schedule
   /**
@@ -126,7 +129,7 @@ public:
   ErrorCode update_schedule(const Schedule::Description & schedule);
 
   std::string get_schedule(
-    const std::string & request_json,
+    const nlohmann::json & request_json,
     int indent = -1) const;
 
   Schedule::Description get_schedule(

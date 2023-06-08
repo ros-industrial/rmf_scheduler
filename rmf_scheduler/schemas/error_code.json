@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "value": { "type": "integer" },
-    "detail": { "type": "object" }
+    "detail": { "type": "string" }
   },
   "required": ["value"]
 }

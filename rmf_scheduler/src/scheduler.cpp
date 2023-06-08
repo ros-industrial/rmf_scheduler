@@ -28,6 +28,31 @@
 namespace rmf_scheduler
 {
 
+namespace utils
+{
+
+/// Convert floating point to integer with proper range limit
+/**
+ * static_cast will cause floating point value higher than integer limit to be 0.
+ *
+ * \param[in] in floating point value
+ * \return integer
+ */
+uint64_t clamp_cast_uint64_t(double in)
+{
+  if (in < 0) {
+    return 0;
+  }
+
+  if (in > static_cast<double>(UINT64_MAX)) {
+    return UINT64_MAX;
+  }
+
+  return static_cast<uint64_t>(in);
+}
+
+}  // namespace utils
+
 namespace parser
 {
 
@@ -160,6 +185,12 @@ void events_to_json(
   const std::unordered_map<std::string, Event> & events_description,
   nlohmann::json & events_json)
 {
+  // return empty instead of null
+  if (events_description.empty()) {
+    events_json = nlohmann::json({});
+    return;
+  }
+
   for (auto & itr : events_description) {
     const Event & event = itr.second;
     nlohmann::json event_json;
@@ -275,12 +306,10 @@ Scheduler::~Scheduler()
 }
 
 ErrorCode Scheduler::add_schedule(
-  const std::string & schedule_json)
+  const nlohmann::json & json)
 {
   Schedule::Description description;
   try {
-    nlohmann::json json;
-    json = nlohmann::json::parse(schedule_json);
     auto json_uri = nlohmann::json_uri{
       schemas::schedule["$id"]
     };
@@ -711,14 +740,12 @@ void Scheduler::_update_schedule(const Schedule::Description & schedule)
 }
 
 std::string Scheduler::get_schedule(
-  const std::string & request,
+  const nlohmann::json & request_json,
   int indent) const
 {
-  nlohmann::json request_json, response_json;
+  nlohmann::json response_json;
   uint64_t start_time, end_time;
   try {
-    // parse request json
-    request_json = nlohmann::json::parse(request);
     auto json_uri = nlohmann::json_uri{
       schemas::get_schedule_request["$id"]
     };
@@ -729,10 +756,10 @@ std::string Scheduler::get_schedule(
       request_json);
 
     start_time = request_json.contains("start_time") ?
-      request_json["start_time"].get<double>() * 1e9 : 0;
+      utils::clamp_cast_uint64_t(request_json["start_time"].get<double>() * 1e9) : 0;
 
     end_time = request_json.contains("end_time") ?
-      request_json["end_time"].get<double>() * 1e9 : UINT64_MAX;
+      utils::clamp_cast_uint64_t(request_json["end_time"].get<double>() * 1e9) : UINT64_MAX;
   } catch (const std::exception & e) {
     // Return schema errors
     response_json["error_code"] =
