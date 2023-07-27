@@ -39,7 +39,7 @@ public:
   using Work = std::function<void ()>;
   using WorkGenerator = std::function<Work(const std::string &)>;
 
-  DAGExecutor();
+  explicit DAGExecutor(unsigned int concurrency = std::thread::hardware_concurrency());
   DAGExecutor(const DAGExecutor &) = delete;
   DAGExecutor & operator=(const DAGExecutor &) = delete;
   DAGExecutor(DAGExecutor &&);

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -61,6 +62,10 @@ public:
   void add_node(
     const std::string & id);
 
+  void update_node(
+    const std::string & id,
+    const std::string & new_id);
+
   void delete_node(
     const std::string & id);
 
@@ -90,9 +95,9 @@ public:
    */
   bool is_cyclic() const;
 
-  std::vector<std::string> entry_nodes() const;
+  std::unordered_set<std::string> entry_nodes() const;
 
-  std::vector<std::string> end_nodes() const;
+  std::unordered_set<std::string> end_nodes() const;
 
   std::vector<std::string> all_nodes() const;
 

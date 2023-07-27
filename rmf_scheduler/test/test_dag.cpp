@@ -63,13 +63,9 @@ TEST_F(TestDAG, BasicDAGCRUD) {
   }
 
   // Validate entry and ending node
-  EXPECT_TRUE(
-    test_utils::is_vector_equal(
-      dag_.entry_nodes(), std::vector<std::string>{"task1"}));
+  EXPECT_EQ(dag_.entry_nodes(), std::unordered_set<std::string>{"task1"});
 
-  EXPECT_TRUE(
-    test_utils::is_vector_equal(
-      dag_.end_nodes(), std::vector<std::string>{"task2"}));
+  EXPECT_EQ(dag_.end_nodes(), std::unordered_set<std::string>{"task2"});
 
   // Add a new node
   dag_.add_node("task5");

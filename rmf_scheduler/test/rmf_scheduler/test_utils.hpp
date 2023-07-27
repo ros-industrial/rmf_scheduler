@@ -52,6 +52,7 @@ inline std::vector<rmf_scheduler::Event> random_event_generator(
           10,
           event_id,
           "",
+          "",
           ""
         });
   }
@@ -67,7 +68,8 @@ inline bool is_event_equal(const Event & lhs, const Event & rhs)
     lhs.duration == rhs.duration &&
     lhs.id == rhs.id &&
     lhs.series_id == rhs.series_id &&
-    lhs.dag_id == rhs.dag_id;
+    lhs.dag_id == rhs.dag_id &&
+    lhs.event_details == rhs.event_details;
 }
 
 inline bool is_event_vector_equal(

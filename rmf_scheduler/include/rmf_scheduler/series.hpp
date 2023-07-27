@@ -16,6 +16,7 @@
 #define RMF_SCHEDULER__SERIES_HPP_
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -54,6 +55,22 @@ public:
     std::string id_prefix;
   };
 
+  class ObserverBase
+  {
+public:
+    virtual ~ObserverBase() {}
+    virtual void on_add_occurrence(
+      const Occurrence & ref_occurrence_id,
+      const Occurrence & new_occurrence) = 0;
+
+    virtual void on_update_occurrence(
+      const Occurrence & old_occurrence,
+      uint64_t new_time) = 0;
+
+    virtual void on_delete_occurrence(
+      const Occurrence & occurrence) = 0;
+  };
+
   Series();
   Series(const Series &);
   Series & operator=(const Series &);
@@ -77,6 +94,8 @@ public:
 
   Description description() const;
 
+  std::vector<Occurrence> occurrences() const;
+
   std::string get_occurrence_id(uint64_t time) const;
 
   Occurrence get_last_occurrence() const;
@@ -85,7 +104,8 @@ public:
 
   std::string cron() const;
 
-  std::vector<Occurrence> expand_until(uint64_t time);
+  std::vector<Occurrence> expand_until(
+    uint64_t time);
 
   void update_occurrence_id(
     uint64_t time,
@@ -110,8 +130,17 @@ public:
   void delete_occurrence(
     uint64_t time);
 
+  // Observer for consolidating with event / dag handling
+  template<typename Observer, typename ... ArgsT>
+  std::shared_ptr<Observer> make_observer(ArgsT &&... args);
+
+  template<typename Observer>
+  void remove_observer(std::shared_ptr<Observer> observer);
+
 private:
   bool _validate_time(uint64_t time, const std::unique_ptr<cron::cronexpr> &) const;
+
+  void _safe_delete(uint64_t time);
 
   std::unique_ptr<cron::cronexpr> cron_;
 
@@ -124,8 +153,35 @@ private:
   std::map<uint64_t, std::string> occurrence_ids_;
 
   std::unordered_set<std::string> exception_ids_;
+
+  std::unordered_set<std::shared_ptr<Series::ObserverBase>> observers_;
 };
 
+template<typename Observer, typename ... ArgsT>
+std::shared_ptr<Observer> Series::make_observer(ArgsT &&... args)
+{
+  static_assert(
+    std::is_base_of_v<Series::ObserverBase, Observer>,
+    "Observer must be derived from Series::ObserverBase"
+  );
+
+  // use a local variable to mimic the constructor
+  auto ptr = std::make_shared<Observer>(std::forward<ArgsT>(args)...);
+
+  observers_.emplace(std::static_pointer_cast<Series::ObserverBase>(ptr));
+  return ptr;
+}
+
+template<typename Observer>
+void Series::remove_observer(std::shared_ptr<Observer> ptr)
+{
+  static_assert(
+    std::is_base_of_v<Series::ObserverBase, Observer>,
+    "Observer must be derived from RuntimeObserverBase"
+  );
+
+  observers_.erase(std::static_pointer_cast<Series::ObserverBase>(ptr));
+}
 
 class SeriesEmptyException : public ExceptionTemplate
 {

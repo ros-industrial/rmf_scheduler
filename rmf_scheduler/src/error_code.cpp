@@ -15,6 +15,11 @@
 #include "nlohmann/json.hpp"
 #include "rmf_scheduler/error_code.hpp"
 
+#include "rmf_scheduler/events_handler.hpp"
+#include "rmf_scheduler/dag.hpp"
+#include "rmf_scheduler/series.hpp"
+#include "rmf_scheduler/scheduler.hpp"
+
 namespace rmf_scheduler
 {
 std::string ErrorCode::json() const
@@ -23,6 +28,76 @@ std::string ErrorCode::json() const
     {"value", val},
     {"detail", detail}
   }.dump();
+}
+
+ErrorCode ErrorCode::resolve_error_code(std::function<void()> && func)
+{
+  try {
+    func();
+  } catch (const EventsHandlerIDException & e) {
+    // Event ID error
+    return {
+      FAILURE |
+      INVALID_ID |
+      INVALID_EVENT,
+      e.what()
+    };
+  } catch (const DAGIDException & e) {
+    // DAG ID error
+    return {
+      FAILURE |
+      INVALID_ID |
+      INVALID_DEPENDENCY,
+      e.what()
+    };
+  } catch (const DAGCyclicException & e) {
+    // DAG Cyclic error
+    return {
+      FAILURE |
+      INVALID_LOGIC |
+      INVALID_DEPENDENCY,
+      e.what()
+    };
+  } catch (const SeriesIDException & e) {
+    // DAG Cyclic error
+    return {
+      FAILURE |
+      INVALID_ID |
+      INVALID_SERIES,
+      e.what()
+    };
+  } catch (const SeriesEmptyException & e) {
+    // Series empty
+    return {
+      FAILURE |
+      INVALID_LOGIC |
+      INVALID_SERIES,
+      e.what()
+    };
+  } catch (const SeriesInvalidCronException & e) {
+    // Series timing invalid
+    return {
+      FAILURE |
+      INVALID_LOGIC |
+      INVALID_SERIES,
+      e.what()
+    };
+  } catch (const ScheduleMultipleWriteException & e) {
+    // Multiple writer error
+    return {
+      FAILURE |
+      MULTIPLE_ACCESS |
+      NO_FIELD,
+      e.what()
+    };
+  } catch (const std::exception & e) {
+    // Other errors
+    return {
+      FAILURE,
+      e.what()
+    };
+  }
+  return SUCCESS;
 }
 
 }  // namespace rmf_scheduler

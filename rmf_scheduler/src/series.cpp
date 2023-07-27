@@ -46,6 +46,7 @@ Series::Series(const Series & rhs)
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
   exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
 }
 
 Series & Series::operator=(const Series & rhs)
@@ -56,6 +57,7 @@ Series & Series::operator=(const Series & rhs)
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
   exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
   return *this;
 }
 
@@ -67,6 +69,7 @@ Series::Series(Series && rhs)
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
   exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
 }
 
 Series & Series::operator=(Series && rhs)
@@ -77,6 +80,7 @@ Series & Series::operator=(Series && rhs)
   occurrence_ids_ = rhs.occurrence_ids_;
   id_prefix_ = rhs.id_prefix_;
   exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
   return *this;
 }
 
@@ -171,9 +175,7 @@ Series::operator bool() const
 Series::Description Series::description() const
 {
   Description description;
-  for (auto & itr : occurrence_ids_) {
-    description.occurrences.emplace_back(Occurrence{itr.first, itr.second});
-  }
+  description.occurrences = occurrences();
   description.cron = cron();
   description.timezone = tz_;
   description.until = until_;
@@ -182,6 +184,15 @@ Series::Description Series::description() const
   }
   description.id_prefix = id_prefix_;
   return description;
+}
+
+std::vector<Series::Occurrence> Series::occurrences() const
+{
+  std::vector<Occurrence> occurrences;
+  for (auto & itr : occurrence_ids_) {
+    occurrences.emplace_back(Occurrence{itr.first, itr.second});
+  }
+  return occurrences;
 }
 
 std::string Series::get_occurrence_id(uint64_t time) const
@@ -233,13 +244,20 @@ std::vector<Series::Occurrence> Series::expand_until(uint64_t time)
 
   time_t last_time = last_itr->first / 1e9;
   time_t until_time = time / 1e9;
+  Occurrence ref_occurrence{last_itr->first, last_itr->second};
 
   last_time = cron::cron_next(*cron_, last_time);
   while (last_time <= until_time) {
     uint64_t ns_time = static_cast<uint64_t>(last_time * 1e9);
     std::string new_id = id_prefix_ + gen_uuid();
     occurrence_ids_.emplace(ns_time, new_id);
-    result.emplace_back(Series::Occurrence{ns_time, new_id});
+    result.emplace_back(Occurrence{ns_time, new_id});
+    // Invoke observers: Add occurrence
+    for (auto & observer : observers_) {
+      observer->on_add_occurrence(
+        ref_occurrence,
+        Occurrence{ns_time, new_id});
+    }
     last_time = cron::cron_next(*cron_, last_time);
   }
 
@@ -314,6 +332,12 @@ void Series::update_cron_from(
       // Push back occurrence that are not mark as an exception
       uint64_t occurrence_time = static_cast<uint64_t>(cron_time_s) * 1e9;
       new_occurrences.push_back(Occurrence{occurrence_time, itr->second});
+      // Invoke observers: Update occurrence
+      for (auto & observer : observers_) {
+        observer->on_update_occurrence(
+          Occurrence{itr->first, itr->second},
+          occurrence_time);
+      }
       itr = occurrence_ids_.erase(itr);
     } else {
       // Skip the occurrence if it is an exception
@@ -349,14 +373,23 @@ void Series::update_occurrence_time(
 
   std::string id = itr->second;
 
-  // Safe delete
-  delete_occurrence(itr->first);
+  // Safe delete without invoking delete observer
+  _safe_delete(itr->first);
 
   // Mark this occurrence as an exception
-  exception_ids_.emplace(id);
+  if (exception_ids_.find(id) == exception_ids_.end()) {
+    exception_ids_.emplace(id);
+  }
 
   // Add in new start time
   occurrence_ids_[new_start_time] = id;
+
+  // Invoke observers: Update occurrence
+  for (auto & observer : observers_) {
+    observer->on_update_occurrence(
+      Occurrence{time, id},
+      new_start_time);
+  }
 }
 
 void Series::set_id_prefix(
@@ -370,10 +403,41 @@ void Series::set_until(
 {
   until_ = time;
   auto itr = occurrence_ids_.lower_bound(time);
+  // Invoke observers: Delete occurrence
+  for (auto & observer : observers_) {
+    observer->on_delete_occurrence(
+      Occurrence{itr->first, itr->second});
+  }
   occurrence_ids_.erase(itr, occurrence_ids_.end());
 }
 
 void Series::delete_occurrence(uint64_t time)
+{
+  std::string occurrence_id = occurrence_ids_.find(time)->second;
+  _safe_delete(time);
+  // Invoke observers: Delete occurrence
+  for (auto & observer : observers_) {
+    observer->on_delete_occurrence(
+      Occurrence{time, occurrence_id});
+  }
+}
+
+bool Series::_validate_time(
+  uint64_t time,
+  const std::unique_ptr<cron::cronexpr> & cron) const
+{
+  utils::set_timezone(tz_.c_str());
+  uint64_t time_s_to_validate = time / 1e9;
+
+  // Roll back 1s
+  time_t roll_back_time = time_s_to_validate - 1;
+
+  time_t valid_time = cron::cron_next(*cron, roll_back_time);
+
+  return time_s_to_validate == static_cast<uint64_t>(valid_time);
+}
+
+void Series::_safe_delete(uint64_t time)
 {
   auto itr = occurrence_ids_.find(time);
   if (itr == occurrence_ids_.end()) {
@@ -397,6 +461,12 @@ void Series::delete_occurrence(uint64_t time)
     if (next_time <= until_) {
       std::string new_id = id_prefix_ + gen_uuid();
       occurrence_ids_.emplace(next_time, new_id);
+      // Invoke observers: Add occurrence
+      for (auto & observer : observers_) {
+        observer->on_add_occurrence(
+          last_occurrence,
+          Occurrence{next_time, new_id});
+      }
     } else {
       until_ = time - 1;
     }
@@ -410,21 +480,6 @@ void Series::delete_occurrence(uint64_t time)
   if (itr_except != exception_ids_.end()) {
     exception_ids_.erase(itr_except);
   }
-}
-
-bool Series::_validate_time(
-  uint64_t time,
-  const std::unique_ptr<cron::cronexpr> & cron) const
-{
-  utils::set_timezone(tz_.c_str());
-  uint64_t time_s_to_validate = time / 1e9;
-
-  // Roll back 1s
-  time_t roll_back_time = time_s_to_validate - 1;
-
-  time_t valid_time = cron::cron_next(*cron, roll_back_time);
-
-  return time_s_to_validate == static_cast<uint64_t>(valid_time);
 }
 
 }  // namespace rmf_scheduler

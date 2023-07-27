@@ -7,6 +7,7 @@ find_package(rclcpp REQUIRED)
 find_package(rmf_api_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
+find_package(pluginlib REQUIRED)
 find_package(taskflow_vendor REQUIRED)
 find_package(croncpp_vendor REQUIRED)
 
@@ -29,6 +30,10 @@ add_library(${PROJECT_NAME}
   src/dag_executor.cpp
   src/error_code.cpp
   src/events_handler.cpp
+  src/parser.cpp
+  src/runtime_interface.cpp
+  src/runtime.cpp
+  src/schedule.cpp
   src/scheduler.cpp
   src/schema_validator.cpp
   src/series.cpp
@@ -39,6 +44,8 @@ add_library(${PROJECT_NAME}
 ament_target_dependencies(${PROJECT_NAME}
   taskflow_vendor
   croncpp_vendor
+  pluginlib
+  rclcpp
 )
 
 target_link_libraries(${PROJECT_NAME}

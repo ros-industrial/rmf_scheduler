@@ -26,8 +26,10 @@
 
 #include "nlohmann/json.hpp"
 
+#include "rclcpp/rclcpp.hpp"
+
 #include "rmf_scheduler/exception.hpp"
-#include "rmf_scheduler/dag.hpp"
+#include "rmf_scheduler/schedule.hpp"
 #include "rmf_scheduler/series.hpp"
 #include "rmf_scheduler/events_handler.hpp"
 #include "rmf_scheduler/error_code.hpp"
@@ -38,20 +40,6 @@ namespace rmf_scheduler
 {
 
 class SchemaValidator;
-
-struct Schedule
-{
-  struct Description
-  {
-    std::unordered_map<std::string, Event> events;
-    std::unordered_map<std::string, DAG::Description> dependencies;
-    std::unordered_map<std::string, Series::Description> series_map;
-  };
-
-  EventsHandler eh;
-  std::unordered_map<std::string, DAG> dags;
-  std::unordered_map<std::string, Series> series_map;
-};
 
 class Scheduler
 {
@@ -97,9 +85,9 @@ public:
    * and not link to existing events in the cache.
    *
    * \param[in] schedule Schedule description data type
-   * \return error code
+   * \throw ExceptionTemplate exception defined
    */
-  ErrorCode add_schedule(const Schedule::Description & schedule);
+  void add_schedule(const Schedule::Description & schedule);
 
   /// Update existing schedule
   /**
@@ -124,38 +112,53 @@ public:
    *
    * \param[in] request_json json string for the new schedule
    */
-  ErrorCode update_schedule(const std::string & request_json);
+  ErrorCode update_schedule(const nlohmann::json & request_json);
 
-  ErrorCode update_schedule(const Schedule::Description & schedule);
+  void update_schedule(const Schedule::Description & schedule);
 
-  std::string get_schedule(
-    const nlohmann::json & request_json,
-    int indent = -1) const;
+  nlohmann::json get_schedule(const nlohmann::json & request_json) const;
 
   Schedule::Description get_schedule(
     uint64_t start_time = 0,
     uint64_t end_time = UINT64_MAX) const;
 
-  ErrorCode delete_schedule(const std::string & request_json);
-  void delete_events(const std::vector<std::string> & event_ids);
-  void delete_dependencies(const std::vector<std::string> & dependency_ids);
+  ErrorCode delete_schedule(const nlohmann::json & request_json);
+  void delete_schedule(
+    const std::vector<std::string> & event_ids,
+    const std::vector<std::string> & dependency_ids,
+    const std::vector<std::string> & series_ids);
+
+  const Schedule & get_schedule_handler_const() const;
+  Schedule & get_schedule_handler();
+
+  // Runtime related functions
+  void load_runtime_interface(
+    const std::string & interface,
+    const std::string & name,
+    const std::string & ns = "");
+
+  void unload_runtime_interface(
+    const std::string & name,
+    const std::string & ns = "");
 
   void spin();
 
-private:
-  void _add_schedule(const Schedule::Description & schedule);
-  void _update_schedule(const Schedule::Description & schedule);
-  ErrorCode _resolve_error_code(std::function<void()>);
+  rclcpp::Executor::SharedPtr get_ros_executor() const;
 
+private:
   // A small convenience function for converting a thread ID to a string
   std::string _thread_id();
 
+  void add_events_to_runtime(uint64_t start_time, uint64_t end_time);
+
   mutable std::shared_mutex mtx_;
-  SystemTimeExecutor ste_;
   Schedule schedule_;
   std::unique_ptr<SchemaValidator> schema_validator_;
   uint64_t last_write_time_;
   std::string last_writer_;
+
+  // ROS related
+  rclcpp::Executor::SharedPtr ros_executor_;
 };
 
 /// Exception for multiple write

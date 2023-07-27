@@ -48,6 +48,9 @@ struct Event
 
   /// DAG that the event belongs to
   std::string dag_id;
+
+  /// Event details
+  std::string event_details;
 };
 
 

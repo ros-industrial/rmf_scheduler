@@ -1,16 +1,16 @@
 {
   "events": {
-    "go_to_place_task1": {
+    "go_to_place_task2": {
       "description": "Example of a go to place task",
       "type": "default/robot_task",
       "start_time": 1680961268,
-      "dependency_id": "dag-1",
+      "dependency_id": "dag-2",
       "event_details": {
         "category": "compose",
         "request": {
           "type": "robot_task_request",
           "fleet": "tinyRobot",
-          "robot": "tinyRobot1"
+          "robot": "tinyRobot2"
         },
         "description": {
           "category": "go_to_place",
@@ -19,7 +19,7 @@
               "activity": {
                 "category": "go_to_place",
                 "description": {
-                  "waypoint": "coe",
+                  "waypoint": "home",
                   "orientation": 0.0
                 }
               }
@@ -28,17 +28,17 @@
         }
       }
     },
-    "clean_task1": {
+    "clean_task2": {
       "description": "Cleaning task at the start of the day",
       "type": "default/robot_task",
       "start_time": 1680961268,
-      "dependency_id": "dag-1",
+      "dependency_id": "dag-2",
       "event_details": {
         "category": "compose",
         "request": {
           "type": "robot_task_request",
           "fleet": "tinyRobot",
-          "robot": "tinyRobot1"
+          "robot": "tinyRobot2"
         },
         "description": {
           "category": "clean",
@@ -51,7 +51,7 @@
                     {
                       "category": "go_to_place",
                       "description": {
-                        "waypoint": "zone1_wp",
+                        "waypoint": "zone2_wp",
                         "orientation": 0.0
                       }
                     },
@@ -76,17 +76,17 @@
     }
   },
   "dependencies": {
-    "dag-1": {
-      "go_to_place_task1": [],
-      "clean_task1": ["go_to_place_task1"]
+    "dag-2": {
+      "go_to_place_task2": [],
+      "clean_task2": ["go_to_place_task2"]
     }
   },
   "series": {
-    "series-1": {
+    "series-2": {
       "cron": "abcdefg",
       "timezone": "Asia/Singapore",
       "id_prefix": "series-",
-      "occurrences": ["dag-1"]
+      "occurrences": ["dag-2"]
     }
   }
 }

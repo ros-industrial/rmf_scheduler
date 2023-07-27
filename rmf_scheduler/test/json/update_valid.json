@@ -1,37 +1,10 @@
 {
   "events": {
-    "go_to_place_task1": {
-      "description": "Example of a go to place task",
-      "type": "default/robot_task",
-      "start_time": 1680961268,
-      "dependency_id": "dag-1",
-      "event_details": {
-        "category": "compose",
-        "request": {
-          "type": "robot_task_request",
-          "fleet": "tinyRobot",
-          "robot": "tinyRobot1"
-        },
-        "description": {
-          "category": "go_to_place",
-          "phases": [
-            {
-              "activity": {
-                "category": "go_to_place",
-                "description": {
-                  "waypoint": "coe",
-                  "orientation": 0.0
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
     "clean_task1": {
       "description": "Cleaning task at the start of the day",
       "type": "default/robot_task",
-      "start_time": 1680961268,
+      "start_time": 1680961868,
+      "duration": 900,
       "dependency_id": "dag-1",
       "event_details": {
         "category": "compose",
@@ -78,12 +51,12 @@
   "dependencies": {
     "dag-1": {
       "go_to_place_task1": ["clean_task1"],
-      "clean_task1": ["go_to_place_task1"]
+      "clean_task1": []
     }
   },
   "series": {
     "series-1": {
-      "cron": "08 41 21 ? * Sat,Sun",
+      "cron": "08 51 21 ? * Sat,Sun",
       "timezone": "Asia/Singapore",
       "id_prefix": "series-",
       "occurrences": ["dag-1"]

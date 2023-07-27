@@ -67,6 +67,18 @@ void DAG::add_node(
   node_list_.emplace(id, std::make_unique<tf::Task>(task.name(id)));
 }
 
+void DAG::update_node(
+  const std::string & id,
+  const std::string & new_id)
+{
+  if (!has_node(id)) {
+    throw DAGIDException(id.c_str(), "update_node: DAG node [%s] doesn't exists", id.c_str());
+  }
+
+  node_list_.emplace(new_id, std::make_unique<tf::Task>(node_list_[id]->name(new_id)));
+  node_list_.erase(id);
+}
+
 void DAG::delete_node(
   const std::string & id)
 {
@@ -240,25 +252,25 @@ bool DAG::_is_cyclic_until(
   return false;
 }
 
-std::vector<std::string> DAG::entry_nodes() const
+std::unordered_set<std::string> DAG::entry_nodes() const
 {
-  std::vector<std::string> result_ids;
+  std::unordered_set<std::string> result_ids;
   taskflow_->for_each_task(
     [&result_ids](tf::Task task) {
       if (task.num_dependents() == 0) {
-        result_ids.push_back(task.name());
+        result_ids.emplace(task.name());
       }
     });
   return result_ids;
 }
 
-std::vector<std::string> DAG::end_nodes() const
+std::unordered_set<std::string> DAG::end_nodes() const
 {
-  std::vector<std::string> result_ids;
+  std::unordered_set<std::string> result_ids;
   taskflow_->for_each_task(
     [&result_ids](tf::Task task) {
       if (task.num_successors() == 0) {
-        result_ids.push_back(task.name());
+        result_ids.emplace(task.name());
       }
     });
   return result_ids;

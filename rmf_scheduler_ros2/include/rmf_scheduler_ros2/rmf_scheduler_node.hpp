@@ -44,10 +44,6 @@ private:
   SchedulerNode();
 
   void schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & msg);
-
-  void handle_add_request(const std::string & id, nlohmann::json & request);
-
-  void handle_get_request(const std::string & id, nlohmann::json & request);
 };
 
 using SchedulerNodePtr = std::shared_ptr<SchedulerNode>;

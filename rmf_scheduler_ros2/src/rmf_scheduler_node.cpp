@@ -83,43 +83,38 @@ void SchedulerNode::schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & m
     return;
   }
 
+  // Start processing the request based on type
+  // Create response and publish
+  rmf_task_msgs::msg::ApiResponse response_msg;
+  response_msg.request_id = msg.request_id;
+  RCLCPP_DEBUG(_node->get_logger(), "Request: %s", payload_it->dump(2).c_str());
+
   std::string type = type_it->get<std::string>();
   if (type == "add") {
-    handle_add_request(msg.request_id, request_json["payload"]);
-  } else if (type == "get") {
-    handle_get_request(msg.request_id, request_json["payload"]);
+    RCLCPP_INFO(_node->get_logger(), "Received Add Schedule Request.");
+    auto error_code = _scheduler->add_schedule(*payload_it);
+    RCLCPP_INFO(_node->get_logger(), "%s", error_code.str().c_str());
+    response_msg.json_msg = error_code.json();
   } else if (type == "update") {
-    return;
+    RCLCPP_INFO(_node->get_logger(), "Received Update Schedule Request.");
+    auto error_code = _scheduler->update_schedule(*payload_it);
+    RCLCPP_INFO(_node->get_logger(), "%s", error_code.str().c_str());
+    response_msg.json_msg = error_code.json();
+  } else if (type == "get") {
+    RCLCPP_INFO(_node->get_logger(), "Received Get Schedule Request.");
+    response_msg.json_msg = _scheduler->get_schedule(*payload_it).dump();
+  } else if (type == "delete") {
+    RCLCPP_INFO(_node->get_logger(), "Received Delete Schedule Request.");
+    auto error_code = _scheduler->delete_schedule(*payload_it);
+    RCLCPP_INFO(_node->get_logger(), "%s", error_code.str().c_str());
+    response_msg.json_msg = error_code.json();
   } else {
+    RCLCPP_INFO(_node->get_logger(), "Received Invalid Schedule Request [%s].", type.c_str());
     return;
   }
-}
 
-void SchedulerNode::handle_add_request(const std::string & id, nlohmann::json & request)
-{
-  RCLCPP_INFO(_node->get_logger(), "Received Add Schedule Request.");
-  RCLCPP_DEBUG(_node->get_logger(), "Request: %s", request.dump().c_str());
-  rmf_scheduler::ErrorCode error_code = _scheduler->add_schedule(request);
-
-  // Create response and publish
-  rmf_task_msgs::msg::ApiResponse response_msg;
-  response_msg.request_id = id;
-  response_msg.json_msg = error_code.json();
   _scheduler_response_publisher->publish(response_msg);
-}
-
-void SchedulerNode::handle_get_request(const std::string & id, nlohmann::json & request)
-{
-  RCLCPP_INFO(_node->get_logger(), "Received Get Schedule Request.");
-
-  // This string is alredy validated
-  std::string schedule_string = _scheduler->get_schedule(request, 2);
-
-  // Create response and publish
-  rmf_task_msgs::msg::ApiResponse response_msg;
-  response_msg.request_id = id;
-  response_msg.json_msg = schedule_string;
-  _scheduler_response_publisher->publish(response_msg);
+  RCLCPP_DEBUG(_node->get_logger(), "Response: %s", payload_it->dump().c_str());
 }
 
 rclcpp::Node::SharedPtr SchedulerNode::node()

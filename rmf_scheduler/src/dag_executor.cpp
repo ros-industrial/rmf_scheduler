@@ -20,8 +20,8 @@
 namespace rmf_scheduler
 {
 
-DAGExecutor::DAGExecutor()
-: executor_(std::make_unique<tf::Executor>())
+DAGExecutor::DAGExecutor(unsigned int concurrency)
+: executor_(std::make_unique<tf::Executor>(concurrency))
 {
 }
 

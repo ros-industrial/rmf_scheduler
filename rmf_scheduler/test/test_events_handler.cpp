@@ -30,7 +30,8 @@ TEST(TestEventsHandler, BasicCRUD) {
     10,                         // duration
     event_id,                   // id
     "",                         // series id
-    ""                          // dag id
+    "",                         // dag id
+    ""                          // event details
   };
 
   eh.add_event(event1);
@@ -59,7 +60,8 @@ TEST(TestEventsHandler, BasicCRUD) {
     10,
     event_id,  // id stays the same
     "dks",
-    "aaa"
+    "aaa",
+    ""
   };
 
   eh.update_event(event1_new);

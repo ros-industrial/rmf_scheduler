@@ -17,6 +17,7 @@
   <build_depend>nlohmann-json-dev</build_depend>
   <build_depend>nlohmann_json_schema_validator_vendor</build_depend>
   <depend>rclcpp</depend>
+  <depend>pluginlib</depend>
   <test_depend>graphviz-dev</test_depend>
 
   <test_depend>ament_lint_auto</test_depend>

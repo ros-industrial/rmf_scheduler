@@ -17,6 +17,10 @@
 
 #include <cstdint>
 #include <string>
+#include <functional>
+
+#define RMF_SCHEDULER_RESOLVE_ERROR_CODE(f) \
+  rmf_scheduler::ErrorCode::resolve_error_code([ = ]() {f;})
 
 namespace rmf_scheduler
 {
@@ -119,7 +123,10 @@ public:
 
   int32_t val;
   std::string detail;
+
+  static ErrorCode resolve_error_code(std::function<void()> && func);
 };
+
 
 }  // namespace rmf_scheduler
 
