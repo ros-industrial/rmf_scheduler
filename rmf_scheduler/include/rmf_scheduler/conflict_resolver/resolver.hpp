@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CONFLICT_RESOLVER__RESOLVER_HPP_
-#define CONFLICT_RESOLVER__RESOLVER_HPP_
+#ifndef RMF_SCHEDULER__CONFLICT_RESOLVER__RESOLVER_HPP_
+#define RMF_SCHEDULER__CONFLICT_RESOLVER__RESOLVER_HPP_
 
 #include <cstdint>
 #include <utility>
 #include <vector>
 
-#include <conflict_resolver/identifier.hpp>
+#include "rmf_scheduler/conflict_resolver/identifier.hpp"
 
+namespace rmf_scheduler
+{
 namespace conflict_resolver
 {
 class Resolver
@@ -50,5 +52,6 @@ private:
 };
 
 }  // namespace conflict_resolver
+}  // namespace rmf_scheduler
 
-#endif  // CONFLICT_RESOLVER__RESOLVER_HPP_
+#endif  // RMF_SCHEDULER__CONFLICT_RESOLVER__RESOLVER_HPP_

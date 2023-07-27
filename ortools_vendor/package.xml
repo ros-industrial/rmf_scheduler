@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>conflict_resolver</name>
-  <version>0.0.0</version>
-  <description>Package for libraries to identify and resolve conflicts in schedules</description>
-  <maintainer email="selvarajs@artc.a-star.edu.sg">santosh balaji selvaraj</maintainer>
+  <name>ortools_vendor</name>
+  <version>9.6.2534</version>
+  <description>ROS package mirror of Google OR-Tools</description>
+  <maintainer email="lum_kai_wen@artc.a-star.edu.sg">kai</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>rclcpp</depend>
+  <build_depend>eigen</build_depend>
 
+  <test_depend>ament_cmake_ros</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
-  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

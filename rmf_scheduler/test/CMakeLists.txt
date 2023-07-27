@@ -8,9 +8,12 @@ ament_add_gtest(test_${PROJECT_NAME}
   ./test_series.cpp
   ./test_system_time_executor.cpp
   ./test_scheduler.cpp
+  ./test_identifier.cpp
+  ./test_deconflict.cpp
 )
 target_link_libraries(test_${PROJECT_NAME}
   ${PROJECT_NAME}
+  ortools::ortools
   gvc
   cgraph
 )

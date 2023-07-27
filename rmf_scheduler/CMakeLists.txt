@@ -10,6 +10,7 @@ find_package(nlohmann_json_schema_validator REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(taskflow_vendor REQUIRED)
 find_package(croncpp_vendor REQUIRED)
+find_package(ortools REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -39,6 +40,8 @@ add_library(${PROJECT_NAME}
   src/series.cpp
   src/system_time_executor.cpp
   src/system_time_utils.cpp
+  src/conflict_resolver/identifier.cpp
+  src/conflict_resolver/cp_resolver.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME}
@@ -51,6 +54,7 @@ ament_target_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   nlohmann_json::nlohmann_json
   nlohmann_json_schema_validator
+  ortools::ortools
 )
 
 rmf_api_generate_schema_headers(
