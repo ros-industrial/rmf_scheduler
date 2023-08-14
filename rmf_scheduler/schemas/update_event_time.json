@@ -1,0 +1,14 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/raw/main/rmf_scheduler/schemas/update_event_time.json",
+    "title": "Update Event Time Request",
+    "description": "Update Time",
+    "type": "object",
+    "properties": {
+      "id": { "type": "string" },
+      "start_time": { "type": "number" },
+      "duration": {"type": "number"}
+    },
+    "required": ["id", "start_time", "duration"],
+    "additionalProperties": false
+}

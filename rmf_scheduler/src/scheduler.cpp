@@ -19,6 +19,7 @@
 #include "rmf_scheduler/error_code.hpp"
 #include "rmf_scheduler/system_time_utils.hpp"
 #include "rmf_scheduler/parser.hpp"
+#include "rmf_scheduler/update_event_time.hpp"
 
 #include "rmf_scheduler/schemas/schedule.hpp"
 #include "rmf_scheduler/schemas/event.hpp"
@@ -26,6 +27,7 @@
 #include "rmf_scheduler/schemas/series.hpp"
 #include "rmf_scheduler/schemas/get_schedule_request.hpp"
 #include "rmf_scheduler/schemas/delete_schedule_request.hpp"
+#include "rmf_scheduler/schemas/update_event_time.hpp"
 
 namespace rmf_scheduler
 {
@@ -64,6 +66,7 @@ Scheduler::Scheduler()
     schemas::schedule,
     schemas::get_schedule_request,
     schemas::delete_schedule_request,
+    schemas::update_event_time
   };
 
   schema_validator_ = std::make_unique<SchemaValidator>(schemas);
@@ -274,6 +277,45 @@ void Scheduler::update_schedule(const Schedule::Description & schedule)
   last_writer_ = _thread_id();
 }
 
+ErrorCode Scheduler::update_event_time(
+  const nlohmann::json & schedule_json)
+{
+  Schedule::Description description;
+  UpdateEventTime update;
+  try {
+    auto json_uri = nlohmann::json_uri{
+      schemas::update_event_time["$id"]
+    };
+
+    // Validate JSON
+    schema_validator_->validate(
+      json_uri,
+      schedule_json);
+
+    // Parse the validated json into description
+    parser::json_to_update_event_time(schedule_json, update);
+  } catch (const std::exception & e) {
+    // Invalid Json schema
+    return {
+      ErrorCode::FAILURE |
+      ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+  return update_event_time(update);
+}
+
+ErrorCode Scheduler::update_event_time(
+  const UpdateEventTime & update)
+{
+  Schedule::Description description;
+  Event initial_event = schedule_.get_event(update.id);
+  initial_event.start_time = update.start_time;
+  initial_event.duration = update.duration;
+  description.events[initial_event.id] = initial_event;
+
+  return RMF_SCHEDULER_RESOLVE_ERROR_CODE(update_schedule(description));
+}
 
 nlohmann::json Scheduler::get_schedule(
   const nlohmann::json & request_json) const

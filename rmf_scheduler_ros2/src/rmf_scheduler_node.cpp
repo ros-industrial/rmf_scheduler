@@ -100,6 +100,11 @@ void SchedulerNode::schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & m
     auto error_code = _scheduler->update_schedule(*payload_it);
     RCLCPP_INFO(_node->get_logger(), "%s", error_code.str().c_str());
     response_msg.json_msg = error_code.json();
+  } else if (type == "update_event_time") {
+    RCLCPP_INFO(_node->get_logger(), "Received Update Event Time Request.");
+    auto error_code = _scheduler->update_event_time(*payload_it);
+    RCLCPP_INFO(_node->get_logger(), "%s", error_code.str().c_str());
+    response_msg.json_msg = error_code.json();
   } else if (type == "get") {
     RCLCPP_INFO(_node->get_logger(), "Received Get Schedule Request.");
     response_msg.json_msg = _scheduler->get_schedule(*payload_it).dump();

@@ -150,6 +150,15 @@ void json_to_schedule(
   }
 }
 
+void json_to_update_event_time(
+  const nlohmann::json & update_event_time_json,
+  rmf_scheduler::UpdateEventTime & update_event_time)
+{
+  update_event_time.id = update_event_time_json["id"].get<std::string>();
+  update_event_time.start_time = update_event_time_json["start_time"].get<double>() * 1e9;
+  update_event_time.duration = update_event_time_json["duration"].get<double>() * 1e9;
+}
+
 void events_to_json(
   const std::unordered_map<std::string, Event> & events_description,
   nlohmann::json & events_json)

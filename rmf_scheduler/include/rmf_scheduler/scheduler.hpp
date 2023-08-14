@@ -34,6 +34,7 @@
 #include "rmf_scheduler/events_handler.hpp"
 #include "rmf_scheduler/error_code.hpp"
 #include "rmf_scheduler/system_time_executor.hpp"
+#include "rmf_scheduler/update_event_time.hpp"
 
 
 namespace rmf_scheduler
@@ -115,6 +116,10 @@ public:
   ErrorCode update_schedule(const nlohmann::json & request_json);
 
   void update_schedule(const Schedule::Description & schedule);
+
+  ErrorCode update_event_time(const nlohmann::json & request_json);
+
+  ErrorCode update_event_time(const UpdateEventTime & update);
 
   nlohmann::json get_schedule(const nlohmann::json & request_json) const;
 

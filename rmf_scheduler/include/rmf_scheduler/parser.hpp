@@ -21,6 +21,7 @@
 
 #include "nlohmann/json.hpp"
 #include "rmf_scheduler/schedule.hpp"
+#include "rmf_scheduler/update_event_time.hpp"
 
 namespace rmf_scheduler
 {
@@ -44,6 +45,10 @@ void json_to_series_map(
 void json_to_schedule(
   const nlohmann::json & schedule_json,
   Schedule::Description & schedule_description);
+
+void json_to_update_event_time(
+  const nlohmann::json & update_event_time_json,
+  UpdateEventTime & update_event_time);
 
 void events_to_json(
   const std::unordered_map<std::string, Event> & events_description,
