@@ -17,6 +17,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "nlohmann/json.hpp"
 #include "rmf_scheduler/schedule.hpp"
@@ -59,6 +60,91 @@ void series_map_to_json(
 void schedule_to_json(
   const Schedule::Description & schedule_description,
   nlohmann::json & schedule_json);
+
+template<typename DetailT>
+bool filter_event_details(
+  const nlohmann::json & event_details_json,
+  const std::string & filter_descriptor,
+  DetailT & filtered_detail,
+  const std::string & delimiter = "::")
+{
+  // Use find function to find 1st position of delimiter.
+  size_t start = 0;
+  size_t end = filter_descriptor.find(delimiter);
+
+  std::string field_descriptor = filter_descriptor.substr(start, end - start);
+  nlohmann::json::const_iterator itr = event_details_json.find(field_descriptor);
+  if (itr == event_details_json.end()) {
+    return false;
+  }
+  while (end != std::string::npos) {  // Loop until no delimiter is left in the string.
+    start = end + delimiter.size();
+    end = filter_descriptor.find(delimiter, start);
+    size_t len = end == std::string::npos ? end : end - start;
+    // Iterate one more time
+    field_descriptor = filter_descriptor.substr(start, len);
+    auto new_itr = itr->find(field_descriptor);
+    if (new_itr == itr->end()) {
+      return false;
+    } else {
+      itr = new_itr;
+    }
+  }
+
+  // Return raw JSON is it is specified as the type
+  if constexpr (std::is_same<DetailT, nlohmann::json>::value) {
+    filtered_detail = *itr;
+    return true;
+  }
+
+  try {
+    filtered_detail = itr->get<DetailT>();
+  } catch (const std::exception & e) {
+    return false;
+  }
+  return true;
+}
+
+template<typename DetailT>
+bool filter_event_details(
+  const std::string & event_details,
+  const std::string & filter_descriptor,
+  DetailT & filtered_detail,
+  const std::string & delimiter = "::")
+{
+  nlohmann::json event_details_json;
+  try {
+    event_details_json = nlohmann::json::parse(event_details);
+  } catch (const std::exception & e) {
+    return false;
+  }
+  return filter_event_details<DetailT>(
+    event_details_json, filter_descriptor, filtered_detail, delimiter);
+}
+
+template<typename DetailT>
+void batch_filter_event_details(
+  const std::string & event_details,
+  const std::vector<std::string> & filter_descriptors,
+  std::vector<bool> & filter_success,
+  std::vector<DetailT> & filtered_details,
+  const std::string & delimiter = "::")
+{
+  nlohmann::json event_details_json;
+  filter_success.clear();
+  filter_success.resize(filter_descriptors.size(), false);
+  filtered_details.clear();
+  filtered_details.resize(filter_descriptors.size());
+  try {
+    event_details_json = nlohmann::json::parse(event_details);
+  } catch (const std::exception & e) {
+    return;
+  }
+  for (size_t i = 0; i < filter_descriptors.size(); i++) {
+    filter_success[i] = filter_event_details<DetailT>(
+      event_details_json, filter_descriptors[i], filtered_details[i], delimiter);
+  }
+}
 
 }  // namespace parser
 

@@ -27,6 +27,8 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   SHARED
+  src/conflict_identifier.cpp
+  src/conflict_resolver/cp_solver.cpp
   src/dag.cpp
   src/dag_executor.cpp
   src/error_code.cpp
@@ -40,8 +42,6 @@ add_library(${PROJECT_NAME}
   src/series.cpp
   src/system_time_executor.cpp
   src/system_time_utils.cpp
-  src/conflict_resolver/identifier.cpp
-  src/conflict_resolver/cp_resolver.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME}

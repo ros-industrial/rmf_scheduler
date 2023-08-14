@@ -12,209 +12,116 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gtest/gtest.h>
-
 #include <cstdint>
+#include <chrono>
 
-#include <rmf_scheduler/conflict_resolver/identifier.hpp>
+#include "gtest/gtest.h"
 
-#include "boost/uuid/uuid.hpp"
-#include "boost/uuid/random_generator.hpp"
-#include "boost/uuid/uuid_io.hpp"
+#include "rmf_scheduler/test_utils.hpp"
+#include "rmf_scheduler/conflict_identifier.hpp"
 
-namespace rmf_scheduler::conflict_resolver::test_utils
+TEST(TestIdentifier, SimpleConflictCheck)
 {
-auto load_events()
-->std::unordered_map<std::string, rmf_scheduler::Event>;
-}  // namespace rmf_scheduler::conflict_resolver::test_utils
+  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+  // No Conflict
+  /**
+   * For Example
+   * Schedule A : 10 - 15
+   * Schedule B : 25 - 30
+  */
+  EXPECT_FALSE(utils::simple_conflict_check(10, 15, 25, 30));
 
-/// No Conflict
-/**
- * For Example
- * Schedule A : 10 - 15
- * Schedule B : 25 - 30
-*/
-TEST(TestIdentifier, NoConflict)
-{
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
+  // Conflict Type A
+  /**
+   * For Example
+   * Schedule A : 10 - 15
+   * Schedule B : 14 - 18
+  */
+  EXPECT_TRUE(utils::simple_conflict_check(10, 15, 14, 18));
 
-  Identifier identifier;
-  uint64_t result = 0;
+  // Conflict Type B
+  /**
+   * For Example
+   * Schedule A : 10 - 15
+   * Schedule B : 7  - 11
+  */
+  EXPECT_TRUE(utils::simple_conflict_check(10, 15, 7, 11));
 
-  uint64_t duration = identifier.conflict_check(10, 15, 25, 30);
-  EXPECT_EQ(duration, result);
+  // Conflict Type C
+  /**
+   * For Example
+   * Schedule A : 10 - 15
+   * Schedule B : 11 - 14
+  */
+  EXPECT_TRUE(utils::simple_conflict_check(10, 15, 11, 14));
+
+  // Conflict Type D
+  /**
+   * For Example
+   * Schedule A : 10 - 15
+   * Schedule B : 5  - 21
+  */
+  EXPECT_TRUE(utils::simple_conflict_check(10, 15, 5, 21));
 }
 
-/// Conflict Type A
-/**
- * For Example
- * Schedule A : 10 - 15
- * Schedule B : 14 - 18
-*/
-TEST(TestIdentifier, ConflictTypeA)
+TEST(TestIdentifier, Categoriser)
 {
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
+  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
 
-  Identifier identifier;
-  uint64_t result = 2;
+  std::vector<Event> events =
+    test_utils::load_clashing_events(5, 6, 10);
 
-  uint64_t duration = identifier.conflict_check(10, 15, 14, 18);
-  EXPECT_EQ(duration, result);
+  auto events_by_filter = utils::categorise_by_filter(events, {"request::robot", "zone"});
+  EXPECT_EQ(events_by_filter[0].size(), 5lu);
+
+  EXPECT_EQ(events_by_filter[1].size(), 6lu);
+
+  auto events_by_type = utils::categorise_by_type(events);
+  EXPECT_EQ(events_by_type.size(), 2lu);
 }
 
-/// Conflict Type B
-/**
- * For Example
- * Schedule A : 10 - 15
- * Schedule B : 7  - 11
-*/
-TEST(TestIdentifier, ConflictTypeB)
+TEST(TestIdentifier, IdentifyConflict)
 {
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
+  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
 
-  Identifier identifier;
-  uint64_t result = 9;
+  std::vector<Event> events =
+    test_utils::load_clashing_events(5, 6, 1000);
 
-  uint64_t duration = identifier.conflict_check(10, 15, 7, 11);
-  EXPECT_EQ(duration, result);
+  auto time_point = std::chrono::steady_clock::now();
+  auto conflicts1 = utils::identify_conflicts(events, {}, {"request::robot"});
+  auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - time_point);
+  time_point = std::chrono::steady_clock::now();
+  auto conflicts2 = utils::identify_conflicts(events, {}, {"request::robot"}, "greedy");
+  auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - time_point);
+
+  std::cout << "Method - Optimal: " << duration1.count() << "ms" << std::endl;
+  std::cout << "Method - Greedy: " << duration2.count() << "ms" << std::endl;
+  std::cout << "Conflict1 size: " << conflicts1.size() << std::endl;
+  // for (auto conflict : conflicts1) {
+  //   std::cout << "- first: " << conflict.first
+  //             << ", second: " << conflict.second
+  //             << "\n  reason: filter: " << conflict.filter
+  //             << ", detail: " << conflict.filtered_detail
+  //             << std::endl;
+  // }
+
+  std::cout << "Conflict2 size: " << conflicts2.size() << std::endl;
+  // for (auto conflict : conflicts2) {
+  //   std::cout << "- first: " << conflict.first
+  //             << ", second: " << conflict.second
+  //             << "\n  reason: filter: " << conflict.filter
+  //             << ", detail: " << conflict.filtered_detail
+  //             << std::endl;
+  // }
+  EXPECT_EQ(conflicts1.size(), 4995lu);
+  EXPECT_EQ(conflicts2.size(), 4995lu);
+
+  conflicts1 = utils::identify_conflicts(events, {}, {"request::robot", "zone"});
+  conflicts2 = utils::identify_conflicts(events, {}, {"request::robot", "zone"}, "greedy");
+  std::cout << "Conflict1 size: " << conflicts1.size() << std::endl;
+  std::cout << "Conflict1 size: " << conflicts2.size() << std::endl;
+  EXPECT_EQ(conflicts1.size(), 15010lu);
+  EXPECT_EQ(conflicts2.size(), 15010lu);
 }
-
-/// Conflict Type C
-/**
- * For Example
- * Schedule A : 10 - 15
- * Schedule B : 11 - 14
-*/
-TEST(TestIdentifier, ConflictTypeC)
-{
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
-
-  Identifier identifier;
-  uint64_t result = 5;
-
-  uint64_t duration = identifier.conflict_check(10, 15, 11, 14);
-  EXPECT_EQ(duration, result);
-}
-
-/// Conflict Type D
-/**
- * For Example
- * Schedule A : 10 - 15
- * Schedule B : 5  - 21
-*/
-TEST(TestIdentifier, ConflictTypeD)
-{
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
-
-  Identifier identifier;
-  uint64_t result = 11;
-
-  uint64_t duration = identifier.conflict_check(10, 15, 5, 21);
-  EXPECT_EQ(duration, result);
-}
-
-TEST(TestIdentifier, RobotCategoriser)
-{
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
-  using Event = rmf_scheduler::Event;
-
-  std::unordered_map<std::string, Event> events =
-    rmf_scheduler::conflict_resolver::test_utils::load_events();
-
-  Identifier identifier;
-
-  std::unordered_map<std::string, std::unordered_map<std::string, Event>>
-  events_by_robots = identifier.categorise_by_robots(events);
-  EXPECT_EQ(events_by_robots.size(), 5);
-}
-
-TEST(TestIdentifier, LocationCategoriser)
-{
-  using Identifier = rmf_scheduler::conflict_resolver::Identifier;
-  using Event = rmf_scheduler::Event;
-
-  std::unordered_map<std::string, Event> events;
-  events = rmf_scheduler::conflict_resolver::test_utils::load_events();
-
-  Identifier identifier;
-
-  std::unordered_map<
-    std::string, std::unordered_map<std::string, Event>> events_by_location;
-  events_by_location = identifier.categorise_by_location(events);
-  EXPECT_EQ(events_by_location.size(), 6);
-}
-
-// Test Utility Functions
-namespace rmf_scheduler::conflict_resolver::test_utils
-{
-
-std::string gen_uuid()
-{
-  boost::uuids::uuid uuid = boost::uuids::random_generator()();
-  return boost::uuids::to_string(uuid);
-}
-
-std::unordered_map<std::string, Event> load_events()
-{
-  std::unordered_map<std::string, Event> events;
-  const std::vector<std::string> locations = {
-    "location_1",
-    "location_2",
-    "location_3",
-    "location_4",
-    "location_5",
-    "area_54"
-  };
-  const uint64_t start = 0;
-  const uint64_t duration = 60;
-
-  // Create task events for robots;
-  for (int i = 0; i < 5; i++) {  // 5 robots
-    const std::string robot = "robot_" + std::to_string(i);
-    for (int j = 0; j < 10; j++) {  // 10 events
-      std::string id = gen_uuid();
-      events.emplace(
-        std::make_pair(
-          id,
-          Event{
-          "",                               // description
-          "default/robot_task",             // type
-          start + duration * j,             // start time
-          duration,                         // duration
-          id,                               // id
-          "",                               // series id
-          "",                               // dag id
-          false,                            // flight schedule
-          robot,                            // robot
-          locations[j % locations.size()]   // random location so no clashes
-        }
-        )
-      );
-    }
-  }
-
-  // Add flight schedule
-  for (int i = 0; i < locations.size(); i++) {
-    std::string id = gen_uuid();
-    events.emplace(
-      std::make_pair(
-        id,
-        Event{
-        "",                               // description
-        "flight_schedule",                // type
-        start + duration * i,             // start time
-        duration,                         // duration
-        id,                               // id
-        "",                               // series id
-        "",                               // dag id
-        true,                             // flight schedule
-        "",                               // robot
-        locations[i % locations.size()]   // add location
-      }
-      )
-    );
-  }
-  return events;
-}
-
-}  // namespace rmf_scheduler::conflict_resolver::test_utils

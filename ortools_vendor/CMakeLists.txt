@@ -72,7 +72,7 @@ else()
   option(BUILD_SCIP "" ON)
   option(BUILD_SAMPLES "" OFF)
   option(BUILD_EXAMPLES "" OFF)
-  add_subdirectory(src)
+  add_subdirectory(src/or-tools)
 
   # export lib
   ament_export_libraries(ortools)

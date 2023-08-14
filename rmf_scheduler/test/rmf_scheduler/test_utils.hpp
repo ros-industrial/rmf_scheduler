@@ -20,7 +20,14 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
+
+#include "boost/uuid/uuid.hpp"
+#include "boost/uuid/random_generator.hpp"
+#include "boost/uuid/uuid_io.hpp"
+
+#include "nlohmann/json.hpp"
 
 #include "rmf_scheduler/event.hpp"
 
@@ -115,6 +122,125 @@ inline bool is_vector_equal(
 inline double to_ms(uint64_t ns)
 {
   return static_cast<double>(ns) / 1e6;
+}
+
+inline std::string gen_uuid()
+{
+  boost::uuids::uuid uuid = boost::uuids::random_generator()();
+  return boost::uuids::to_string(uuid);
+}
+
+// Load a set of robot events that do not clash
+inline std::vector<Event> load_clashing_events(
+  int num_robots,
+  int num_location,
+  int num_events)
+{
+  std::vector<Event> events;
+  std::vector<std::string> locations;
+  for (int i = 0; i < num_location; i++) {
+    locations.push_back("location_" + std::to_string(i));
+  }
+  const uint64_t start = 0;
+  const uint64_t duration = 60;
+
+  // Add robot task events
+  for (int i = 0; i < num_robots; i++) {
+    const std::string robot = "robot_" + std::to_string(i);
+    for (int j = 0; j < num_events; j++) {
+      std::string id = gen_uuid();
+
+      // Generate Event Details
+      nlohmann::json event_details_json;
+      event_details_json["request"] = nlohmann::json();
+      event_details_json["request"]["robot"] = robot;
+      // random location so no clashes
+      event_details_json["zone"] = locations[j % locations.size()];
+
+      events.push_back(
+        Event{
+            "",                               // description
+            "default/robot_task",             // type
+            start + (duration / 2) * j,       // start time
+            duration,                         // duration
+            id,                               // id
+            "",                               // series id
+            "",                               // dag id
+            event_details_json.dump()         // event_details
+          }
+      );
+    }
+  }
+
+  // Add flight schedule based events
+  for (int i = 0; i < num_location; i++) {
+    std::string id = gen_uuid();
+
+    // Generate Event Details
+    nlohmann::json event_details_json;
+    // random location so no clashes
+    event_details_json["zone"] = locations[i];
+    events.push_back(
+      Event {
+          "",                               // description
+          "flight-schedule",                // type
+          start + duration * i,             // start time
+          duration,                         // duration
+          id,                               // id
+          "",                               // series id
+          "",                               // dag id
+          event_details_json.dump(),        // event details
+        }
+    );
+  }
+
+  return events;
+}
+
+inline std::vector<Event> load_no_clashing_events(
+  int num_robots,
+  int num_events)
+{
+  std::vector<Event> events;
+  const uint64_t start = 0;
+  const uint64_t duration = 60;
+  for (int i = 0; i < num_robots; i++) {   // 2 robots
+    const std::string robot = "robot_" + std::to_string(i);
+    for (int j = 0; j < num_events; j++) {  // 3 events
+      std::string id = gen_uuid();
+      std::string event_details = "{request:{robot:" + robot + "}}";
+      events.push_back(
+        Event{
+            "",                     // description
+            "default/robot_task",   // type
+            start + duration * j,   // start time
+            duration,               // duration
+            id,                     // id
+            "",                     // series id
+            "",                     // dag id
+            event_details,          // event details
+          }
+      );
+    }
+  }
+  return events;
+}
+
+inline void print_events(const std::vector<Event> & events)
+{
+  for (auto event : events) {
+    std::cout << "Event \n"
+              << std::endl
+              << "\tid: "
+              << event.id
+              << "\n \tstart time: "
+              << event.start_time
+              << "\n \tduration: "
+              << event.duration
+              << "\n \tevent details: "
+              << event.event_details
+              << std::endl;
+  }
 }
 
 
