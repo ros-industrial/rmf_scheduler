@@ -101,13 +101,7 @@ public:
     const Series::Occurrence & old_occurrence,
     uint64_t new_time) override
   {
-    // Update starting time for all events within the dag occurrence
-    auto all_nodes = dags_.at(old_occurrence.id).all_nodes();
-    for (auto & node_id : all_nodes) {
-      Event event = eh_.get_event(node_id);
-      event.start_time = event.start_time - old_occurrence.time + new_time;
-      eh_.update_event(event);
-    }
+    // Do nothing;
   }
 
   void on_delete_occurrence(
