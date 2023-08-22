@@ -172,14 +172,23 @@ void Schedule::update_dag(
   const std::string & dag_id,
   DAG && dag)
 {
+  std::string series_id;
+  bool series_found = false;
   for (auto & event_id : dags_.at(dag_id).all_nodes()) {
     Event event = eh_.get_event(event_id);
+    if (!event.series_id.empty() && !series_found) {
+      series_id = event.series_id;
+      series_found = true;
+    }
     event.dag_id = "";
     eh_.update_event(event);
   }
   for (auto & event_id : dag.all_nodes()) {
     Event event = eh_.get_event(event_id);
     event.dag_id = dag_id;
+    if (event.series_id.empty() && series_found) {
+      event.series_id = series_id;
+    }
     eh_.update_event(event);
   }
   dags_[dag_id] = std::move(dag);
