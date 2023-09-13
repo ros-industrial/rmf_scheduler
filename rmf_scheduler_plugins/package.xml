@@ -6,7 +6,7 @@
     Default scheduler plugins for rmf_scheduler to interact with other RMF components
   </description>
   <maintainer email="chenbn@artc.a-star.edu.sg">Chen Bainian</maintainer>
-  <maintainer email="lum_kai_wen@artc.a-star.edu.sg">kai</maintainer>
+  <maintainer email="lum_kai_wen@artc.a-star.edu.sg">Lum Kai Wen</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
