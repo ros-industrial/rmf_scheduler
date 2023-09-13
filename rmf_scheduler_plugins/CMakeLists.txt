@@ -16,7 +16,6 @@ set(dep_pkgs
   rmf_task_msgs
   rmf_api_msgs
   rmf_scheduler
-  rmf_websocket
   pluginlib
   nlohmann_json
   nlohmann_json_schema_validator
@@ -36,7 +35,6 @@ ament_target_dependencies(rmf_scheduler_plugins
   rclcpp
   rmf_scheduler
   rmf_task_msgs
-  rmf_websocket
   pluginlib
 )
 

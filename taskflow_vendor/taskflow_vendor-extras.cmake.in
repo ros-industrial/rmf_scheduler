@@ -2,7 +2,7 @@ find_package(Taskflow QUIET)
   
 if(NOT Taskflow_FOUND)
   # add the local Modules directory to the modules path
-  set(Taskflow_DIR "${@PROJECT_NAME@_DIR}/../../../opt/taskflow_vendor/lib/cmake/Taskflow/Taskflow")
+  set(Taskflow_DIR "${@PROJECT_NAME@_DIR}/../../../opt/taskflow_vendor/lib/cmake/Taskflow/")
   message(WARNING "Setting Taskflow_DIR to: '${Taskflow_DIR}'")
 
   find_package(Taskflow CONFIG REQUIRED QUIET)

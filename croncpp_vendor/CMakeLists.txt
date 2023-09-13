@@ -34,7 +34,7 @@ macro(build_croncpp)
   endif()
 
   include(ExternalProject)
-  ExternalProject_Add(Taskflow
+  ExternalProject_Add(croncpp
     GIT_REPOSITORY https://github.com/mariusbancila/croncpp
     GIT_TAG v2023.03.30
     CMAKE_ARGS

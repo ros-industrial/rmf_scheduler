@@ -15,7 +15,6 @@ set(dep_pkgs
   rclcpp
   rmf_task_msgs
   rmf_scheduler
-  rmf_websocket
   nlohmann_json
   nlohmann_json_schema_validator
 )

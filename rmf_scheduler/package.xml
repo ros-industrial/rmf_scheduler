@@ -15,7 +15,7 @@
   <build_depend>croncpp_vendor</build_depend>
   <build_depend>taskflow_vendor</build_depend>
   <build_depend>nlohmann-json-dev</build_depend>
-  <build_depend>nlohmann_json_schema_validator_vendor</build_depend>
+  <depend>nlohmann_json_schema_validator_vendor</depend>
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
   <depend>ortools_vendor</depend>

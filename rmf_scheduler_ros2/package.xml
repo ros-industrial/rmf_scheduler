@@ -12,10 +12,10 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
   <build_depend>nlohmann-json-dev</build_depend>
-  <build_depend>nlohmann_json_schema_validator_vendor</build_depend>
-  <build_depend>rmf_task_msgs</build_depend>
-  <build_depend>rmf_scheduler</build_depend>
-  <build_depend>rclcpp</build_depend>
+  <depend>nlohmann_json_schema_validator_vendor</depend>
+  <depend>rmf_task_msgs</depend>
+  <depend>rmf_scheduler</depend>
+  <depend>rclcpp</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
