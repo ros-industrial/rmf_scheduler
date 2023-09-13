@@ -2,8 +2,8 @@
 Changelog for package ortools_vendor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+9.6.2534
+--------
 * Rework identifier and cp solver to use event detail (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!19 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/19>`_)
 
   * Update source build path and add in git ignore

@@ -2,8 +2,8 @@
 Changelog for package taskflow_vendor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.5.0
+-----
 * Add dependency graph and execution support (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!6 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/6>`_)
 
   * Use vendor instead of pure cmake for taskflow

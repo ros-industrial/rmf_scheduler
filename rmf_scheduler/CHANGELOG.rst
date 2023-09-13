@@ -2,8 +2,8 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0
+-----
 * Add in functional estimation and executor plug-ins (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!23 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/23>`_)
 * Add series id to event in dag series if not populated. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!22 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/22>`_)
 * Prevent change of event start time in observer callback (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!20 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/20>`_)

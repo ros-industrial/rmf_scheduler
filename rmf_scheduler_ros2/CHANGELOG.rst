@@ -2,8 +2,8 @@
 Changelog for package rmf_scheduler_ros2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0
+-----
 * Add in functional estimation and executor plug-ins (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!23 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/23>`_)
 * Add missing rmf_scheduler_ros2 deps
 * Add feature for updating via event id and updated timing (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!18 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/18>`_)
