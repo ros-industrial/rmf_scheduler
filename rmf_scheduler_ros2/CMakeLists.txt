@@ -15,6 +15,7 @@ set(dep_pkgs
   rclcpp
   rmf_task_msgs
   rmf_scheduler
+  rmf_websocket
   nlohmann_json
   nlohmann_json_schema_validator
 )
@@ -23,17 +24,24 @@ foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
 endforeach()
 
-include_directories(
-  include
-)
-
 add_library(rmf_scheduler_ros2 SHARED
-  src/rmf_scheduler_node.cpp)
+  src/scheduler_node.cpp
+  src/scheduler_executor.cpp
+  src/estimate_node.cpp
+  src/runtime_node.cpp
+  src/scheduler_log_handler.cpp
+)
 
 ament_target_dependencies(rmf_scheduler_ros2
   rclcpp
   rmf_scheduler
-  rmf_task_msgs)
+  rmf_task_msgs
+)
+
+target_include_directories(rmf_scheduler_ros2 PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 target_link_libraries(rmf_scheduler_ros2
   nlohmann_json::nlohmann_json
@@ -55,12 +63,27 @@ endif()
 
 install(
   TARGETS
-    scheduler_node
     rmf_scheduler_ros2
-  EXPORT rmf_scheduler_ros2
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  EXPORT export_rmf_scheduler_ros2
   LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+)
+
+install(
+  TARGETS
+    scheduler_node
+  EXPORT export_scheduler_node
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
+
+ament_export_targets(export_rmf_scheduler_ros2 HAS_LIBRARY_TARGET)
+
+ament_export_dependencies(
+  ${dep_pkgs}
 )
 
 ament_package()

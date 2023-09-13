@@ -26,11 +26,11 @@ std::string init_json_from_file(
   const std::string & path,
   bool relative = true)
 {
-  std::ifstream f_invalid_cron(
+  std::ifstream f_json(
     relative ? std::string(TEST_DIRECTORY) + path : path);
-  std::stringstream b_invalid_cron;
-  b_invalid_cron << f_invalid_cron.rdbuf();
-  return b_invalid_cron.str();
+  std::stringstream b_json;
+  b_json << f_json.rdbuf();
+  return b_json.str();
 }
 
 }  // namespace rmf_scheduler::test_utils
@@ -44,7 +44,9 @@ protected:
   void SetUp() override
   {
     using namespace rmf_scheduler;  // NOLINT(build/namespaces)
-    scheduler_ = std::make_unique<Scheduler>();
+    // Don't expand series
+    scheduler_ = std::make_unique<Scheduler>(
+      SchedulerOptions().expand_series_automatically(false));  // Don't expand series
   }
 
   rmf_scheduler::ErrorCode load_valid_schedule()
@@ -52,14 +54,15 @@ protected:
     using namespace rmf_scheduler;  // NOLINT(build/namespaces)
     auto valid_str =
       test_utils::init_json_from_file("json/add_valid.json");
-    auto error_code = scheduler_->add_schedule(nlohmann::json::parse(valid_str));
-    current_schedule_json_str_ = scheduler_->get_schedule(R"({})"_json).dump(2);
+    auto error_code = scheduler_->handle_add_schedule(nlohmann::json::parse(valid_str));
+    current_schedule_json_str_ = scheduler_->handle_get_schedule(R"({})"_json).dump(2);
     return error_code;
   }
 
   bool schedule_unchanged()
   {
-    bool result = scheduler_->get_schedule(R"({})"_json).dump(2) == current_schedule_json_str_;
+    bool result = scheduler_->handle_get_schedule(R"({})"_json).dump(2) ==
+      current_schedule_json_str_;
     std::cout << (result ? "Schedule unchanged" : "Schedule changed") << std::endl;
     return result;
   }
@@ -94,7 +97,7 @@ TEST_F(TestAddSchedule, InvalidSchema)
   load_valid_schedule();
 
   // Invalid JSON
-  auto error_code = scheduler_->add_schedule("random_stuff");
+  auto error_code = scheduler_->handle_add_schedule("random_stuff");
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -106,7 +109,7 @@ TEST_F(TestAddSchedule, InvalidSchema)
   EXPECT_TRUE(schedule_unchanged());
 
   // Minimal viable empty schedule
-  error_code = scheduler_->add_schedule(R"({"events":{}})"_json);
+  error_code = scheduler_->handle_add_schedule(R"({"events":{}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
 
@@ -126,7 +129,7 @@ TEST_F(TestAddSchedule, InvalidID)
   // This time should spit out Event ID invalid error code
   auto valid_str =
     test_utils::init_json_from_file("json/add_valid.json");
-  auto error_code = scheduler_->add_schedule(nlohmann::json::parse(valid_str));
+  auto error_code = scheduler_->handle_add_schedule(nlohmann::json::parse(valid_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
     error_code.val,
@@ -137,7 +140,7 @@ TEST_F(TestAddSchedule, InvalidID)
   EXPECT_TRUE(schedule_unchanged());
 
   // This should spit out Dependency ID invalid error code
-  error_code = scheduler_->add_schedule(
+  error_code = scheduler_->handle_add_schedule(
     R"({"events":{}, "dependencies": {"dag-1":{}}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
@@ -149,7 +152,7 @@ TEST_F(TestAddSchedule, InvalidID)
   EXPECT_TRUE(schedule_unchanged());
 
   // This should spit out Series ID invalid error code
-  error_code = scheduler_->add_schedule(
+  error_code = scheduler_->handle_add_schedule(
     R"({"events":{}, "series":
       {"series-1":{"cron": "",
       "timezone":"UTC","occurrences":[]}}})"_json);
@@ -174,7 +177,7 @@ TEST_F(TestAddSchedule, InvalidDependencyLogic)
   // Invalid dependency graph cyclic
   auto cyclic_dag_schedule_json_str =
     test_utils::init_json_from_file("json/add_cyclic_dag.json");
-  auto error_code = scheduler_->add_schedule(
+  auto error_code = scheduler_->handle_add_schedule(
     nlohmann::json::parse(cyclic_dag_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
@@ -198,7 +201,7 @@ TEST_F(TestAddSchedule, InvalidSeriesLogic)
   auto series_empty_schedule_json_str =
     test_utils::init_json_from_file("json/add_series_empty.json");
 
-  auto error_code = scheduler_->add_schedule(
+  auto error_code = scheduler_->handle_add_schedule(
     nlohmann::json::parse(series_empty_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
@@ -214,7 +217,7 @@ TEST_F(TestAddSchedule, InvalidSeriesLogic)
   auto invalid_cron_schedule_json_str =
     test_utils::init_json_from_file("json/add_invalid_cron.json");
 
-  error_code = scheduler_->add_schedule(
+  error_code = scheduler_->handle_add_schedule(
     nlohmann::json::parse(invalid_cron_schedule_json_str));
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
@@ -243,16 +246,16 @@ TEST_F(TestUpdateSchedule, UpdateValidSchedule)
 
   auto valid_json =
     nlohmann::json::parse(test_utils::init_json_from_file("json/update_valid.json"));
-  auto error_code = scheduler_->update_schedule(valid_json);
+  auto error_code = scheduler_->handle_update_schedule(valid_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
-  auto new_schedule_json = scheduler_->get_schedule(R"({})"_json);
-  std::cout << new_schedule_json.dump(2) << std::endl;
+  auto new_schedule_json = scheduler_->handle_get_schedule(R"({})"_json);
+  // std::cout << new_schedule_json.dump(2) << std::endl;
 
   // Verify that the updated schedule is updated correctly
-  const auto & handler = scheduler_->get_schedule_handler_const();
+  const auto & handler = scheduler_->schedule_handler_const();
   // Verify event start time is updated
-  Event clean_task1 = handler.get_event("clean_task1");
+  const data::Event & clean_task1 = handler.get_event("clean_task1");
   uint64_t new_clean_task1_start_time =
     static_cast<uint64_t>(
     valid_json["events"]["clean_task1"]["start_time"].get<double>() * 1e9);
@@ -269,7 +272,7 @@ TEST_F(TestUpdateSchedule, UpdateValidSchedule)
   EXPECT_EQ(deps[0], "clean_task1");
 
   // Verify event start time within DAG is updated
-  Event go_to_place_task1 = handler.get_event("go_to_place_task1");
+  const data::Event & go_to_place_task1 = handler.get_event("go_to_place_task1");
   EXPECT_EQ(
     go_to_place_task1.start_time,
     new_clean_task1_start_time + new_clean_task1_duration
@@ -292,7 +295,7 @@ TEST_F(TestUpdateSchedule, InvalidID)
   auto invalid_event_id_json =
     nlohmann::json::parse(
     test_utils::init_json_from_file("json/update_invalid_event_id.json"));
-  auto error_code = scheduler_->update_schedule(
+  auto error_code = scheduler_->handle_update_schedule(
     R"({"events":{"abcdefg": {
       "description": "Invalid event id",
       "type": "default/robot_task",
@@ -310,7 +313,7 @@ TEST_F(TestUpdateSchedule, InvalidID)
 
   // Invalid Dependency ID
   // This should spit out Dependency ID invalid error code
-  error_code = scheduler_->update_schedule(
+  error_code = scheduler_->handle_update_schedule(
     R"({"events":{}, "dependencies": {"abcdefgg":{}}})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(
@@ -322,7 +325,7 @@ TEST_F(TestUpdateSchedule, InvalidID)
   EXPECT_TRUE(schedule_unchanged());
 
   // This should spit out Series ID invalid error code
-  error_code = scheduler_->update_schedule(
+  error_code = scheduler_->handle_update_schedule(
     R"({"events":{}, "series":
       {"series-2":{"cron": "",
       "timezone":"UTC","occurrences":[]}}})"_json);
@@ -336,7 +339,7 @@ TEST_F(TestUpdateSchedule, InvalidID)
   EXPECT_TRUE(schedule_unchanged());
 
   // Cannot change series from a dag series to an event series
-  error_code = scheduler_->update_schedule(
+  error_code = scheduler_->handle_update_schedule(
     R"({"events": {}, "series":{
     "series-1": {
       "cron": "48 42 21 ? * Sat,Sun",
@@ -383,14 +386,14 @@ TEST_F(TestDeleteSchedule, DeleteValidDAGSeries)
 
   // Delete a single event
   // This causes DAG to change resulting in series making an exception for the old dag
-  auto error_code = scheduler_->delete_schedule(R"({ "event_ids": ["clean_task1"]})"_json);
+  auto error_code = scheduler_->handle_delete_schedule(R"({ "event_ids": ["clean_task1"]})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
 
-  const auto & handler = scheduler_->get_schedule_handler_const();
+  const auto & handler = scheduler_->schedule_handler_const();
   // Verify event is deleted
   EXPECT_FALSE(handler.events_handler_const().has_event("clean_task1"));
-  const Series & series1 = handler.get_series("series-1");
+  const data::Series & series1 = handler.get_series("series-1");
   std::string last_occurrence_id = series1.get_last_occurrence().id;
   // Verify series is expanded
   EXPECT_NE(last_occurrence_id, "dag-1");
@@ -398,13 +401,13 @@ TEST_F(TestDeleteSchedule, DeleteValidDAGSeries)
   EXPECT_TRUE(handler.dags_const().find(last_occurrence_id) != handler.dags_const().end());
 
   // Print out schedule for debugging
-  auto new_schedule_json = scheduler_->get_schedule(R"({})"_json);
-  std::cout << new_schedule_json.dump(2) << std::endl;
+  auto new_schedule_json = scheduler_->handle_get_schedule(R"({})"_json);
+  // std::cout << new_schedule_json.dump(2) << std::endl;
 
 
   // Delete a single event, resulting in dag being empty
   // This causes DAG and the occurrence within the series to be deleted
-  error_code = scheduler_->delete_schedule(
+  error_code = scheduler_->handle_delete_schedule(
     R"({ "event_ids": ["go_to_place_task1"], "dependency_ids": ["dag-1"]})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
@@ -422,12 +425,12 @@ TEST_F(TestDeleteSchedule, DeleteValidDAGSeries)
   }
   EXPECT_TRUE(series1_deleted);
 
-  new_schedule_json = scheduler_->get_schedule(R"({})"_json);
-  std::cout << new_schedule_json.dump(2) << std::endl;
+  new_schedule_json = scheduler_->handle_get_schedule(R"({})"_json);
+  // std::cout << new_schedule_json.dump(2) << std::endl;
 
 
   // Delete a dag event series, resulting in all dags && event deleted
-  error_code = scheduler_->delete_schedule(R"({ "series_ids": ["series-1"]})"_json);
+  error_code = scheduler_->handle_delete_schedule(R"({ "series_ids": ["series-1"]})"_json);
   std::cout << error_code.str() << std::endl;
   EXPECT_EQ(error_code.val, ErrorCode::SUCCESS);
 
@@ -435,6 +438,6 @@ TEST_F(TestDeleteSchedule, DeleteValidDAGSeries)
   EXPECT_TRUE(handler.events_handler_const().get_all_events().empty());
   EXPECT_TRUE(handler.dags_const().empty());
   EXPECT_TRUE(handler.series_map_const().empty());
-  new_schedule_json = scheduler_->get_schedule(R"({})"_json);
-  std::cout << new_schedule_json.dump(2) << std::endl;
+  new_schedule_json = scheduler_->handle_get_schedule(R"({})"_json);
+  // std::cout << new_schedule_json.dump(2) << std::endl;
 }

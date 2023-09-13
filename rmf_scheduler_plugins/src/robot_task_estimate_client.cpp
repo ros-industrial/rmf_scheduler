@@ -27,33 +27,29 @@
 namespace rmf_scheduler_plugins
 {
 
-static constexpr char RMF_TASK_API_REQUEST_TOPIC[] = "/task_api_request";
-static constexpr char RMF_TASK_API_RESPONSE_TOPIC[] = "/task_api_request";
+static constexpr char RMF_TASK_API_REQUESTS_TOPIC[] = "/task_api_requests";
+static constexpr char RMF_TASK_API_RESPONSES_TOPIC[] = "/task_api_responses";
 
 RobotTaskEstimateClient::RobotTaskEstimateClient()
-: support_task_types_({
-    "rmf/robot_task"
-  }),
-  schema_validator_({
+: schema_validator_(std::vector<nlohmann::json>{
+    rmf_api_msgs::schemas::error,
     rmf_api_msgs::schemas::task_request,
+    rmf_api_msgs::schemas::task_state,
     rmf_api_msgs::schemas::dispatch_task_request,
     rmf_api_msgs::schemas::dispatch_task_response,
     rmf_api_msgs::schemas::robot_task_request,
     rmf_api_msgs::schemas::robot_task_response,
     rmf_api_msgs::schemas::task_estimate_request,
     rmf_api_msgs::schemas::task_estimate_response,
-    rmf_api_msgs::schemas::task_state,
-    rmf_api_msgs::schemas::error,
   })
 {
 }
 
 
 void RobotTaskEstimateClient::init(
-  const std::string & name,
-  const std::string & ns)
+  const std::shared_ptr<void> & node)
 {
-  rmf_scheduler::EstimateInterface::init(name, ns);
+  node_ = std::static_pointer_cast<rclcpp::Node>(node);
 
   // QOS settings
   auto default_qos = rclcpp::SystemDefaultsQoS();
@@ -64,13 +60,13 @@ void RobotTaskEstimateClient::init(
     .keep_last(100);
 
   request_publisher_ =
-    get_node()->create_publisher<rmf_task_msgs::msg::ApiRequest>(
-    RMF_TASK_API_REQUEST_TOPIC,
+    node_->create_publisher<rmf_task_msgs::msg::ApiRequest>(
+    RMF_TASK_API_REQUESTS_TOPIC,
     transient_local_qos);
 
   response_subscriber_ =
-    get_node()->create_subscription<rmf_task_msgs::msg::ApiResponse>(
-    RMF_TASK_API_RESPONSE_TOPIC,
+    node_->create_subscription<rmf_task_msgs::msg::ApiResponse>(
+    RMF_TASK_API_RESPONSES_TOPIC,
     default_qos,
     std::bind(
       &RobotTaskEstimateClient::handle_response, this,
@@ -78,36 +74,50 @@ void RobotTaskEstimateClient::init(
 }
 
 
-std::shared_future<nlohmann::json> RobotTaskEstimateClient::async_estimate(
+std::shared_future<rmf_scheduler::task::EstimateResponse>
+RobotTaskEstimateClient::async_estimate(
   const std::string & id,
-  const nlohmann::json & event_details)
+  const rmf_scheduler::task::EstimateRequest & request)
 {
   // Get validation error if any
   // TODO(Briancbn): exception handling
+  nlohmann::json task_request;
+  task_request["task_request"] = request.details["request"];
+
+  if (request.state != nullptr) {
+    nlohmann::json state;
+    state["waypoint"] = request.state->waypoint;
+    state["orientation"] = request.state->orientation;
+    state["battery_soc"] = request.state->consumables["battery_soc"];
+    state["time"] = request.start_time / 1e6;
+    task_request["state"] = state;
+  }
+
+  nlohmann::json estimate_request;
+  estimate_request["request"] = task_request;
+  estimate_request["type"] = "estimate_task_request";
+
+  // change them to slugs
+  // all spaces(" ") and dash ("-") to underline ("_")
+  estimate_request["robot"] = request.details["robot"].get<std::string>();
+  estimate_request["fleet"] = request.details["fleet"].get<std::string>();
   std::string error;
   auto json_uri = nlohmann::json_uri{
     rmf_api_msgs::schemas::task_estimate_request["$id"]
   };
-  schema_validator_.validate(json_uri, event_details);
+  schema_validator_.validate(json_uri, estimate_request);
 
-  response_map_[id] = std::promise<nlohmann::json>();
+  response_map_[id] = std::promise<rmf_scheduler::task::EstimateResponse>();
 
   // Publish request
   request_publisher_->publish(
     rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
-    .json_msg(event_details.dump())
+    .json_msg(estimate_request.dump())
     .request_id(id)
   );
 
   return response_map_.at(id).get_future();
 }
-
-
-const std::unordered_set<std::string> & RobotTaskEstimateClient::support_task_types() const
-{
-  return support_task_types_;
-}
-
 
 void RobotTaskEstimateClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & msg)
@@ -117,16 +127,16 @@ void RobotTaskEstimateClient::handle_response(
     return;
   }
 
-  nlohmann::json response;
+  nlohmann::json raw_response;
   try {
-    response = nlohmann::json::parse(msg.json_msg);
+    raw_response = nlohmann::json::parse(msg.json_msg);
     auto json_uri = nlohmann::json_uri{
       rmf_api_msgs::schemas::task_estimate_response["$id"]
     };
-    schema_validator_.validate(json_uri, response);
+    schema_validator_.validate(json_uri, raw_response);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      get_node()->get_logger(),
+      node_->get_logger(),
       "Error in response to [%s]: %s",
       msg.request_id.c_str(),
       e.what());
@@ -134,10 +144,23 @@ void RobotTaskEstimateClient::handle_response(
   }
 
   RCLCPP_INFO(
-    get_node()->get_logger(),
+    node_->get_logger(),
     "Got Response to [%s]: %s",
     msg.request_id.c_str(),
     msg.json_msg.c_str());
+
+  rmf_scheduler::task::EstimateResponse response;
+  response.deployment_time =
+    static_cast<uint64_t>(raw_response["deployment_time"].get<int>()) * 1e6;
+  response.finish_time =
+    static_cast<uint64_t>(raw_response["finish_time"].get<int>()) * 1e6;
+  response.duration =
+    static_cast<uint64_t>(raw_response["duration"].get<int>()) * 1e6;
+
+  response.state.waypoint = raw_response["state"]["waypoint"].get<int>();
+  response.state.orientation = raw_response["state"]["orientation"].get<double>();
+  response.state.consumables["battery_soc"] =
+    raw_response["state"]["battery_soc"].get<double>();
 
   response_map_itr->second.set_value(response);
   response_map_.erase(response_map_itr);
@@ -149,4 +172,4 @@ void RobotTaskEstimateClient::handle_response(
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-  rmf_scheduler_plugins::RobotTaskEstimateClient, rmf_scheduler::EstimateInterface)
+  rmf_scheduler_plugins::RobotTaskEstimateClient, rmf_scheduler::task::EstimateInterface)

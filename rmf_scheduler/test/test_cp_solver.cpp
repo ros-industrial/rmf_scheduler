@@ -19,8 +19,8 @@
 
 #include "rmf_scheduler/test_utils.hpp"
 #include "rmf_scheduler/sanitizer_macro.hpp"
-#include "rmf_scheduler/conflict_identifier.hpp"
-#include "rmf_scheduler/conflict_resolver/cp_solver.hpp"
+#include "rmf_scheduler/conflict/identifier.hpp"
+#include "rmf_scheduler/conflict/cp_solver.hpp"
 
 // TODO(anyone): fix sanitizer failure
 #ifndef __SANITIZE_ADDRESS__
@@ -34,11 +34,11 @@ TEST(TestScheduler, NoConflictResolution)
   const uint64_t WINDOW_START = 0;
   const uint64_t WINDOW_END = 60 * 24;  // 24hr * 60 min/hr
 
-  std::shared_ptr<conflict_resolver::CpSolver> cp_solver =
-    conflict_resolver::CpSolver::make();
+  std::shared_ptr<conflict::CpSolver> cp_solver =
+    conflict::CpSolver::make();
 
   // Load a schedule of events that do not clash
-  std::vector<Event> events;
+  std::vector<data::Event> events;
   events = test_utils::load_no_clashing_events(2, 3);
 
   // Initialize the solver
@@ -60,7 +60,7 @@ TEST(TestScheduler, NoConflictResolution)
   }
 
   // No overlap for robot and zone
-  auto event_by_filter = utils::categorise_by_filter(events, {"request::robot", "zone"});
+  auto event_by_filter = utils::categorise_by_filter(events, {"robot", "zone"});
 
   for (auto itr : event_by_filter) {
     for (auto itr2 : itr) {
@@ -81,14 +81,14 @@ TEST(TestScheduler, ConflictResolution)
   const uint64_t WINDOW_START = 0;
   const uint64_t WINDOW_END = 60 * 24;  // 24hr * 60 min/hr
 
-  std::shared_ptr<conflict_resolver::CpSolver> cp_solver =
-    conflict_resolver::CpSolver::make();
+  std::shared_ptr<conflict::CpSolver> cp_solver =
+    conflict::CpSolver::make();
 
   // Load a schedule of events that clashes
-  std::vector<Event> events = test_utils::load_clashing_events(5, 6, 3);
+  std::vector<data::Event> events = test_utils::load_clashing_events(5, 6, 3);
 
   auto initial_conflicts = utils::identify_conflicts(
-    events, {}, {"request::robot", "zone"});
+    events, {}, {"robot", "zone"});
 
   // There should be conflicts initially
   EXPECT_FALSE(initial_conflicts.empty());
@@ -112,7 +112,7 @@ TEST(TestScheduler, ConflictResolution)
   }
 
   // Solve for a feasible solution
-  auto event_by_filter = utils::categorise_by_filter(events, {"request::robot", "zone"});
+  auto event_by_filter = utils::categorise_by_filter(events, {"robot", "zone"});
 
   for (auto itr : event_by_filter) {
     for (auto itr2 : itr) {
@@ -144,7 +144,7 @@ TEST(TestScheduler, ConflictResolution)
 
   // There should not be any conflicts in the end
   auto final_conflicts = utils::identify_conflicts(
-    events, {}, {"request::robot", "zone"});
+    events, {}, {"robot", "zone"});
   EXPECT_TRUE(final_conflicts.empty());
 }
 

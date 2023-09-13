@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <chrono>
-#include <thread>
-
 #include "gtest/gtest.h"
-#include "rmf_scheduler/dag.hpp"
-#include "rmf_scheduler/dag_executor.hpp"
+#include "rmf_scheduler/data/dag.hpp"
 #include "rmf_scheduler/test_utils.hpp"
 #include "rmf_scheduler/sanitizer_macro.hpp"
 #include "graphviz/gvc.h"
@@ -27,7 +23,7 @@ class TestDAG : public ::testing::Test
 protected:
   void SetUp() override
   {
-    using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+    using namespace rmf_scheduler::data;  // NOLINT(build/namespaces)
     dag_description_ = {
       {"task1", {}},
       {"task2", {"task4", "task3"}},
@@ -41,8 +37,8 @@ protected:
   {
   }
 
-  rmf_scheduler::DAG dag_;
-  rmf_scheduler::DAG::Description dag_description_;
+  rmf_scheduler::data::DAG dag_;
+  rmf_scheduler::data::DAG::Description dag_description_;
 };
 
 TEST_F(TestDAG, BasicDAGCRUD) {
@@ -151,7 +147,7 @@ TEST_F(TestDAG, DAGCheckCyclic) {
   bool exception_caught = false;
   try {
     dag_.add_dependency("task1", {"task3"}, true);
-  } catch (rmf_scheduler::DAGCyclicException & e) {
+  } catch (rmf_scheduler::exception::DAGCyclicException & e) {
     std::cerr << "exception caught:\n" << e.what() << std::endl;
     exception_caught = true;
   }
@@ -161,69 +157,9 @@ TEST_F(TestDAG, DAGCheckCyclic) {
   try {
     dag_.clear_dependency("task1");
     dag_.add_dependency("task1", {"task2"}, true);
-  } catch (rmf_scheduler::DAGCyclicException & e) {
+  } catch (rmf_scheduler::exception::DAGCyclicException & e) {
     std::cerr << "exception caught:\n" << e.what() << std::endl;
     exception_caught = true;
   }
   EXPECT_TRUE(exception_caught);
-}
-
-TEST_F(TestDAG, DAGExecutorBasic)
-{
-  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
-  std::vector<std::string> tasks_finished;
-  std::mutex mtx;
-  std::unordered_map<std::string, int> work_table = {
-    {"task1", 1},
-    {"task2", 2},
-    {"task3", 3},
-    {"task4", 4}
-  };
-
-  DAGExecutor dag_executor;
-
-  // Create a generator that generate the function call based on task id
-  DAGExecutor::WorkGenerator work_generator =
-    [&tasks_finished, work_table, &mtx](const std::string & id) -> DAGExecutor::Work {
-      int work_s = work_table.at(id);
-
-      // The actual function called during the DAG execution
-      auto work = [ =, &tasks_finished, &mtx]() {
-          std::this_thread::sleep_for(std::chrono::seconds(work_s));
-
-          // Lock thread before writing to tasks_finished
-          std::lock_guard<std::mutex> lk(mtx);
-          tasks_finished.push_back(id);
-        };
-      return work;
-    };
-
-  // Run a full execution
-  auto future = dag_executor.run(dag_, work_generator);
-  future.get();
-
-  std::cout << "Order of tasks finished" << std::endl;
-  for (auto & task : tasks_finished) {
-    std::cout << task << std::endl;
-  }
-
-  EXPECT_EQ(tasks_finished.front(), "task1");
-  EXPECT_EQ(tasks_finished.back(), "task2");
-  EXPECT_EQ(static_cast<int>(tasks_finished.size()), 4);
-
-  // Clear the history
-  tasks_finished.clear();
-
-  // Stop in the middle of the execution
-  future = dag_executor.run(dag_, work_generator);
-
-  // Sleep until the middle of task 2 being executed
-  std::this_thread::sleep_for(std::chrono::seconds(3));
-  dag_executor.cancel();
-
-  future.get();
-
-  for (auto & task : tasks_finished) {
-    std::cout << task << std::endl;
-  }
 }

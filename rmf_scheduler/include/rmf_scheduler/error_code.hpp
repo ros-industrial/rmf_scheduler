@@ -38,14 +38,15 @@ public:
   static constexpr int32_t INVALID_ID = 0x01 << 8;
   static constexpr int32_t INVALID_LOGIC = 0x02 << 8;
   static constexpr int32_t INVALID_SCHEMA = 0x03 << 8;
-  static constexpr int32_t MULTIPLE_ACCESS = 0x04 << 8;
+  static constexpr int32_t RUNTIME = 0x10 << 8;
 
-  // Error data type
+  // Error data detail
   static constexpr int32_t FIELD = 0xff << 16;
   static constexpr int32_t NO_FIELD = 0xfe << 16;
   static constexpr int32_t INVALID_EVENT = 0x01 << 16;
   static constexpr int32_t INVALID_DEPENDENCY = 0x02 << 16;
   static constexpr int32_t INVALID_SERIES = 0x03 << 16;
+  static constexpr int32_t MULTIPLE_ACCESS = 0x10 << 16;
 
   ErrorCode(
     int code = 0,
@@ -83,8 +84,8 @@ public:
       case INVALID_SCHEMA:
         out += "INVALID_SCHEMA";
         break;
-      case MULTIPLE_ACCESS:
-        out += "MULTIPLE_ACCESS";
+      case RUNTIME:
+        out += "RUNTIME";
         break;
       default:
         out += "UNKNOWN_ERROR_TYPE";
@@ -102,6 +103,9 @@ public:
         break;
       case INVALID_SERIES:
         out += "INVALID_SERIES";
+        break;
+      case MULTIPLE_ACCESS:
+        out += "MULTIPLE_ACCESS";
         break;
       case NO_FIELD:
         break;

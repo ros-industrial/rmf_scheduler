@@ -20,8 +20,7 @@
 #include <vector>
 
 #include "nlohmann/json.hpp"
-#include "rmf_scheduler/schedule.hpp"
-#include "rmf_scheduler/update_event_time.hpp"
+#include "rmf_scheduler/data/schedule.hpp"
 
 namespace rmf_scheduler
 {
@@ -31,40 +30,42 @@ namespace parser
 
 void json_to_events(
   const nlohmann::json & events_json,
-  std::unordered_map<std::string, Event> & events_description);
+  std::unordered_map<std::string, data::Event> & events_description);
 
 
 void json_to_dependencies(
   const nlohmann::json & dependencies_json,
-  std::unordered_map<std::string, DAG::Description> & dependencies_description);
+  std::unordered_map<std::string, data::DAG::Description> & dependencies_description);
 
 void json_to_series_map(
   const nlohmann::json & series_json,
-  std::unordered_map<std::string, Series::Description> & series_map_description);
+  std::unordered_map<std::string, data::Series::Description> & series_map_description);
 
 void json_to_schedule(
   const nlohmann::json & schedule_json,
-  Schedule::Description & schedule_description);
+  data::Schedule::Description & schedule_description);
 
 void json_to_update_event_time(
   const nlohmann::json & update_event_time_json,
-  UpdateEventTime & update_event_time);
+  data::Event & update_event_time);
 
 void events_to_json(
-  const std::unordered_map<std::string, Event> & events_description,
-  nlohmann::json & events_json);
+  const std::unordered_map<std::string, data::Event> & events_description,
+  nlohmann::json & events_json,
+  bool full = false);
 
 void dependencies_to_json(
-  const std::unordered_map<std::string, DAG::Description> & dependencies_description,
+  const std::unordered_map<std::string, data::DAG::Description> & dependencies_description,
   nlohmann::json & dependencies_json);
 
 void series_map_to_json(
-  const std::unordered_map<std::string, Series::Description> & series_map_description,
+  const std::unordered_map<std::string, data::Series::Description> & series_map_description,
   nlohmann::json & series_map_json);
 
 void schedule_to_json(
-  const Schedule::Description & schedule_description,
-  nlohmann::json & schedule_json);
+  const data::Schedule::Description & schedule_description,
+  nlohmann::json & schedule_json,
+  bool full = false);
 
 template<typename DetailT>
 bool filter_event_details(

@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "rmf_scheduler/series.hpp"
-#include "rmf_scheduler/system_time_utils.hpp"
+#include "rmf_scheduler/data/series.hpp"
+#include "rmf_scheduler/utils/system_time_utils.hpp"
 
 class TestSeries : public ::testing::Test
 {
@@ -25,7 +25,7 @@ protected:
     utils::set_timezone("Asia/Singapore");
     uint64_t start_time = utils::from_localtime("Jan 2 10:15:00 2023");
     uint64_t end_time = utils::from_localtime("Oct 3 10:15:00 2023");
-    series_ = Series(
+    series_ = data::Series(
       "event-1",
       start_time,
       "0 15 10 ? * MON-FRI",    // 10:15 AM every Monday - Friday
@@ -38,7 +38,7 @@ protected:
   {
   }
 
-  rmf_scheduler::Series series_;
+  rmf_scheduler::data::Series series_;
 };
 
 
@@ -76,7 +76,7 @@ TEST_F(TestSeries, BasicDescriptionReload)
   auto description = series_.description();
 
   // Create a new series based on description
-  Series new_series(description);
+  data::Series new_series(description);
   auto new_description = new_series.description();
 
   // Print out all occurrences

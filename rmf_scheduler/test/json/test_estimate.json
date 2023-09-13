@@ -1,0 +1,32 @@
+{
+  "events": {
+    "go_to_place_task1": {
+      "description": "Example of a go to place task",
+      "type": "rmf/robot_task",
+      "start_time": 1692175969,
+      "duration": 100,
+      "event_details": {
+        "type": "robot_task_request",
+        "fleet": "leoscrub",
+        "robot": "leovac_1",
+        "request": {
+          "category": "compose",
+          "description": {
+            "category": "go_to_place",
+            "phases": [
+              {
+                "activity": {
+                  "category": "go_to_place",
+                  "description": {
+                    "waypoint": "czone_b2_start",
+                    "orientation": 0.0
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

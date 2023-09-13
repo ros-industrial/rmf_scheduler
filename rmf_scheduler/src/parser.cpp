@@ -22,7 +22,7 @@ namespace parser
 
 void json_to_events(
   const nlohmann::json & events_json,
-  std::unordered_map<std::string, Event> & events_description)
+  std::unordered_map<std::string, data::Event> & events_description)
 {
   for (auto & itr : events_json.items()) {
     auto & event_json = itr.value();
@@ -51,7 +51,7 @@ void json_to_events(
     }
 
     // Create event
-    Event event {
+    data::Event event {
       event_json["description"].get<std::string>(),                         // description
       event_json["type"].get<std::string>(),                                // type
       static_cast<uint64_t>(event_json["start_time"].get<double>() * 1e9),  // start time
@@ -61,23 +61,28 @@ void json_to_events(
       dependency_id,                                                        // dag id
       event_details                                                         // event details
     };
+
+    if (event_json.contains("task_details")) {
+      event.task_details = event_json["task_details"].dump();
+    }
+
     events_description.emplace(id, std::move(event));
   }
 }
 
 void json_to_dependencies(
   const nlohmann::json & dependencies_json,
-  std::unordered_map<std::string, DAG::Description> & dependencies_description)
+  std::unordered_map<std::string, data::DAG::Description> & dependencies_description)
 {
   for (auto & dependency_itr : dependencies_json.items()) {
     auto & dependency_json = dependency_itr.value();
 
     // Convert DAG
-    DAG::Description dag_description;
+    data::DAG::Description dag_description;
     for (auto dependency_itr : dependency_json.items()) {
       dag_description.emplace(
         dependency_itr.key(),
-        dependency_itr.value().get<DAG::DependencyInfo>()
+        dependency_itr.value().get<data::DAG::DependencyInfo>()
       );
     }
     dependencies_description.emplace(dependency_itr.key(), std::move(dag_description));
@@ -86,17 +91,17 @@ void json_to_dependencies(
 
 void json_to_series_map(
   const nlohmann::json & series_json,
-  std::unordered_map<std::string, Series::Description> & series_map_description)
+  std::unordered_map<std::string, data::Series::Description> & series_map_description)
 {
   for (auto & series_itr : series_json.items()) {
     auto & series_json = series_itr.value();
 
     // Convert series json
-    Series::Description series_description;
+    data::Series::Description series_description;
     series_description.cron = series_json["cron"].get<std::string>();
     series_description.timezone = series_json["timezone"].get<std::string>();
     for (auto & occurrence_itr : series_json["occurrences"]) {
-      Series::Occurrence occurrence {
+      data::Series::Occurrence occurrence {
         0,                                // time need to look up from events
         occurrence_itr.get<std::string>()  // id
       };
@@ -129,7 +134,7 @@ void json_to_series_map(
 
 void json_to_schedule(
   const nlohmann::json & schedule_json,
-  Schedule::Description & schedule_description)
+  data::Schedule::Description & schedule_description)
 {
   // Convert required fields: events
   json_to_events(
@@ -152,7 +157,7 @@ void json_to_schedule(
 
 void json_to_update_event_time(
   const nlohmann::json & update_event_time_json,
-  rmf_scheduler::UpdateEventTime & update_event_time)
+  data::Event & update_event_time)
 {
   update_event_time.id = update_event_time_json["id"].get<std::string>();
   update_event_time.start_time = update_event_time_json["start_time"].get<double>() * 1e9;
@@ -160,8 +165,9 @@ void json_to_update_event_time(
 }
 
 void events_to_json(
-  const std::unordered_map<std::string, Event> & events_description,
-  nlohmann::json & events_json)
+  const std::unordered_map<std::string, data::Event> & events_description,
+  nlohmann::json & events_json,
+  bool full)
 {
   // return empty instead of null
   if (events_description.empty()) {
@@ -170,7 +176,7 @@ void events_to_json(
   }
 
   for (auto & itr : events_description) {
-    const Event & event = itr.second;
+    const data::Event & event = itr.second;
     nlohmann::json event_json;
     event_json["description"] = event.description;
     event_json["type"] = event.type;
@@ -190,12 +196,17 @@ void events_to_json(
       event_json["dependency_id"] = event.dag_id;
     }
 
+    if (!event.task_details.empty() && full) {
+      event_json["task_details"] =
+        nlohmann::json::parse(event.task_details);
+    }
+
     events_json[itr.first] = event_json;
   }
 }
 
 void dependencies_to_json(
-  const std::unordered_map<std::string, DAG::Description> & dependencies_description,
+  const std::unordered_map<std::string, data::DAG::Description> & dependencies_description,
   nlohmann::json & dependencies_json)
 {
   for (auto itr : dependencies_description) {
@@ -208,12 +219,12 @@ void dependencies_to_json(
 }
 
 void series_map_to_json(
-  const std::unordered_map<std::string, Series::Description> & series_map_description,
+  const std::unordered_map<std::string, data::Series::Description> & series_map_description,
   nlohmann::json & series_map_json)
 {
   for (auto itr : series_map_description) {
     nlohmann::json series_json;
-    const Series::Description & series = itr.second;
+    const data::Series::Description & series = itr.second;
     series_json["cron"] = series.cron;
     series_json["timezone"] = series.timezone;
 
@@ -238,13 +249,15 @@ void series_map_to_json(
 }
 
 void schedule_to_json(
-  const Schedule::Description & schedule_description,
-  nlohmann::json & schedule_json)
+  const data::Schedule::Description & schedule_description,
+  nlohmann::json & schedule_json,
+  bool full)
 {
   // Convert events
   events_to_json(
     schedule_description.events,
-    schedule_json["events"]);
+    schedule_json["events"],
+    full);
 
   // Convert optional fields
   if (!schedule_description.dependencies.empty()) {

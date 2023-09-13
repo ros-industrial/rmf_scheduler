@@ -7,43 +7,43 @@
       "duration": 900,
       "dependency_id": "dag-1",
       "event_details": {
-        "category": "compose",
+        "type": "robot_task_request",
+        "fleet": "tinyRobot",
+        "robot": "tinyRobot1",
         "request": {
-          "type": "robot_task_request",
-          "fleet": "tinyRobot",
-          "robot": "tinyRobot1"
-        },
-        "description": {
-          "category": "clean",
-          "phases": [
-            {
-              "activity": {
-                "category": "sequence",
-                "description": {
-                  "activities": [
-                    {
-                      "category": "go_to_place",
-                      "description": {
-                        "waypoint": "zone1_wp",
-                        "orientation": 0.0
-                      }
-                    },
-                    {
-                      "category": "perform_action",
-                      "description": {
-                        "unix_millis_action_duration_estimate": 6000,
-                        "category": "clean",
+          "category": "compose",
+          "description": {
+            "category": "clean",
+            "phases": [
+              {
+                "activity": {
+                  "category": "sequence",
+                  "description": {
+                    "activities": [
+                      {
+                        "category": "go_to_place",
                         "description": {
+                          "waypoint": "zone1_wp",
+                          "orientation": 0.0
+                        }
+                      },
+                      {
+                        "category": "perform_action",
+                        "description": {
+                          "unix_millis_action_duration_estimate": 6000,
+                          "category": "clean",
+                          "description": {
 
-                        },
-                        "use_tool_sink": false
+                          },
+                          "use_tool_sink": false
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
                 }
               }
-            }
-          ]
+            ]
+          }
         }
       }
     }

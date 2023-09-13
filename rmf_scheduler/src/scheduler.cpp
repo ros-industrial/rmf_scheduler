@@ -14,12 +14,17 @@
 
 #include <thread>
 
+#include "pluginlib/class_loader.hpp"
+
 #include "rmf_scheduler/scheduler.hpp"
 #include "rmf_scheduler/schema_validator.hpp"
 #include "rmf_scheduler/error_code.hpp"
-#include "rmf_scheduler/system_time_utils.hpp"
+#include "rmf_scheduler/utils/uuid.hpp"
+#include "rmf_scheduler/utils/system_time_utils.hpp"
 #include "rmf_scheduler/parser.hpp"
-#include "rmf_scheduler/update_event_time.hpp"
+#include "rmf_scheduler/conflict/identifier.hpp"
+#include "rmf_scheduler/conflict/cp_solver.hpp"
+#include "rmf_scheduler/log.hpp"
 
 #include "rmf_scheduler/schemas/schedule.hpp"
 #include "rmf_scheduler/schemas/event.hpp"
@@ -72,16 +77,27 @@ Scheduler::Scheduler()
   schema_validator_ = std::make_unique<SchemaValidator>(schemas);
 
   last_write_time_ = utils::now();
+
+  series_expand_time_ = utils::now();
+
+  // Runtime parameters
+  spinning_ = false;
+}
+
+Scheduler::Scheduler(const SchedulerOptions & options)
+: Scheduler()
+{
+  options_ = options;
 }
 
 Scheduler::~Scheduler()
 {
 }
 
-ErrorCode Scheduler::add_schedule(
+ErrorCode Scheduler::handle_add_schedule(
   const nlohmann::json & json)
 {
-  Schedule::Description description;
+  data::Schedule::Description description;
   try {
     auto json_uri = nlohmann::json_uri{
       schemas::schedule["$id"]
@@ -96,6 +112,7 @@ ErrorCode Scheduler::add_schedule(
     parser::json_to_schedule(json, description);
   } catch (const std::exception & e) {
     // Invalid Json schema
+    RS_LOG_ERROR(e.what());
     return {
       ErrorCode::FAILURE |
       ErrorCode::INVALID_SCHEMA,
@@ -107,11 +124,11 @@ ErrorCode Scheduler::add_schedule(
   return RMF_SCHEDULER_RESOLVE_ERROR_CODE(add_schedule(description));
 }
 
-void Scheduler::add_schedule(const Schedule::Description & schedule)
+void Scheduler::add_schedule(const data::Schedule::Description & schedule)
 {
-  std::unordered_map<std::string, Event> events_to_add;
-  std::unordered_map<std::string, DAG> dags_to_add;
-  std::unordered_map<std::string, Series> event_series_map_to_add, dag_series_map_to_add;
+  std::unordered_map<std::string, data::Event> events_to_add;
+  std::unordered_map<std::string, data::DAG> dags_to_add;
+  std::unordered_map<std::string, data::Series> event_series_map_to_add, dag_series_map_to_add;
   uint64_t read_time;
 
   {  // Read Lock
@@ -143,48 +160,71 @@ void Scheduler::add_schedule(const Schedule::Description & schedule)
     return;
   }
 
-  // Write lock
-  WriteLock lk(mtx_);
+  { // Write lock
+    WriteLock lk(mtx_);
 
-  // If there is writing after the read, exit immediately
-  if (last_write_time_ > read_time) {
-    throw ScheduleMultipleWriteException(
-            "Schedule already written by %s at time \n\t%s.",
-            last_writer_.c_str(), utils::to_localtime(last_write_time_));
+    // If there is writing after the read, exit immediately
+    if (last_write_time_ > read_time) {
+      throw exception::ScheduleMultipleWriteException(
+              "Schedule already written by %s at time \n\t%s.",
+              last_writer_.c_str(), utils::to_localtime(last_write_time_));
+    }
+
+    // Generate task details
+    RS_LOG_INFO("Generating task info");
+    for (auto & event_itr : events_to_add) {
+      task_builder_.build_task(event_itr.second);
+    }
+
+    // Trigger estimation pipeline
+    RS_LOG_INFO("Starting to estimate duration");
+    task_estimator_.estimate(
+      events_to_add,
+      2.0);
+
+
+    // Update schedule cache
+    // Add new events as dangling events
+    for (auto & event_itr : events_to_add) {
+      schedule_.add_event(event_itr.second);
+    }
+
+    // Link the events together using DAG
+    for (auto & dag_itr : dags_to_add) {
+      schedule_.add_dag(dag_itr.first, std::move(dag_itr.second));
+
+      // Generate the start time for events based on DAG
+      schedule_.generate_dag_event_start_time(dag_itr.first);
+    }
+
+    // Link the events / DAGs together using series.
+    for (auto & series_itr : event_series_map_to_add) {
+      schedule_.add_event_series(series_itr.first, std::move(series_itr.second));
+    }
+
+    for (auto & series_itr : dag_series_map_to_add) {
+      schedule_.add_dag_series(series_itr.first, std::move(series_itr.second));
+    }
+
+    if (options_.expand_series_) {
+      schedule_.expand_all_series_until(series_expand_time_);
+    }
+
+    // Update who made changes last
+    last_write_time_ = utils::now();
+    last_writer_ = _thread_id();
+  }  // Write Lock
+
+  // tick once since new events are added
+  if (spinning_) {
+    _tick();
   }
-
-  // Update schedule cache
-  // Add new events as dangling events
-  for (auto & event_itr : events_to_add) {
-    schedule_.add_event(event_itr.second);
-  }
-
-  // Link the events together using DAG
-  for (auto & dag_itr : dags_to_add) {
-    schedule_.add_dag(dag_itr.first, std::move(dag_itr.second));
-
-    // Generate the start time for events based on DAG
-    schedule_.generate_dag_event_start_time(dag_itr.first);
-  }
-
-  // Link the events / DAGs together using series.
-  for (auto & series_itr : event_series_map_to_add) {
-    schedule_.add_event_series(series_itr.first, std::move(series_itr.second));
-  }
-
-  for (auto & series_itr : dag_series_map_to_add) {
-    schedule_.add_dag_series(series_itr.first, std::move(series_itr.second));
-  }
-
-  // Update who made changes last
-  last_write_time_ = utils::now();
-  last_writer_ = _thread_id();
 }
 
-ErrorCode Scheduler::update_schedule(
+ErrorCode Scheduler::handle_update_schedule(
   const nlohmann::json & schedule_json)
 {
-  Schedule::Description description;
+  data::Schedule::Description description;
   try {
     auto json_uri = nlohmann::json_uri{
       schemas::schedule["$id"]
@@ -199,6 +239,7 @@ ErrorCode Scheduler::update_schedule(
     parser::json_to_schedule(schedule_json, description);
   } catch (const std::exception & e) {
     // Invalid Json schema
+    RS_LOG_ERROR(e.what());
     return {
       ErrorCode::FAILURE |
       ErrorCode::INVALID_SCHEMA,
@@ -208,11 +249,12 @@ ErrorCode Scheduler::update_schedule(
   return RMF_SCHEDULER_RESOLVE_ERROR_CODE(update_schedule(description));
 }
 
-void Scheduler::update_schedule(const Schedule::Description & schedule)
+void Scheduler::update_schedule(const data::Schedule::Description & schedule)
 {
-  std::unordered_map<std::string, Event> events_to_update;
-  std::unordered_map<std::string, DAG> dags_to_update;
-  std::unordered_map<std::string, Series> event_series_map_to_update, dag_series_map_to_update;
+  std::unordered_map<std::string, data::Event> events_to_update;
+  std::unordered_map<std::string, data::DAG> dags_to_update;
+  std::unordered_map<std::string, data::Series>
+  event_series_map_to_update, dag_series_map_to_update;
   uint64_t read_time;
 
   {  // Read lock
@@ -241,47 +283,67 @@ void Scheduler::update_schedule(const Schedule::Description & schedule)
     return;
   }
 
-  WriteLock lk(mtx_);
-  // If there is writing after the read, exit immediately
-  if (last_write_time_ > read_time) {
-    throw ScheduleMultipleWriteException(
-            "Schedule already written by %s at time \n\t%s.",
-            last_writer_.c_str(), utils::to_localtime(last_write_time_));
+  { // Write lock
+    WriteLock lk(mtx_);
+    // If there is writing after the read, exit immediately
+    if (last_write_time_ > read_time) {
+      throw exception::ScheduleMultipleWriteException(
+              "Schedule already written by %s at time \n\t%s.",
+              last_writer_.c_str(), utils::to_localtime(last_write_time_));
+    }
+
+    // Generate task details
+    RS_LOG_INFO("Generating task info");
+    for (auto & event_itr : events_to_update) {
+      task_builder_.build_task(event_itr.second);
+    }
+
+    // Trigger estimation pipeline
+    RS_LOG_INFO("Starting to estimate duration");
+    task_estimator_.estimate(events_to_update, 2.0);
+
+    // Update schedule cache
+    // Update events first
+    for (auto & event_itr : events_to_update) {
+      schedule_.update_event(event_itr.second);
+    }
+
+    // Update the dependencies
+    for (auto & dag_itr : dags_to_update) {
+      schedule_.update_dag(dag_itr.first, std::move(dag_itr.second));
+
+      // Generate the start time for events based on DAG
+      schedule_.generate_dag_event_start_time(dag_itr.first);
+    }
+
+    // Update series map
+    for (auto & series_itr : event_series_map_to_update) {
+      schedule_.update_event_series(series_itr.first, std::move(series_itr.second));
+    }
+
+    for (auto & series_itr : dag_series_map_to_update) {
+      schedule_.update_dag_series(series_itr.first, std::move(series_itr.second));
+    }
+
+    if (options_.expand_series_) {
+      schedule_.expand_all_series_until(series_expand_time_);
+    }
+
+    // Update who made changes last
+    last_write_time_ = utils::now();
+    last_writer_ = _thread_id();
   }
 
-  // Update schedule cache
-  // Update events first
-  for (auto & event_itr : events_to_update) {
-    schedule_.update_event(event_itr.second);
+  // tick once since new events are added
+  if (spinning_) {
+    _tick();
   }
-
-  // Update the dependencies
-  for (auto & dag_itr : dags_to_update) {
-    schedule_.update_dag(dag_itr.first, std::move(dag_itr.second));
-
-    // Generate the start time for events based on DAG
-    schedule_.generate_dag_event_start_time(dag_itr.first);
-  }
-
-  // Update series map
-  for (auto & series_itr : event_series_map_to_update) {
-    schedule_.update_event_series(series_itr.first, std::move(series_itr.second));
-  }
-
-  for (auto & series_itr : dag_series_map_to_update) {
-    schedule_.update_dag_series(series_itr.first, std::move(series_itr.second));
-  }
-
-  // Update who made changes last
-  last_write_time_ = utils::now();
-  last_writer_ = _thread_id();
 }
 
-ErrorCode Scheduler::update_event_time(
+ErrorCode Scheduler::handle_update_event_time(
   const nlohmann::json & schedule_json)
 {
-  Schedule::Description description;
-  UpdateEventTime update;
+  data::Event update;
   try {
     auto json_uri = nlohmann::json_uri{
       schemas::update_event_time["$id"]
@@ -296,20 +358,29 @@ ErrorCode Scheduler::update_event_time(
     parser::json_to_update_event_time(schedule_json, update);
   } catch (const std::exception & e) {
     // Invalid Json schema
+    RS_LOG_ERROR(e.what());
     return {
       ErrorCode::FAILURE |
       ErrorCode::INVALID_SCHEMA,
       e.what()
     };
   }
-  return update_event_time(update);
-}
 
-ErrorCode Scheduler::update_event_time(
-  const UpdateEventTime & update)
-{
-  Schedule::Description description;
-  Event initial_event = schedule_.get_event(update.id);
+  // Translate to schedule update
+  data::Schedule::Description description;
+  data::Event initial_event;
+  try {
+    ReadLock lk(mtx_);
+    initial_event = schedule_.get_event(update.id);
+  } catch (const std::exception & e) {
+    RS_LOG_ERROR(e.what());
+    return {
+      ErrorCode::FAILURE |
+      ErrorCode::INVALID_ID |
+      ErrorCode::INVALID_EVENT,
+      e.what()
+    };
+  }
   initial_event.start_time = update.start_time;
   initial_event.duration = update.duration;
   description.events[initial_event.id] = initial_event;
@@ -317,11 +388,12 @@ ErrorCode Scheduler::update_event_time(
   return RMF_SCHEDULER_RESOLVE_ERROR_CODE(update_schedule(description));
 }
 
-nlohmann::json Scheduler::get_schedule(
-  const nlohmann::json & request_json) const
+nlohmann::json Scheduler::handle_get_schedule(
+  const nlohmann::json & request_json)
 {
   nlohmann::json response_json;
   uint64_t start_time, end_time;
+  bool full;
   try {
     auto json_uri = nlohmann::json_uri{
       schemas::get_schedule_request["$id"]
@@ -338,8 +410,11 @@ nlohmann::json Scheduler::get_schedule(
 
     end_time = request_json.contains("end_time") ?
       utils::clamp_cast_uint64_t(request_json["end_time"].get<double>() * 1e9) : UINT64_MAX;
+
+    full = request_json.contains("full") ? request_json["full"].get<bool>() : false;
   } catch (const std::exception & e) {
     // Return schema errors
+    RS_LOG_ERROR(e.what());
     response_json["error_code"] =
       nlohmann::json {
       {"value", ErrorCode::FAILURE | ErrorCode::INVALID_SCHEMA},
@@ -349,8 +424,19 @@ nlohmann::json Scheduler::get_schedule(
   }
 
   try {
+    // Check if series expansion is required
+    uint64_t max_series_expansion_time = utils::now() +
+      static_cast<uint64_t>(options_.series_max_expandable_duration_ * 1e9);
+
+    if (end_time > series_expand_time_ && max_series_expansion_time >
+      series_expand_time_ && options_.expand_series_)
+    {
+      WriteLock w_lk(mtx_);
+      schedule_.expand_all_series_until(std::min(end_time, max_series_expansion_time));
+    }
+
     auto schedule_description = get_schedule(start_time, end_time);
-    parser::schedule_to_json(schedule_description, response_json["schedule"]);
+    parser::schedule_to_json(schedule_description, response_json["schedule"], full);
     response_json["error_code"] =
       nlohmann::json {
       {"value", ErrorCode::SUCCESS},
@@ -358,6 +444,7 @@ nlohmann::json Scheduler::get_schedule(
     };
   } catch (const std::exception & e) {
     // Unknown error
+    RS_LOG_ERROR(e.what());
     response_json["error_code"] =
       nlohmann::json {
       {"value", ErrorCode::FAILURE},
@@ -368,12 +455,14 @@ nlohmann::json Scheduler::get_schedule(
   return response_json;
 }
 
-Schedule::Description Scheduler::get_schedule(
+data::Schedule::Description Scheduler::get_schedule(
   uint64_t start_time,
   uint64_t end_time) const
 {
   ReadLock lk(mtx_);
-  Schedule::Description schedule_description;
+
+  // compile the schedule description
+  data::Schedule::Description schedule_description;
   auto event_vector = schedule_.events_handler_const().lookup_events(start_time, end_time);
   for (auto & event : event_vector) {
     schedule_description.events.emplace(event.id, event);
@@ -402,7 +491,7 @@ Schedule::Description Scheduler::get_schedule(
 }
 
 
-ErrorCode Scheduler::delete_schedule(const nlohmann::json & request_json)
+ErrorCode Scheduler::handle_delete_schedule(const nlohmann::json & request_json)
 {
   std::vector<std::string> event_ids, dependency_ids, series_ids;
   try {
@@ -435,6 +524,7 @@ ErrorCode Scheduler::delete_schedule(const nlohmann::json & request_json)
     }
   } catch (const std::exception & e) {
     // Invalid Json schema
+    RS_LOG_ERROR(e.what());
     return {
       ErrorCode::FAILURE |
       ErrorCode::INVALID_SCHEMA,
@@ -481,7 +571,7 @@ void Scheduler::delete_schedule(
   WriteLock lk(mtx_);
   // If there is writing after the read, exit immediately
   if (last_write_time_ > read_time) {
-    throw ScheduleMultipleWriteException(
+    throw exception::ScheduleMultipleWriteException(
             "Schedule already written by %s at time \n\t%s.",
             last_writer_.c_str(), utils::to_localtime(last_write_time_));
   }
@@ -491,7 +581,7 @@ void Scheduler::delete_schedule(
   // Store dags deleted along the way
   std::unordered_set<std::string> dag_deleted;
   for (auto & event_id : event_ids) {
-    Event event = schedule_.get_event(event_id);
+    data::Event event = schedule_.get_event(event_id);
 
     bool is_dag = !event.dag_id.empty();
     bool is_series = !event.series_id.empty();
@@ -509,7 +599,7 @@ void Scheduler::delete_schedule(
         } else {
           // TODO(anyone): Make this cleaner maybe?
           // Detach the event from the DAG before deletion
-          DAG new_dag(schedule_.get_dag(event.dag_id).description());
+          data::DAG new_dag(schedule_.get_dag(event.dag_id).description());
           new_dag.delete_node(event_id);
           // Make this DAG an exception in the series
           schedule_.update_dag_series_occurrence(
@@ -564,20 +654,307 @@ void Scheduler::delete_schedule(
   schedule_.purge();
 }
 
-const Schedule & Scheduler::get_schedule_handler_const() const
+const data::Schedule & Scheduler::schedule_handler_const() const
 {
   return schedule_;
 }
 
-Schedule & Scheduler::get_schedule_handler()
+data::Schedule & Scheduler::schedule_handler()
 {
   return schedule_;
+}
+
+void Scheduler::optimize(uint64_t start_time, uint64_t end_time)
+{
+  RS_LOG_INFO(
+    "Checking for conflict:\n"
+    "\tstart_time: %lus, end time: %lus",
+    start_time, end_time);
+  auto events = schedule_.events_handler_const().lookup_events(start_time, end_time);
+  auto initial_conflicts = utils::identify_conflicts(
+    events, {}, {"request::robot", "zone"});
+  if (initial_conflicts.empty()) {
+    RS_LOG_INFO("No conflict");
+    return;
+  }
+
+  RS_LOG_INFO("Conflict detected start deconfliction");
+  // Initialize the solver
+  auto cp_solver = conflict::CpSolver::make();
+  cp_solver->init(events, {start_time, end_time}, 5.0);
+
+  // Categorise the events by type
+  auto event_by_type = utils::categorise_by_type(events);
+
+  // Mark flight schedule as fixed
+  auto flight_event_itr = event_by_type.find("flight-schedule");
+  if (flight_event_itr != event_by_type.end()) {
+    cp_solver->mark_fixed(flight_event_itr->second);
+  }
+
+  // Add robot task to the objective function
+  auto robot_event_itr = event_by_type.find("Cleaning Task");
+  if (robot_event_itr != event_by_type.end()) {
+    cp_solver->add_objective(robot_event_itr->second);
+  }
+
+  // Solve for a feasible solution
+  auto event_by_filter = utils::categorise_by_filter(events, {"robot", "zone"});
+
+  for (auto itr : event_by_filter) {
+    for (auto itr2 : itr) {
+      cp_solver->add_no_overlap(itr2.second);
+    }
+  }
+
+  // Solve for a way to avoid conflict
+  auto result = cp_solver->solve(true);
+
+  RS_LOG_INFO("Solver done");
+  // Implement the changes
+  for (auto & change : result) {
+    RS_LOG_INFO(
+      "Event id: %s\n"
+      "orig: %lus, final:%lus.",
+      change.id.c_str(),
+      change.original_start_time,
+      change.final_start_time);
+    auto event = schedule_.get_event(change.id);
+    event.start_time = change.final_start_time;
+    schedule_.update_event(event);
+  }
+}
+
+void Scheduler::load_runtime_interface(
+  const std::shared_ptr<void> & node,
+  const std::string & name,
+  const std::string & interface,
+  const std::vector<std::string> & supported_task_types)
+{
+  task_executor_.load_plugin(node, name, interface, supported_task_types);
+}
+
+void Scheduler::unload_runtime_interface(
+  const std::string & name)
+{
+  task_executor_.unload_plugin(name);
+}
+
+void Scheduler::load_estimate_interface(
+  const std::shared_ptr<void> & node,
+  const std::string & name,
+  const std::string & interface,
+  const std::vector<std::string> & supported_task_types)
+{
+  task_estimator_.load_plugin(node, name, interface, supported_task_types);
+}
+
+void Scheduler::unload_estimate_interface(
+  const std::string & name)
+{
+  task_estimator_.unload_plugin(name);
+}
+
+void Scheduler::load_builder_interface(
+  const std::shared_ptr<void> & node,
+  const std::string & name,
+  const std::string & interface,
+  const std::vector<std::string> & supported_task_types)
+{
+  task_builder_.load_plugin(node, name, interface, supported_task_types);
+}
+
+void Scheduler::unload_builder_interface(
+  const std::string & name)
+{
+  task_builder_.unload_plugin(name);
 }
 
 std::string Scheduler::_thread_id()
 {
   auto hashed = std::hash<std::thread::id>()(std::this_thread::get_id());
   return std::to_string(hashed);
+}
+
+void Scheduler::spin()
+{
+  // this funtion can only be called once
+  if (spinning_) {
+    throw exception::TaskExecutionException("Already spinnning");
+  }
+  spinning_ = true;
+  uint64_t tick_time =
+    utils::now();
+
+  // Add in the first tick event
+  std::string ticking_event_id = "tick-" + utils::gen_uuid();
+  data::Event ticking_event {
+    "Ticking Event",
+    "ticking_event",               // type
+    tick_time,
+    0,                          // duration
+    ticking_event_id,           // id
+    "",                         // series id
+    "",                         // dag id
+    ""                          // event details
+  };
+
+  // Keep track of the ticking time
+  next_tick_time_ = tick_time;
+
+  // Minimal tick rate
+  tick_period_ = options_.tick_period_;
+
+  ste_.add_action(
+    ticking_event,
+    [this]() -> void {
+      _tick();
+    });
+
+  RS_LOG_INFO("Spinning..");
+  ste_.spin();
+}
+
+void Scheduler::stop()
+{
+  ste_.stop();
+}
+
+void Scheduler::_tick()
+{
+  // Write lock
+  WriteLock lk(mtx_);  // TODO(Briancbn): Improve mutex locks
+
+  // Add in next tick
+  // First modulate the ticking period
+  uint64_t current_time = utils::now();
+  RS_LOG_INFO("Ticking Current Time: %lus", current_time);
+
+  // Only tick when past the next tick time
+  if (next_tick_time_ <= current_time) {
+    next_tick_time_ = next_tick_time_ + static_cast<uint64_t>(tick_period_) * 1e9;
+
+    RS_LOG_INFO("Add next timer tick at time %lus", next_tick_time_);
+
+    // Add in next tick event
+    std::string ticking_event_id = "tick-" + utils::gen_uuid();
+    data::Event ticking_event {
+      "Ticking Event",
+      "ticking_event",            // type
+      next_tick_time_,            // next tick time
+      0,                          // duration
+      ticking_event_id,           // id
+      "",                         // series id
+      "",                         // dag id
+      ""                          // event details
+    };
+
+    ste_.add_action(
+      ticking_event,
+      [this]() -> void {
+        _tick();
+      });
+  }
+
+  // push events
+  uint64_t tick_period_start_time = current_time -
+    static_cast<uint64_t>(options_.allow_past_events_duration_) * 1e9;
+  uint64_t tick_period_end_time = next_tick_time_;
+
+  // Push these events to the queue
+  _push_events(tick_period_start_time, tick_period_end_time);
+
+  // TODO(Briancbn): free up unused resources
+}
+
+void Scheduler::_push_events(uint64_t start_time, uint64_t end_time)
+{
+  // First expand all series till end_time
+  if (end_time > series_expand_time_) {
+    schedule_.expand_all_series_until(end_time);
+  }
+
+  // Retrieve all events within the window
+  auto events = schedule_.events_handler_const().lookup_events(start_time, end_time);
+
+  RS_LOG_INFO("Found %lu events to push to runtime", events.size());
+  for (auto & event : events) {
+    // Filter event that cannot be executed
+    if (!task_executor_.is_supported(event.type)) {
+      RS_LOG_INFO(
+        "Event type [%s] doesn't have a runtime interface, skipping..",
+        event.type.c_str());
+      continue;
+    }
+
+    bool dag_action = !event.dag_id.empty();
+    std::string action_id = dag_action ? event.dag_id : event.id;
+
+    // Check ignore actions that are already pushed
+    if (pushed_action_ids_.find(action_id) != pushed_action_ids_.end()) {
+      continue;
+    }
+
+    RS_LOG_INFO(
+      "Pushing %s action [%s] to runtime",
+      (dag_action ? "DAG" : "Event"),
+      action_id.c_str());
+
+    // Generate action
+    runtime::SystemTimeExecutor::Action action;
+    if (dag_action) {
+      // Create a fake event specifically for DAG
+      data::DAG & dag = schedule_.dags()[action_id];
+      // Get dag start time
+      uint64_t dag_start_time = schedule_.get_dag_start_time(dag);
+      data::Event dag_event {
+        "DAG Event",
+        "dag_event",                // type
+        dag_start_time,             // next tick time
+        0,                          // duration
+        action_id,                  // id
+        "",                         // series id
+        "",                         // dag id
+        ""                          // event details
+      };
+      action = _generate_dag_action(dag);
+      ste_.add_action(dag_event, action);
+    } else {
+      action = _generate_event_action(event);
+      ste_.add_action(event, action);
+    }
+    pushed_action_ids_.emplace(action_id);
+  }
+}
+
+runtime::SystemTimeExecutor::Action Scheduler::_generate_dag_action(
+  data::DAG & dag)
+{
+  return [ =, &dag]() -> void {
+           // Write lock
+           WriteLock lk(mtx_);
+           runtime::DAGExecutor dag_executor;
+           auto future = dag_executor.run(
+             dag,
+             [this](const std::string & id) -> runtime::DAGExecutor::Work {
+               data::Event event = schedule_.get_event(id);
+               return _generate_event_action(event, true);
+             });
+           dag_executors_.emplace_back(std::move(dag_executor));
+           dag_futures_.push_back(future);
+         };
+}
+
+runtime::SystemTimeExecutor::Action Scheduler::_generate_event_action(
+  const data::Event & event,
+  bool blocking)
+{
+  return [ = ]() {
+           auto future = task_executor_.run_async(event);
+           if (blocking) {
+             future.wait();
+           }
+         };
 }
 
 }  // namespace rmf_scheduler

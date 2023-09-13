@@ -1,0 +1,13 @@
+{
+    "events": {
+      "flight1": {
+        "description": "Flight at Zone3",
+        "type": "cag/flight",
+        "start_time": 1690394400,
+        "duration": 3600,
+        "event_details": {
+          "zone": "zone3"
+        }
+      }
+    }
+}

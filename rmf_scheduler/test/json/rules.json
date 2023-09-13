@@ -1,0 +1,34 @@
+{
+  "objective": {
+    "types": [
+      "rmf/robot_task",
+      "rmf/robot_task/clean",
+      "rmf/robot_task/charging",
+      "rmf/robot_task/maintenance"
+    ]
+  },
+  "fixed": {
+    "types": [
+      "cag/flight"
+    ]
+  },
+  "no_overlap": [
+    {
+      "allowed_types": [
+        "rmf/robot_task",
+        "rmf/robot_task/clean",
+        "rmf/robot_task/charging",
+        "rmf/robot_task/maintenance"
+      ],
+      "filter": ["request::robot"]
+    },
+    {
+      "allowed_types": [
+        "rmf/robot_task/clean",
+        "cag/flight"
+      ],
+      "filter": ["zone"]
+
+    }
+  ]
+}

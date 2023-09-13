@@ -27,21 +27,29 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   SHARED
-  src/conflict_identifier.cpp
-  src/conflict_resolver/cp_solver.cpp
-  src/dag.cpp
-  src/dag_executor.cpp
+  src/conflict/identifier.cpp
+  src/conflict/cp_solver.cpp
+  src/data/dag.cpp
+  src/data/event.cpp
+  src/data/events_handler.cpp
+  src/data/schedule.cpp
+  src/data/series.cpp
   src/error_code.cpp
-  src/events_handler.cpp
   src/parser.cpp
-  src/runtime_interface.cpp
-  src/runtime.cpp
-  src/schedule.cpp
+  src/runtime/dag_executor.cpp
+  src/runtime/system_time_executor.cpp
   src/scheduler.cpp
+  src/scheduler_options.cpp
   src/schema_validator.cpp
-  src/series.cpp
-  src/system_time_executor.cpp
-  src/system_time_utils.cpp
+  src/task/task_plugin.cpp
+  src/task/builder.cpp
+  src/task/estimate_interface.cpp
+  src/task/estimator.cpp
+  src/task/execution_interface.cpp
+  src/task/executor.cpp
+  src/utils/system_time_utils.cpp
+  src/log.cpp
+  src/default_log_handler.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME}

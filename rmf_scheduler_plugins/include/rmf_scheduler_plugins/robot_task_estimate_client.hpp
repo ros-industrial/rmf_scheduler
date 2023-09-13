@@ -23,7 +23,7 @@
 
 #include "nlohmann/json.hpp"
 #include "nlohmann/json-schema.hpp"
-#include "rmf_scheduler/estimate_interface.hpp"
+#include "rmf_scheduler/task/estimate_interface.hpp"
 #include "rmf_scheduler/schema_validator.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rmf_task_msgs/msg/api_request.hpp"
@@ -32,31 +32,28 @@
 namespace rmf_scheduler_plugins
 {
 
-class RobotTaskEstimateClient : public rmf_scheduler::EstimateInterface
+class RobotTaskEstimateClient : public rmf_scheduler::task::EstimateInterface
 {
 public:
   RobotTaskEstimateClient();
   virtual ~RobotTaskEstimateClient() {}
 
-  void init(
-    const std::string & name,
-    const std::string & ns) override;
+  void init(const std::shared_ptr<void> & node) override;
 
-  std::shared_future<nlohmann::json> async_estimate(
+  std::shared_future<rmf_scheduler::task::EstimateResponse> async_estimate(
     const std::string & id,
-    const nlohmann::json & event_details) override;
-
-  const std::unordered_set<std::string> & support_task_types() const override;
+    const rmf_scheduler::task::EstimateRequest & request) override;
 
 private:
   void handle_response(
     const rmf_task_msgs::msg::ApiResponse & request);
 
-  const std::unordered_set<std::string> support_task_types_;
+  rclcpp::Node::SharedPtr node_;
 
   rmf_scheduler::SchemaValidator schema_validator_;
 
-  std::unordered_map<std::string, std::promise<nlohmann::json>> response_map_;
+  std::unordered_map<std::string, std::promise<rmf_scheduler::task::EstimateResponse>>
+  response_map_;
 
   rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr request_publisher_;
 

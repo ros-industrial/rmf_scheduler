@@ -6,7 +6,8 @@
   "type": "object",
   "properties": {
     "start_time": { "type": "number" },
-    "end_time": { "type": "number" }
+    "end_time": { "type": "number" },
+    "full": { "type": "boolean" }
   },
   "additionalProperties": false
 }

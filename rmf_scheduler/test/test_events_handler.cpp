@@ -13,17 +13,17 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "rmf_scheduler/events_handler.hpp"
+#include "rmf_scheduler/data/events_handler.hpp"
 #include "rmf_scheduler/test_utils.hpp"
 
 TEST(TestEventsHandler, BasicCRUD) {
   using namespace rmf_scheduler;  // NOLINT(build/namespaces)
-  EventsHandler eh;
+  data::EventsHandler eh;
 
   // Add one event
   std::string event_id = "abcdefg12345";
 
-  Event event1 {
+  data::Event event1 {
     "First Event for testing",  // description
     "robot_task",               // type
     0,                          // start time
@@ -53,7 +53,7 @@ TEST(TestEventsHandler, BasicCRUD) {
   ));
 
   // Update added event
-  Event event1_new {
+  data::Event event1_new {
     "First Event for testing modified",
     "robot_task",
     0,
@@ -102,7 +102,7 @@ TEST(TestEventsHandler, StartTimeLookupBasic)
     100,
     1000);
 
-  EventsHandler eh;
+  data::EventsHandler eh;
 
   for (auto & event : events_vector) {
     eh.add_event(event);
@@ -113,7 +113,7 @@ TEST(TestEventsHandler, StartTimeLookupBasic)
   uint64_t lower_bound = 20;
   uint64_t upper_bound = 44;
   auto result_eh = eh.lookup_events(lower_bound, upper_bound);
-  std::vector<Event> result_greedy;
+  std::vector<data::Event> result_greedy;
   for (auto & event : events_vector) {
     if (event.start_time >= lower_bound && event.start_time <= upper_bound) {
       result_greedy.push_back(event);

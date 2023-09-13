@@ -15,7 +15,6 @@
 #include "rmf_scheduler/schema_validator.hpp"
 
 #include <functional>
-#include <iostream>
 
 namespace rmf_scheduler
 {

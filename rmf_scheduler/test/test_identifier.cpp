@@ -18,7 +18,7 @@
 #include "gtest/gtest.h"
 
 #include "rmf_scheduler/test_utils.hpp"
-#include "rmf_scheduler/conflict_identifier.hpp"
+#include "rmf_scheduler/conflict/identifier.hpp"
 
 TEST(TestIdentifier, SimpleConflictCheck)
 {
@@ -68,10 +68,10 @@ TEST(TestIdentifier, Categoriser)
 {
   using namespace rmf_scheduler;  // NOLINT(build/namespaces)
 
-  std::vector<Event> events =
+  std::vector<data::Event> events =
     test_utils::load_clashing_events(5, 6, 10);
 
-  auto events_by_filter = utils::categorise_by_filter(events, {"request::robot", "zone"});
+  auto events_by_filter = utils::categorise_by_filter(events, {"robot", "zone"});
   EXPECT_EQ(events_by_filter[0].size(), 5lu);
 
   EXPECT_EQ(events_by_filter[1].size(), 6lu);
@@ -84,15 +84,15 @@ TEST(TestIdentifier, IdentifyConflict)
 {
   using namespace rmf_scheduler;  // NOLINT(build/namespaces)
 
-  std::vector<Event> events =
+  std::vector<data::Event> events =
     test_utils::load_clashing_events(5, 6, 1000);
 
   auto time_point = std::chrono::steady_clock::now();
-  auto conflicts1 = utils::identify_conflicts(events, {}, {"request::robot"});
+  auto conflicts1 = utils::identify_conflicts(events, {}, {"robot"});
   auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(
     std::chrono::steady_clock::now() - time_point);
   time_point = std::chrono::steady_clock::now();
-  auto conflicts2 = utils::identify_conflicts(events, {}, {"request::robot"}, "greedy");
+  auto conflicts2 = utils::identify_conflicts(events, {}, {"robot"}, "greedy");
   auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(
     std::chrono::steady_clock::now() - time_point);
 
@@ -118,8 +118,8 @@ TEST(TestIdentifier, IdentifyConflict)
   EXPECT_EQ(conflicts1.size(), 4995lu);
   EXPECT_EQ(conflicts2.size(), 4995lu);
 
-  conflicts1 = utils::identify_conflicts(events, {}, {"request::robot", "zone"});
-  conflicts2 = utils::identify_conflicts(events, {}, {"request::robot", "zone"}, "greedy");
+  conflicts1 = utils::identify_conflicts(events, {}, {"robot", "zone"});
+  conflicts2 = utils::identify_conflicts(events, {}, {"robot", "zone"}, "greedy");
   std::cout << "Conflict1 size: " << conflicts1.size() << std::endl;
   std::cout << "Conflict1 size: " << conflicts2.size() << std::endl;
   EXPECT_EQ(conflicts1.size(), 15010lu);

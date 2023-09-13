@@ -15,8 +15,8 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "rmf_scheduler/system_time_executor.hpp"
-#include "rmf_scheduler/system_time_utils.hpp"
+#include "rmf_scheduler/runtime/system_time_executor.hpp"
+#include "rmf_scheduler/utils/system_time_utils.hpp"
 #include "rmf_scheduler/test_utils.hpp"
 
 class TestSystemTimeExecutor : public ::testing::Test
@@ -58,9 +58,9 @@ protected:
     thr_->join();
   }
 
-  std::vector<rmf_scheduler::Event> generated_events_;
+  std::vector<rmf_scheduler::data::Event> generated_events_;
 
-  rmf_scheduler::SystemTimeExecutor ste_;
+  rmf_scheduler::runtime::SystemTimeExecutor ste_;
   std::shared_ptr<std::thread> thr_;
 
   /// Map to record the actual start time
@@ -130,7 +130,7 @@ TEST_F(TestSystemTimeExecutor, ExecuteImmediately)
   // Create an immediate event,
   // start_time is NOW
   std::string event_id = "abcdefg-immediate";
-  Event immediate_event {
+  data::Event immediate_event {
     "Immediate test event",     // description
     "robot_task",               // type
     start_time_ - 1,                // start time
@@ -177,7 +177,7 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   std::string event_id = "abcdefg-burden";
-  Event burden_event {
+  data::Event burden_event {
     "Burden event that last for 500ms",
     "robot_task",               // type
     utils::now() +
@@ -205,7 +205,7 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
   }
 
   event_id = "abcdefg-addon";
-  Event addon_event {
+  data::Event addon_event {
     "New event added after burden event",
     "robot_task",               // type
     utils::now() +

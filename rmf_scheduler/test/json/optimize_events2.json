@@ -1,0 +1,19 @@
+{
+    "events": {
+      "leovac_clean_task3": {
+        "description": "Cleaning task: LeoVac-1 Zone3",
+        "type": "rmf/robot_task",
+        "start_time": 1690392600,
+        "duration": 3600,
+        "event_details": {
+          "category": "compose",
+          "request": {
+            "type": "robot_task_request",
+            "fleet": "LeoVac",
+            "robot": "LeoVac-01"
+          },
+          "zone": "zone3"
+        }
+      }
+    }
+}

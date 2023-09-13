@@ -16,6 +16,7 @@
 #define RMF_SCHEDULER__EXCEPTION_HPP_
 
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -24,12 +25,17 @@
 namespace rmf_scheduler
 {
 
+namespace exception
+{
+
 class ExceptionTemplate : public std::exception
 {
 public:
   ExceptionTemplate(
+    int32_t code,
     const char * msg, ...)
   {
+    code_ = code;
     buffer_ = new char[4096];
     va_list args;
     va_start(args, msg);
@@ -47,6 +53,11 @@ public:
     return buffer_;
   }
 
+  int32_t code() const noexcept
+  {
+    return code_;
+  }
+
 protected:
   void add_prefix(const char * prefix)
   {
@@ -60,14 +71,15 @@ protected:
 
 private:
   char * buffer_;
+  int32_t code_ = 1;
 };
 
 class IDException : public ExceptionTemplate
 {
 public:
   template<typename ... Args>
-  IDException(const char * id, const char * msg, Args && ... args)
-  : ExceptionTemplate(msg, std::forward<Args>(args) ...)
+  IDException(int32_t code, const char * id, const char * msg, Args && ... args)
+  : ExceptionTemplate(code, msg, std::forward<Args>(args) ...)
   {
     // Copy over id
     size_t id_len = strlen(id) + 1;
@@ -88,6 +100,8 @@ public:
 private:
   char * id_;
 };
+
+}  // namespace exception
 
 }  // namespace rmf_scheduler
 

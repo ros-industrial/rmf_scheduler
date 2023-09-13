@@ -23,13 +23,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "boost/uuid/uuid.hpp"
-#include "boost/uuid/random_generator.hpp"
-#include "boost/uuid/uuid_io.hpp"
-
 #include "nlohmann/json.hpp"
 
-#include "rmf_scheduler/event.hpp"
+#include "rmf_scheduler/data/event.hpp"
+#include "rmf_scheduler/utils/uuid.hpp"
 
 namespace rmf_scheduler
 {
@@ -37,13 +34,13 @@ namespace rmf_scheduler
 namespace test_utils
 {
 
-inline std::vector<rmf_scheduler::Event> random_event_generator(
+inline std::vector<rmf_scheduler::data::Event> random_event_generator(
   uint64_t start_time,
   uint64_t end_time,
   int sample_size)
 {
   using namespace rmf_scheduler;  // NOLINT(build/namespaces)
-  std::vector<Event> events;
+  std::vector<data::Event> events;
   std::default_random_engine gen;
   std::uniform_int_distribution<uint64_t> dist(start_time, end_time);
   for (int i = 0; i < sample_size; i++) {
@@ -52,7 +49,7 @@ inline std::vector<rmf_scheduler::Event> random_event_generator(
     s << i << '-' << start_time;
     std::string event_id = s.str();
     events.emplace_back(
-      Event{
+      data::Event{
           "Randomly generated time event",
           "robot_task",
           start_time,
@@ -66,7 +63,7 @@ inline std::vector<rmf_scheduler::Event> random_event_generator(
   return events;
 }
 
-inline bool is_event_equal(const Event & lhs, const Event & rhs)
+inline bool is_event_equal(const data::Event & lhs, const data::Event & rhs)
 {
   return
     lhs.description == rhs.description &&
@@ -80,8 +77,8 @@ inline bool is_event_equal(const Event & lhs, const Event & rhs)
 }
 
 inline bool is_event_vector_equal(
-  const std::vector<rmf_scheduler::Event> & lhs,
-  const std::vector<rmf_scheduler::Event> & rhs)
+  const std::vector<rmf_scheduler::data::Event> & lhs,
+  const std::vector<rmf_scheduler::data::Event> & rhs)
 {
   if (lhs.size() != rhs.size()) {
     return false;
@@ -124,19 +121,13 @@ inline double to_ms(uint64_t ns)
   return static_cast<double>(ns) / 1e6;
 }
 
-inline std::string gen_uuid()
-{
-  boost::uuids::uuid uuid = boost::uuids::random_generator()();
-  return boost::uuids::to_string(uuid);
-}
-
 // Load a set of robot events that do not clash
-inline std::vector<Event> load_clashing_events(
+inline std::vector<data::Event> load_clashing_events(
   int num_robots,
   int num_location,
   int num_events)
 {
-  std::vector<Event> events;
+  std::vector<data::Event> events;
   std::vector<std::string> locations;
   for (int i = 0; i < num_location; i++) {
     locations.push_back("location_" + std::to_string(i));
@@ -148,17 +139,16 @@ inline std::vector<Event> load_clashing_events(
   for (int i = 0; i < num_robots; i++) {
     const std::string robot = "robot_" + std::to_string(i);
     for (int j = 0; j < num_events; j++) {
-      std::string id = gen_uuid();
+      std::string id = utils::gen_uuid();
 
       // Generate Event Details
       nlohmann::json event_details_json;
-      event_details_json["request"] = nlohmann::json();
-      event_details_json["request"]["robot"] = robot;
+      event_details_json["robot"] = robot;
       // random location so no clashes
       event_details_json["zone"] = locations[j % locations.size()];
 
       events.push_back(
-        Event{
+        data::Event{
             "",                               // description
             "default/robot_task",             // type
             start + (duration / 2) * j,       // start time
@@ -174,14 +164,14 @@ inline std::vector<Event> load_clashing_events(
 
   // Add flight schedule based events
   for (int i = 0; i < num_location; i++) {
-    std::string id = gen_uuid();
+    std::string id = utils::gen_uuid();
 
     // Generate Event Details
     nlohmann::json event_details_json;
     // random location so no clashes
     event_details_json["zone"] = locations[i];
     events.push_back(
-      Event {
+      data::Event {
           "",                               // description
           "flight-schedule",                // type
           start + duration * i,             // start time
@@ -197,20 +187,20 @@ inline std::vector<Event> load_clashing_events(
   return events;
 }
 
-inline std::vector<Event> load_no_clashing_events(
+inline std::vector<data::Event> load_no_clashing_events(
   int num_robots,
   int num_events)
 {
-  std::vector<Event> events;
+  std::vector<data::Event> events;
   const uint64_t start = 0;
   const uint64_t duration = 60;
   for (int i = 0; i < num_robots; i++) {   // 2 robots
     const std::string robot = "robot_" + std::to_string(i);
     for (int j = 0; j < num_events; j++) {  // 3 events
-      std::string id = gen_uuid();
-      std::string event_details = "{request:{robot:" + robot + "}}";
+      std::string id = utils::gen_uuid();
+      std::string event_details = "{robot:" + robot + "}";
       events.push_back(
-        Event{
+        data::Event{
             "",                     // description
             "default/robot_task",   // type
             start + duration * j,   // start time
@@ -226,7 +216,7 @@ inline std::vector<Event> load_no_clashing_events(
   return events;
 }
 
-inline void print_events(const std::vector<Event> & events)
+inline void print_events(const std::vector<data::Event> & events)
 {
   for (auto event : events) {
     std::cout << "Event \n"

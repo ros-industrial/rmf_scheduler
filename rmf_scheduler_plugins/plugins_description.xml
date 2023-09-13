@@ -1,0 +1,31 @@
+<library path="rmf_scheduler_plugins">
+  <!-- Task Builder Plugins -->
+  <class
+    name="rmf_scheduler_plugins/RobotTaskBuilder"
+    type="rmf_scheduler_plugins::RobotTaskBuilder"
+    base_class_type="rmf_scheduler::task::BuilderInterface">
+    <description>
+      Create the robot task details from event details
+    </description>
+  </class>
+  
+  <!-- Estimate Plugins -->
+  <class
+    name="rmf_scheduler_plugins/RobotTaskEstimateClient"
+    type="rmf_scheduler_plugins::RobotTaskEstimateClient"
+    base_class_type="rmf_scheduler::task::EstimateInterface">
+    <description>
+      Estimate the duration and end state for basic RMF tasks
+    </description>
+  </class>
+
+  <!-- Execution Plugins -->
+  <class
+    name="rmf_scheduler_plugins/RobotTaskExecutionClient"
+    type="rmf_scheduler_plugins::RobotTaskExecutionClient"
+    base_class_type="rmf_scheduler::task::ExecutionInterface">
+    <description>
+      Execute basic RMF tasks
+    </description>
+  </class>
+</library>

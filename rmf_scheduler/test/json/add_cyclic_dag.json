@@ -6,25 +6,25 @@
       "start_time": 1680961268,
       "dependency_id": "dag-2",
       "event_details": {
-        "category": "compose",
+        "type": "robot_task_request",
+        "fleet": "tinyRobot",
+        "robot": "tinyRobot2",
         "request": {
-          "type": "robot_task_request",
-          "fleet": "tinyRobot",
-          "robot": "tinyRobot2"
-        },
-        "description": {
-          "category": "go_to_place",
-          "phases": [
-            {
-              "activity": {
-                "category": "go_to_place",
-                "description": {
-                  "waypoint": "home",
-                  "orientation": 0.0
+          "category": "compose",
+          "description": {
+            "category": "go_to_place",
+            "phases": [
+              {
+                "activity": {
+                  "category": "go_to_place",
+                  "description": {
+                    "waypoint": "home",
+                    "orientation": 0.0
+                  }
                 }
               }
-            }
-          ]
+            ]
+          }
         }
       }
     },
@@ -34,43 +34,43 @@
       "start_time": 1680961268,
       "dependency_id": "dag-2",
       "event_details": {
-        "category": "compose",
+        "type": "robot_task_request",
+        "fleet": "tinyRobot",
+        "robot": "tinyRobot2",
         "request": {
-          "type": "robot_task_request",
-          "fleet": "tinyRobot",
-          "robot": "tinyRobot2"
-        },
-        "description": {
-          "category": "clean",
-          "phases": [
-            {
-              "activity": {
-                "category": "sequence",
-                "description": {
-                  "activities": [
-                    {
-                      "category": "go_to_place",
-                      "description": {
-                        "waypoint": "zone2_wp",
-                        "orientation": 0.0
-                      }
-                    },
-                    {
-                      "category": "perform_action",
-                      "description": {
-                        "unix_millis_action_duration_estimate": 6000,
-                        "category": "clean",
+          "category": "compose",
+          "description": {
+            "category": "clean",
+            "phases": [
+              {
+                "activity": {
+                  "category": "sequence",
+                  "description": {
+                    "activities": [
+                      {
+                        "category": "go_to_place",
                         "description": {
+                          "waypoint": "zone2_wp",
+                          "orientation": 0.0
+                        }
+                      },
+                      {
+                        "category": "perform_action",
+                        "description": {
+                          "unix_millis_action_duration_estimate": 6000,
+                          "category": "clean",
+                          "description": {
 
-                        },
-                        "use_tool_sink": false
+                          },
+                          "use_tool_sink": false
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
                 }
               }
-            }
-          ]
+            ]
+          }
         }
       }
     }
