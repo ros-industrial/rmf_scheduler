@@ -59,6 +59,24 @@ public:
     std::string id_prefix;
   };
 
+  struct Update
+  {
+    /// Cron
+    std::string cron;
+
+    /// Duration
+    std::string timezone;
+
+    /// old occurrence time
+    uint64_t old_occurrence_time;
+
+    /// new occurrence time
+    uint64_t new_occurrence_time;
+
+    /// Reccurrance end date
+    uint64_t until;
+  };
+
   class ObserverBase
   {
 public:
@@ -68,6 +86,10 @@ public:
       const Occurrence & new_occurrence) = 0;
 
     virtual void on_update_occurrence(
+      const Occurrence & old_occurrence,
+      uint64_t new_time) = 0;
+
+    virtual void on_update_cron(
       const Occurrence & old_occurrence,
       uint64_t new_time) = 0;
 
@@ -102,11 +124,17 @@ public:
 
   std::string get_occurrence_id(uint64_t time) const;
 
+  uint64_t get_occurrence_time(const std::string & id) const;
+
   Occurrence get_last_occurrence() const;
+
+  Occurrence get_first_occurrence() const;
 
   uint64_t get_until() const;
 
   std::string cron() const;
+
+  std::string tz()  const;
 
   std::vector<Occurrence> expand_until(
     uint64_t time);

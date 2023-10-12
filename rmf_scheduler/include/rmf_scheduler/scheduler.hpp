@@ -121,6 +121,11 @@ public:
 
   ErrorCode handle_update_event_time(const nlohmann::json & request_json);
 
+  ErrorCode handle_update_series(const nlohmann::json & request_json);
+
+  void update_series(
+    const std::unordered_map<std::string, data::Series::Update> & series_update);
+
   nlohmann::json handle_get_schedule(const nlohmann::json & request_json);
 
   data::Schedule::Description get_schedule(

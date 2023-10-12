@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <ostream>
+
 #include "rmf_scheduler/data/schedule.hpp"
 #include "rmf_scheduler/runtime/dag_executor.hpp"
 
@@ -53,6 +55,12 @@ public:
     auto event = eh_.get_event(old_occurrence.id);
     event.start_time = new_time;
     eh_.update_event(event);
+  }
+
+  void on_update_cron(
+    const Series::Occurrence & /*old_occurrence*/,
+    uint64_t /*new_time*/) override
+  {
   }
 
   void on_delete_occurrence(
@@ -110,6 +118,19 @@ public:
     // Do nothing;
   }
 
+  void on_update_cron(
+    const Series::Occurrence & old_occurrence,
+    uint64_t new_time) override
+  {
+    // Update starting time for all events within the dag occurrence
+    auto all_nodes = dags_.at(old_occurrence.id).all_nodes();
+    for (auto & node_id : all_nodes) {
+      Event event = eh_.get_event(node_id);
+      event.start_time = event.start_time - old_occurrence.time + new_time;
+      eh_.update_event(event);
+    }
+  }
+
   void on_delete_occurrence(
     const Series::Occurrence & occurrence) override
   {
@@ -135,6 +156,19 @@ void Schedule::add_event(const Event & event)
 
 void Schedule::update_event(const Event & event)
 {
+  // Update the series occurrence only if it is an event serie
+  if (!event.series_id.empty() && event.dag_id.empty()) {
+    uint64_t old_start_time = eh_.get_event(event.id).start_time;
+    auto series_itr = series_map_.find(event.series_id);
+    if (series_itr == series_map_.end()) {
+      throw exception::SeriesIDException(
+              event.series_id.c_str(),
+              "Event [%s] with Series ID [%s] does not exist in schedule",
+              event.id.c_str(),
+              event.series_id.c_str());
+    }
+    series_itr->second.update_occurrence_time(old_start_time, event.start_time);
+  }
   eh_.update_event(event);
 }
 
@@ -198,6 +232,33 @@ void Schedule::update_dag(
     eh_.update_event(event);
   }
   dags_[dag_id] = std::move(dag);
+
+  // Update dag start time here so we can use it later
+  generate_dag_event_start_time(dag_id);
+
+  // Generate the start time for events based on DAG
+  if (series_found) {
+    auto series_itr = series_map_.find(series_id);
+    if (series_itr == series_map_.end()) {
+      throw exception::SeriesIDException(
+              series_id.c_str(),
+              "Series ID [%s] from DAG [%s] does not exist in schedule",
+              series_id.c_str(),
+              dag_id.c_str());
+    }
+    // update_dag_series_occurrence(
+    uint64_t old_dag_start_time = series_itr->second.get_occurrence_time(dag_id);
+    uint64_t new_dag_start_time = get_dag_start_time(dag_id);
+    std::ostringstream oss;
+    oss << "Old start time ["
+        << old_dag_start_time
+        << "].\n New start time ["
+        << new_dag_start_time
+        << "]";
+    RS_LOG_DEBUG(oss.str().c_str());
+
+    series_itr->second.update_occurrence_time(old_dag_start_time, new_dag_start_time);
+  }
 }
 
 void Schedule::detach_dag_event(
@@ -287,6 +348,13 @@ uint64_t Schedule::get_dag_start_time(
   return start_time;
 }
 
+uint64_t Schedule::get_dag_start_time(const std::string & dag_id) const
+{
+  auto & dag = dags_.at(dag_id);
+  // Send an empty map of events so that we will use existing events
+  return get_dag_start_time(dag);
+}
+
 void Schedule::add_event_series(
   const std::string & series_id,
   Series && series)
@@ -337,6 +405,17 @@ void Schedule::expand_event_series_until(
 
 void Schedule::update_event_series_cron(
   const std::string & series_id,
+  const std::string & new_cron,
+  const std::string & timezone,
+  uint64_t old_occurrence_time,
+  uint64_t new_occurrence_time)
+{
+  auto & series = series_map_[series_id];
+  series.update_cron_from(old_occurrence_time, new_occurrence_time, new_cron, timezone);
+}
+
+void Schedule::update_event_series_cron(
+  const std::string & series_id,
   const Event & new_event,
   const std::string & new_cron,
   const std::string & timezone)
@@ -344,6 +423,17 @@ void Schedule::update_event_series_cron(
   auto old_event = eh_.get_event(new_event.id);
   auto & series = series_map_[series_id];
   series.update_cron_from(old_event.start_time, new_event.start_time, new_cron, timezone);
+}
+
+void Schedule::update_dag_series_cron(
+  const std::string & series_id,
+  const std::string & new_cron,
+  const std::string & timezone,
+  uint64_t old_occurrence_time,
+  uint64_t new_occurrence_time)
+{
+  auto & series = series_map_[series_id];
+  series.update_cron_from(old_occurrence_time, new_occurrence_time, new_cron, timezone);
 }
 
 void Schedule::update_event_series_until(
@@ -721,6 +811,31 @@ void Schedule::validate_add_series_map(
       valid_dag_series_map.emplace(series_itr.first, std::move(valid_series));
     } else {
       valid_event_series_map.emplace(series_itr.first, std::move(valid_series));
+    }
+  }
+}
+
+void Schedule::validate_update_full_series_map(
+  const std::unordered_map<std::string, Series::Update> & series_map,
+  std::unordered_map<std::string, Series::Update> & valid_update_event_series_map,
+  std::unordered_map<std::string, Series::Update> & valid_update_dag_series_map) const
+{
+  // Validate all ids in the series exists in the events or DAG
+  for (auto & series_itr : series_map) {
+    // Throw error if the Series ID is not an existing one
+    auto old_series_itr = series_map_.find(series_itr.first);
+    if (old_series_itr == series_map_.end()) {
+      throw exception::SeriesIDException(
+              series_itr.first.c_str(),
+              "update_series error "
+              "Series [%s] doesn't exist, use a different ID",
+              series_itr.first.c_str());
+    }
+
+    if (is_dag_series(old_series_itr->second.occurrences())) {
+      valid_update_dag_series_map.emplace(series_itr.first, series_map.at(series_itr.first));
+    } else {
+      valid_update_event_series_map.emplace(series_itr.first, series_map.at(series_itr.first));
     }
   }
 }

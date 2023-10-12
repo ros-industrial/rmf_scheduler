@@ -88,6 +88,10 @@ public:
     const DAG & dag,
     const std::unordered_map<std::string, Event> & temp_events = {}) const;
 
+  /// Get the start time of a existing DAG based on the earliest event
+  uint64_t get_dag_start_time(
+    const std::string & dag_id) const;
+
   // Event Series CRUD
   /// Add series based on dangling event
   void add_event_series(
@@ -110,6 +114,21 @@ public:
     const Event & new_event,
     const std::string & new_cron,
     const std::string & timezone);
+
+  /// Update event series CRON from current time
+  void update_event_series_cron(
+    const std::string & series_id,
+    const std::string & new_cron,
+    const std::string & timezone,
+    uint64_t old_occurrence_time,
+    uint64_t new_occurrence_time);
+
+  void update_dag_series_cron(
+    const std::string & series_id,
+    const std::string & new_cron,
+    const std::string & timezone,
+    uint64_t old_occurrence_time,
+    uint64_t new_occurrence_time);
 
   /// Update event series until time
   void update_event_series_until(
@@ -230,6 +249,12 @@ public:
     std::unordered_map<std::string, Series> & valid_dag_series,
     const std::unordered_map<std::string, Event> & temp_events = {},
     const std::unordered_map<std::string, DAG> & temp_dags = {}) const;
+
+  /// Validate update series operation
+  void validate_update_full_series_map(
+    const std::unordered_map<std::string, Series::Update> & series_map,
+    std::unordered_map<std::string, Series::Update> & valid_update_event_series_map,
+    std::unordered_map<std::string, Series::Update> & valid_update_dag_series_map) const;
 
   /// Validate update event operation
   void validate_update_series_map(

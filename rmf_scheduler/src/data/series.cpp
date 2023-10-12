@@ -199,6 +199,19 @@ std::string Series::get_occurrence_id(uint64_t time) const
   }
 }
 
+uint64_t Series::get_occurrence_time(const std::string & id) const
+{
+  for (auto & itr : occurrence_ids_) {
+    if (itr.second == id) {
+      return itr.first;
+    }
+  }
+  throw exception::SeriesIDException(
+          "get_occurrence_time",
+          "Occurrence ID [%s] not found.",
+          id.c_str());
+}
+
 Series::Occurrence Series::get_last_occurrence() const
 {
   if (!*this) {
@@ -210,6 +223,17 @@ Series::Occurrence Series::get_last_occurrence() const
   return Series::Occurrence{itr->first, itr->second};
 }
 
+Series::Occurrence Series::get_first_occurrence() const
+{
+  if (!*this) {
+    throw exception::SeriesEmptyException(
+            "get_first_occurrence: ",
+            "No last occurrence found, Series empty.");
+  }
+  auto itr = occurrence_ids_.begin();
+  return Series::Occurrence{itr->first, itr->second};
+}
+
 uint64_t Series::get_until() const
 {
   return until_;
@@ -218,6 +242,11 @@ uint64_t Series::get_until() const
 std::string Series::cron() const
 {
   return cron::to_cronstr(*cron_);
+}
+
+std::string Series::tz() const
+{
+  return tz_;
 }
 
 std::vector<Series::Occurrence> Series::expand_until(uint64_t time)
@@ -316,7 +345,18 @@ void Series::update_cron_from(
   cron_ = std::move(temp_cron);
   time_t cron_time_s = new_start_time / 1e9;
   std::vector<Occurrence> new_occurrences {{new_start_time, itr->second}};
+  for (auto & observer : observers_) {
+    observer->on_update_occurrence(
+      Occurrence{time, itr->second},
+      new_start_time);
+  }
+  for (auto & observer : observers_) {
+    observer->on_update_cron(
+      Occurrence{time, itr->second},
+      new_start_time);
+  }
   itr = occurrence_ids_.erase(itr);
+
 
   // Create new occurrences based on old
   utils::set_timezone(tz_.c_str());
@@ -332,6 +372,11 @@ void Series::update_cron_from(
           Occurrence{itr->first, itr->second},
           occurrence_time);
       }
+      for (auto & observer : observers_) {
+        observer->on_update_cron(
+          Occurrence{itr->first, itr->second},
+          occurrence_time);
+      }
       itr = occurrence_ids_.erase(itr);
     } else {
       // Skip the occurrence if it is an exception
@@ -344,14 +389,15 @@ void Series::update_cron_from(
     occurrence_ids_[occurrence.time] = occurrence.id;
   }
 
-  // Set all the occurrences before this as exception
-  auto itr_old_occurrence = occurrence_ids_.upper_bound(time);
+  // Set all the occurrences before current time as exception
+  auto itr_old_occurrence = occurrence_ids_.lower_bound(new_start_time);
   for (auto i = occurrence_ids_.begin(); i != itr_old_occurrence; i++) {
     if (exception_ids_.find(i->second) == exception_ids_.end()) {
       exception_ids_.emplace(i->second);
     }
   }
 }
+
 
 void Series::update_occurrence_time(
   uint64_t time,

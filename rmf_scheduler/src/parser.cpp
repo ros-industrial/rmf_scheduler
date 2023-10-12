@@ -164,6 +164,26 @@ void json_to_update_event_time(
   update_event_time.duration = update_event_time_json["duration"].get<double>() * 1e9;
 }
 
+void json_to_update_series_map(
+  const nlohmann::json & update_series_request_json,
+  std::unordered_map<std::string, data::Series::Update> & update_series_map)
+{
+  for (auto & update_series_itr : update_series_request_json["updates"].items()) {
+    auto & update_series_json = update_series_itr.value();
+    data::Series::Update update_series;
+    update_series.old_occurrence_time =
+      static_cast<uint64_t>(update_series_json["old_occ_time"].get<double>() * 1e9);
+    update_series.new_occurrence_time =
+      static_cast<uint64_t>(update_series_json["new_occ_time"].get<double>() * 1e9);
+    update_series.cron = update_series_json["cron"].get<std::string>();
+    update_series.timezone = update_series_json["timezone"].get<std::string>();
+    if (update_series_json.contains("until")) {
+      update_series.until = static_cast<uint64_t>(update_series_json["until"].get<double>() * 1e9);
+    }
+    update_series_map.emplace(update_series_itr.key(), std::move(update_series));
+  }
+}
+
 void events_to_json(
   const std::unordered_map<std::string, data::Event> & events_description,
   nlohmann::json & events_json,

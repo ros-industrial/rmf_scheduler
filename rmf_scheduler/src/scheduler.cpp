@@ -33,6 +33,8 @@
 #include "rmf_scheduler/schemas/get_schedule_request.hpp"
 #include "rmf_scheduler/schemas/delete_schedule_request.hpp"
 #include "rmf_scheduler/schemas/update_event_time.hpp"
+#include "rmf_scheduler/schemas/update_series.hpp"
+#include "rmf_scheduler/schemas/update_series_request.hpp"
 
 namespace rmf_scheduler
 {
@@ -71,7 +73,9 @@ Scheduler::Scheduler()
     schemas::schedule,
     schemas::get_schedule_request,
     schemas::delete_schedule_request,
-    schemas::update_event_time
+    schemas::update_event_time,
+    schemas::update_series,
+    schemas::update_series_request
   };
 
   schema_validator_ = std::make_unique<SchemaValidator>(schemas);
@@ -311,13 +315,14 @@ void Scheduler::update_schedule(const data::Schedule::Description & schedule)
     // Update the dependencies
     for (auto & dag_itr : dags_to_update) {
       schedule_.update_dag(dag_itr.first, std::move(dag_itr.second));
-
-      // Generate the start time for events based on DAG
-      schedule_.generate_dag_event_start_time(dag_itr.first);
     }
 
     // Update series map
     for (auto & series_itr : event_series_map_to_update) {
+      RS_LOG_INFO(
+        "Updating series event for series: %s to cron: [%s]",
+        series_itr.first.c_str(),
+        series_itr.second.cron().c_str());
       schedule_.update_event_series(series_itr.first, std::move(series_itr.second));
     }
 
@@ -328,6 +333,110 @@ void Scheduler::update_schedule(const data::Schedule::Description & schedule)
     if (options_.expand_series_) {
       schedule_.expand_all_series_until(series_expand_time_);
     }
+
+    // Update who made changes last
+    last_write_time_ = utils::now();
+    last_writer_ = _thread_id();
+  }
+
+  // tick once since new events are added
+  if (spinning_) {
+    _tick();
+  }
+}
+
+ErrorCode Scheduler::handle_update_series(
+  const nlohmann::json & json)
+{
+  std::unordered_map<std::string, data::Series::Update> update_series_map;
+  try {
+    auto json_uri = nlohmann::json_uri{
+      schemas::update_series_request["$id"]
+    };
+
+    // Validate JSON
+    schema_validator_->validate(
+      json_uri,
+      json);
+
+    // Parse the validated json into description
+    parser::json_to_update_series_map(json, update_series_map);
+  } catch (const std::exception & e) {
+    // Invalid Json schema
+    return {
+      ErrorCode::FAILURE |
+      ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+
+  // Call add_schedule to check logic
+  return RMF_SCHEDULER_RESOLVE_ERROR_CODE(update_series(update_series_map));
+}
+
+void Scheduler::update_series(
+  const std::unordered_map<std::string,
+  data::Series::Update> & series_updates)
+{
+  std::unordered_map<std::string, data::Series::Update> event_series_map_to_update,
+    dag_series_map_to_update;
+  uint64_t read_time;
+
+  {  // Read lock
+    ReadLock lk(mtx_);
+    read_time = utils::now();
+
+    // Validate the Series
+    schedule_.validate_update_full_series_map(
+      series_updates,
+      event_series_map_to_update,
+      dag_series_map_to_update);
+  }  // Read Lock
+
+  // Return early if there is nothing to update
+  if (event_series_map_to_update.empty() && dag_series_map_to_update.empty()) {
+    return;
+  }
+
+  { // Write lock
+    WriteLock lk(mtx_);
+    // If there is writing after the read, exit immediately
+    if (last_write_time_ > read_time) {
+      throw exception::ScheduleMultipleWriteException(
+              "Schedule already written by %s at time \n\t%s.",
+              last_writer_.c_str(), utils::to_localtime(last_write_time_));
+    }
+
+    // Update series map
+    for (auto & series_itr : event_series_map_to_update) {
+      RS_LOG_INFO(
+        "Updating series event for series: %s to cron: [%s]",
+        series_itr.first.c_str(),
+        series_itr.second.cron.c_str());
+
+      schedule_.update_event_series_cron(
+        series_itr.first,
+        series_itr.second.cron,
+        series_itr.second.timezone,
+        series_itr.second.old_occurrence_time,
+        series_itr.second.new_occurrence_time);
+    }
+
+    for (auto & series_itr : dag_series_map_to_update) {
+      RS_LOG_INFO(
+        "Updating series event for series: %s to cron: [%s]",
+        series_itr.first.c_str(),
+        series_itr.second.cron.c_str());
+
+      schedule_.update_dag_series_cron(
+        series_itr.first,
+        series_itr.second.cron,
+        series_itr.second.timezone,
+        series_itr.second.old_occurrence_time,
+        series_itr.second.new_occurrence_time);
+    }
+
+    schedule_.expand_all_series_until(series_expand_time_);
 
     // Update who made changes last
     last_write_time_ = utils::now();

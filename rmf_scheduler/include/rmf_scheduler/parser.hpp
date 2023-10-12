@@ -49,6 +49,10 @@ void json_to_update_event_time(
   const nlohmann::json & update_event_time_json,
   data::Event & update_event_time);
 
+void json_to_update_series_map(
+  const nlohmann::json & update_series_request_json,
+  std::unordered_map<std::string, data::Series::Update> & update_series_map);
+
 void events_to_json(
   const std::unordered_map<std::string, data::Event> & events_description,
   nlohmann::json & events_json,
