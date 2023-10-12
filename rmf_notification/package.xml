@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rmf_notification</name>
+  <version>0.1.0</version>
+  <description>
+    An notification manager for RMF.
+  </description>
+  <maintainer email="chenbn@artc.a-star.edu.sg">Chen Bainian</maintainer>
+  <maintainer email="selvarajs@artc.a-star.edu.sg">Santosh Balaji Selvarajs</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <build_depend>nlohmann-json-dev</build_depend>
+  <depend>rclcpp</depend>
+  <depend>rmf_scheduler</depend>
+  <depend>libwebsocketpp-dev</depend>
+  <depend>libcpprest-dev</depend>
+  <depend>libssl-dev</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
