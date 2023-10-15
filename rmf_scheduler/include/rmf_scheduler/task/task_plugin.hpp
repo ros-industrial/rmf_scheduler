@@ -67,6 +67,7 @@ public:
 private:
   std::unordered_map<std::string, std::shared_ptr<TaskPluginBase>> plugins_;
   std::unordered_map<std::string, std::string> task_plugins_lookup_;
+  std::shared_ptr<void> loader_;
 
   template<typename BasePluginT>
   friend std::shared_ptr<BasePluginT>

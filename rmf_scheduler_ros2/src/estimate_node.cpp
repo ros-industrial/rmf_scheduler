@@ -38,6 +38,19 @@ EstimateNode::SharedPtr EstimateNode::make_node(
 
   estimate_node->_scheduler = scheduler_node->scheduler();
 
+  // Load plugins through parameters
+  auto result = estimate_node->_node->list_parameters({}, 2);
+  for (auto & plugin_name : result.prefixes) {
+    auto plugin_type = estimate_node->_node->get_parameter(plugin_name + ".type").as_string();
+    auto supported_tasks =
+      estimate_node->_node->get_parameter(plugin_name + ".supported_tasks").as_string_array();
+    RCLCPP_INFO(
+      estimate_node->_node->get_logger(),
+      "Estimate plugin found: %s, type: %s",
+      plugin_name.c_str(), plugin_type.c_str());
+    estimate_node->load_interface(plugin_name, plugin_type, supported_tasks);
+  }
+
   return estimate_node;
 }
 

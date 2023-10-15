@@ -12,65 +12,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rmf_scheduler_ros2/runtime_node.hpp"
+#include "rmf_scheduler_ros2/builder_node.hpp"
 
 namespace rmf_scheduler_ros2
 {
 
-RuntimeNode::RuntimeNode()
+BuilderNode::BuilderNode()
 {
 }
 
-RuntimeNode::SharedPtr RuntimeNode::make_node(
+BuilderNode::SharedPtr BuilderNode::make_node(
   SchedulerNode::SharedPtr scheduler_node)
 {
-  RuntimeNode::SharedPtr runtime_node(new RuntimeNode());
+  BuilderNode::SharedPtr builder_node(new BuilderNode());
 
   std::string ns = scheduler_node->node()->get_namespace();
   std::string name = scheduler_node->node()->get_name();
-  name += "_runtime_client";
-  runtime_node->_node = rclcpp::Node::make_shared(
+  name += "_builder_client";
+  builder_node->_node = rclcpp::Node::make_shared(
     name, ns,
     rclcpp::NodeOptions()
     .allow_undeclared_parameters(true)
     .automatically_declare_parameters_from_overrides(true)
   );
 
-  runtime_node->_scheduler = scheduler_node->scheduler();
+  builder_node->_scheduler = scheduler_node->scheduler();
 
   // Load plugins through parameters
-  auto result = runtime_node->_node->list_parameters({}, 2);
+  auto result = builder_node->_node->list_parameters({}, 2);
   for (auto & plugin_name : result.prefixes) {
-    auto plugin_type = runtime_node->_node->get_parameter(plugin_name + ".type").as_string();
+    auto plugin_type = builder_node->_node->get_parameter(plugin_name + ".type").as_string();
     auto supported_tasks =
-      runtime_node->_node->get_parameter(plugin_name + ".supported_tasks").as_string_array();
+      builder_node->_node->get_parameter(plugin_name + ".supported_tasks").as_string_array();
     RCLCPP_INFO(
-      runtime_node->_node->get_logger(),
-      "Execute plugin found: %s, type: %s",
+      builder_node->_node->get_logger(),
+      "Builder plugin found: %s, type: %s",
       plugin_name.c_str(), plugin_type.c_str());
-    runtime_node->load_interface(plugin_name, plugin_type, supported_tasks);
+    builder_node->load_interface(plugin_name, plugin_type, supported_tasks);
   }
-  return runtime_node;
+
+  return builder_node;
 }
-void RuntimeNode::load_interface(
+
+void BuilderNode::load_interface(
   const std::string & name,
   const std::string & interface,
   const std::vector<std::string> & task_types)
 {
-  _scheduler->load_runtime_interface(
+  _scheduler->load_builder_interface(
     _node,
     name,
     interface,
     task_types);
 }
 
-void RuntimeNode::unload_interface(
+void BuilderNode::unload_interface(
   const std::string & name)
 {
-  _scheduler->unload_runtime_interface(name);
+  _scheduler->unload_builder_interface(name);
 }
 
-rclcpp::Node::SharedPtr RuntimeNode::node() const
+rclcpp::Node::SharedPtr BuilderNode::node() const
 {
   return _node;
 }

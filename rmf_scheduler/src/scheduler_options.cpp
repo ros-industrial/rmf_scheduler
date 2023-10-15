@@ -45,4 +45,10 @@ SchedulerOptions & SchedulerOptions::expand_series_automatically(bool flag)
   return *this;
 }
 
+SchedulerOptions & SchedulerOptions::estimate_timeout(double sec)
+{
+  estimate_timeout_ = sec;
+  return *this;
+}
+
 }  // namespace rmf_scheduler

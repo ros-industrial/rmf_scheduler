@@ -32,13 +32,15 @@ public:
   SchedulerOptions & allow_past_events_duration(double sec);
   SchedulerOptions & series_max_expandable_duration(double sec);
   SchedulerOptions & expand_series_automatically(bool);
+  SchedulerOptions & estimate_timeout(double sec);
 
 private:
   // TODO(Briancbn): use context here
   double tick_period_ = 5 * 60;  // 5min
   double allow_past_events_duration_ = 5 * 60;  // 5min
   double series_max_expandable_duration_ = 2 * 30 * 24 * 60 * 60;  // 2months
-  double expand_series_ = true;
+  bool expand_series_ = true;
+  double estimate_timeout_ = 2.0;  // 2s
 };
 
 }  // namespace rmf_scheduler

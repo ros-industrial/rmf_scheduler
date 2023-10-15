@@ -1,0 +1,40 @@
+# Scheduler main node
+scheduler_node:
+  ros__parameters:
+    tick_period: 600  # 10min
+    allow_past_events_duration: 300  # 5min
+    series_max_expandable_duration: 5184000  # 2 months
+    expand_series: true
+    estimate_timeout: 0.5  # 0.5s
+
+
+# Estimate client
+scheduler_node_estimate_client:
+  ros__parameters:
+    rmf_estimate_client:
+      type: rmf_scheduler_plugins/RobotTaskEstimateClient
+      supported_tasks:
+        - rmf/robot_task
+
+# Runtime client
+scheduler_node_runtime_client:
+  ros__parameters:
+    rmf_runtime_client:
+      type: rmf_scheduler_plugins/RobotTaskExecutionClient
+      supported_tasks:
+        - rmf/robot_task
+
+# Builder client
+scheduler_node_builder_client:
+  ros__parameters:
+    rmf_task_builder:
+      type: rmf_scheduler_plugins/RobotTaskBuilder
+      supported_tasks:
+        - rmf/robot_task
+        - rmf/clean_task
+
+#   custom_task_builder:
+#     type: rmf_scheduler_plugins/CustomTaskBuilder
+#     supported_tasks:
+#       - rmf/custom_task1
+#       - rmf/custom_task2

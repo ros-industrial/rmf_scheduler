@@ -1,0 +1,9 @@
+<launch>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="scheduler_config" default="$(find-pkg-share rmf_scheduler_ros2)/config/scheduler.yaml"/>
+
+  <node pkg="rmf_scheduler_ros2" exec="scheduler_node">
+    <param from="$(var scheduler_config)"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+  </node>
+</launch>

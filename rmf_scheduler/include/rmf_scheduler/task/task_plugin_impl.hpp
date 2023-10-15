@@ -89,6 +89,7 @@ load_task_plugin_impl(
     base_plugin_name.c_str(),
     name.c_str(),
     oss.str().c_str());
+  task_manager->loader_ = plugin_loader;
 
   return plugin_instance;
 }

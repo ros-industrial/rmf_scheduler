@@ -28,6 +28,7 @@ add_library(rmf_scheduler_ros2 SHARED
   src/scheduler_executor.cpp
   src/estimate_node.cpp
   src/runtime_node.cpp
+  src/builder_node.cpp
   src/scheduler_log_handler.cpp
 )
 
@@ -77,6 +78,12 @@ install(
 install(
   DIRECTORY include/
   DESTINATION include
+)
+
+install(DIRECTORY
+  launch
+  config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_export_targets(export_rmf_scheduler_ros2 HAS_LIBRARY_TARGET)

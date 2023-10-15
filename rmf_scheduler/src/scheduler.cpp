@@ -184,7 +184,7 @@ void Scheduler::add_schedule(const data::Schedule::Description & schedule)
     RS_LOG_INFO("Starting to estimate duration");
     task_estimator_.estimate(
       events_to_add,
-      2.0);
+      options_.estimate_timeout_);
 
 
     // Update schedule cache
@@ -304,7 +304,7 @@ void Scheduler::update_schedule(const data::Schedule::Description & schedule)
 
     // Trigger estimation pipeline
     RS_LOG_INFO("Starting to estimate duration");
-    task_estimator_.estimate(events_to_update, 2.0);
+    task_estimator_.estimate(events_to_update, options_.estimate_timeout_);
 
     // Update schedule cache
     // Update events first

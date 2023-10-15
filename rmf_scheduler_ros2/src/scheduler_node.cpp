@@ -15,6 +15,7 @@
 
 #include "rmf_scheduler_ros2/scheduler_node.hpp"
 #include "rmf_scheduler/utils/system_time_utils.hpp"
+#include "rmf_scheduler_ros2/utils.hpp"
 
 namespace rmf_scheduler_ros2
 {
@@ -58,8 +59,48 @@ SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
       &SchedulerNode::test_deconflict_cb, scheduler_node,
       std::placeholders::_1));
 
-  // scheduler
-  scheduler_node->_scheduler = std::make_shared<rmf_scheduler::Scheduler>();
+  // Default parameters
+  double tick_period = 5 * 60;  // 5min
+  double allow_past_events_duration = 5 * 60;  // 5min
+  double series_max_expandable_duration = 2 * 30 * 24 * 60 * 60;  // 2months
+  bool expand_series = true;
+  double estimate_timeout = 2.0;  // 2s
+
+  // Get parameters for scheduler options
+  declare_or_get_param<double>(
+    tick_period, "tick_period",
+    node, node->get_logger(),
+    tick_period);
+
+  declare_or_get_param<double>(
+    allow_past_events_duration, "allow_past_events_duration",
+    node, node->get_logger(),
+    allow_past_events_duration);
+
+  declare_or_get_param<double>(
+    series_max_expandable_duration, "series_max_expandable_duration",
+    node, node->get_logger(),
+    series_max_expandable_duration);
+
+  declare_or_get_param<bool>(
+    expand_series, "expand_series",
+    node, node->get_logger(),
+    expand_series);
+
+  declare_or_get_param<double>(
+    estimate_timeout, "estimate_timeout",
+    node, node->get_logger(),
+    estimate_timeout);
+
+  // Create Scheduler
+  scheduler_node->_scheduler = std::make_shared<rmf_scheduler::Scheduler>(
+    rmf_scheduler::SchedulerOptions()
+    .tick_period(tick_period)
+    .allow_past_events_duration(allow_past_events_duration)
+    .series_max_expandable_duration(series_max_expandable_duration)
+    .expand_series_automatically(expand_series)
+    .estimate_timeout(estimate_timeout)
+  );
   RCLCPP_INFO(scheduler_node->node()->get_logger(), "Scheduler node created.");
 
   return scheduler_node;
