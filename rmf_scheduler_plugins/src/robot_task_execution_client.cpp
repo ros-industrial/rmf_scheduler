@@ -193,34 +193,38 @@ void RobotTaskExecutionClient::cancel(const std::string & id)
 void RobotTaskExecutionClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & response)
 {
-  auto task_status_itr = task_status_map_.find(response.request_id);
-  if (task_status_itr == task_status_map_.end()) {
-    return;
-  }
-
   nlohmann::json task_state_json;
   try {
     task_state_json = nlohmann::json::parse(response.json_msg);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Error when parsing task states for task [%s]%s",
-      response.request_id.c_str(),
+      "Error when parsing task states %s",
       e.what());
     return;
   }
-  std::string status = task_state_json["status"].get<std::string>();
+  auto task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
+  auto task_status_itr = task_status_map_.find(task_id);
+  if (task_status_itr == task_status_map_.end()) {
+    return;
+  }
+  std::string status = task_state_json["data"]["status"].get<std::string>();
   if (status != task_status_itr->second) {
     RCLCPP_INFO(
       node_->get_logger(),
       "Received new task status [%s] for task [%s];",
       status.c_str(),
-      response.request_id.c_str());
+      task_id.c_str());
     task_status_itr->second = status;
   }
 
   if (status == "completed") {
-    notify_completion(response.request_id, true, "completed");
+    RCLCPP_INFO(
+      node_->get_logger(),
+      "Task [%s] is [%s];",
+      task_id.c_str(),
+      status.c_str());
+    notify_completion(task_id, true, "completed");
   }
 }
 
