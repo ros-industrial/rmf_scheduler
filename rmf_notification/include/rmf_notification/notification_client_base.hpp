@@ -12,39 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMF_NOTIFICATION__MESSAGE_HPP_
-#define RMF_NOTIFICATION__MESSAGE_HPP_
+#ifndef RMF_NOTIFICATION__NOTIFICATION_CLIENT_BASE_HPP_
+#define RMF_NOTIFICATION__NOTIFICATION_CLIENT_BASE_HPP_
 
 #include <string>
-#include <unordered_map>
+#include "rmf_notification/message.hpp"
 
 namespace rmf_notification
 {
 
-/// Message wrapper for notifications
-struct Message
+class NotificationClientBase
 {
-  explicit Message(
-    std::string _type,
-    std::string _payload,
-    uint64_t _timestamp
-  );
+public:
+  virtual ~NotificationClientBase() {}
+  virtual void init(
+    const std::string & endpoint_uri) = 0;
 
-  Message() = default;
+  virtual bool is_connected() const = 0;
 
-  /// Id for message
-  std::string message_id;
+  virtual void publish(
+    const Message & message) = 0;
 
-  /// Type or topic for message
-  std::string type;
-
-  /// Actual payload for the message
-  std::string payload;
-
-  /// Timestamp of message
-  uint64_t timestamp;
+  virtual void shutdown() = 0;
 };
-
 }  // namespace rmf_notification
 
-#endif  // RMF_NOTIFICATION__MESSAGE_HPP_
+#endif  // RMF_NOTIFICATION__NOTIFICATION_CLIENT_BASE_HPP_

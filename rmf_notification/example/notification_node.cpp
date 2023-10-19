@@ -16,6 +16,8 @@
 
 #include "rmf_notification/message.hpp"
 #include "rmf_notification/notification_manager.hpp"
+#include "rmf_notification/websocket_client.hpp"
+#include "rmf_notification/http_client.hpp"
 
 const rclcpp::Logger LOGGER = rclcpp::get_logger("test_notification");
 
@@ -32,29 +34,35 @@ public:
       std::bind(&TestNotification::timer_callback, this));
     std::string websocket_uri = "ws://localhost:8000/_internal";
     std::string mobile_uri = "http://localhost:8000/notification/telegram";
-    notification_manager_ptr_ = new rmf_notification::NotificationManager(
-      websocket_uri,
-      mobile_uri
-    );
+    notify_ptr_ = rmf_notification::NotificationManager::get();
+    notify_ptr_->create_client<rmf_notification::WebsocketClient>(websocket_uri);
+    notify_ptr_->create_client<rmf_notification::HTTPClient>(mobile_uri);
     RCLCPP_INFO(LOGGER, "Starting test notification node");
   }
 
   ~TestNotification()
   {
     timer_->cancel();
-    delete notification_manager_ptr_;
   }
 
 private:
   void timer_callback()
   {
+    auto connections = notify_ptr_->get_connections();
+    RCLCPP_INFO(LOGGER, "Connections:");
+    for (auto & connection : connections) {
+      RCLCPP_INFO(
+        LOGGER, "- endpoint_uri: %s, connected: %s",
+        connection.first.c_str(),
+        (connection.second ? "true" : "false"));
+    }
     counter_ = counter_ + 1;
     std::string message = "test message: " + std::to_string(counter_);
-    notification_manager_ptr_->publish_state(message, "maintenance_log_update");
+    notify_ptr_->publish(message, "maintenance_log_update");
   }
 
   rclcpp::TimerBase::SharedPtr timer_;
-  rmf_notification::NotificationManager * notification_manager_ptr_;
+  std::shared_ptr<rmf_notification::NotificationManager> notify_ptr_;
   int counter_;
 };
 

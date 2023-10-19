@@ -24,6 +24,8 @@ include_directories(
 add_library(${PROJECT_NAME}
   SHARED
   src/notification_manager.cpp
+  src/http_client.cpp
+  src/websocket_client.cpp
   src/message.cpp
 )
 
