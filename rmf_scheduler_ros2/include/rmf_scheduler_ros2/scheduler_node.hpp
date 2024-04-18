@@ -33,7 +33,14 @@ public:
   // cppcheck-suppress unknownMacro
   RCLCPP_SMART_PTR_DEFINITIONS(SchedulerNode)
   static SchedulerNode::SharedPtr make_node(
+    rclcpp::Node::SharedPtr scheduler_node,
+    const rmf_scheduler::SchedulerOptions::DynamicChargerMap & dynamic_charger_map,
+    const rmf_scheduler::SchedulerOptions::FixedChargerMap & fixed_charger_map
+  );
+
+  static SchedulerNode::SharedPtr make_node(
     rclcpp::Node::SharedPtr scheduler_node);
+
 
   rclcpp::Node::SharedPtr node() const;
 

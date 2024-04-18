@@ -16,6 +16,7 @@
 #define RMF_SCHEDULER__SCHEDULER_OPTIONS_HPP_
 
 #include <string>
+#include <unordered_map>
 
 namespace rmf_scheduler
 {
@@ -26,6 +27,11 @@ class SchedulerOptions
   friend class Scheduler;
 
 public:
+  using DynamicChargerMap =
+    std::unordered_map<
+    std::string, std::unordered_map<std::string, std::string>
+    >;
+  using FixedChargerMap = std::unordered_map<std::string, std::string>;
   SchedulerOptions();
 
   virtual ~SchedulerOptions() = default;
@@ -41,6 +47,8 @@ public:
   SchedulerOptions & enable_local_caching(bool);
   SchedulerOptions & cache_dir(const std::string &);
   SchedulerOptions & cache_keep_last(size_t);
+  SchedulerOptions & dynamic_charger_map(const DynamicChargerMap &);
+  SchedulerOptions & fixed_charger_map(const FixedChargerMap &);
 
 private:
   // TODO(Briancbn): use context here
@@ -57,6 +65,9 @@ private:
   bool enable_local_caching_ = false;
   std::string cache_dir_ = ".";
   size_t cache_keep_last_ = 5;
+
+  DynamicChargerMap dynamic_charger_map_;
+  FixedChargerMap fixed_charger_map_;
 };
 
 }  // namespace rmf_scheduler

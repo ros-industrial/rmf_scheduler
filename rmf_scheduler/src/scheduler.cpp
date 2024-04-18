@@ -270,15 +270,6 @@ Scheduler::Scheduler(const SchedulerOptions & options)
     schemas::update_series_request
   };
 
-  /***************** Dirty Fixes **************/
-  dynamic_charger_aloc_map_["leovac"]["dock_office"] = "leovac_01";
-  dynamic_charger_aloc_map_["leovac"]["dock_ps"] = "leovac_02";
-  fixed_charger_aloc_map_["s75/s75_a"] = "demo_charging_point";
-  fixed_charger_aloc_map_["v40/v40_a"] = "v40_charger_1";
-  fixed_charger_aloc_map_["v40/v40_b"] = "v40_charger_2";
-
-  /***************** Dirty Fixes **************/
-
   // Initialize notification manager
   notification_manager_ = rmf_notification::NotificationManager::get();
 
@@ -1911,15 +1902,15 @@ void Scheduler::send_to_best_charger(
 {
   // Get the charger(s)
   std::string charger_name;
-  auto itr = dynamic_charger_aloc_map_.find(fleet_name);
-  if (itr == dynamic_charger_aloc_map_.end()) {
+  auto itr = options_.dynamic_charger_map_.find(fleet_name);
+  if (itr == options_.dynamic_charger_map_.end()) {
     RS_LOG_WARN(
       "No dynamic charger set for for [%s/%s], checking fixed charger",
       fleet_name.c_str(),
       robot_name.c_str());
 
-    auto fixed_itr = fixed_charger_aloc_map_.find(fleet_name + '/' + robot_name);
-    if (fixed_itr == fixed_charger_aloc_map_.end()) {
+    auto fixed_itr = options_.fixed_charger_map_.find(fleet_name + '/' + robot_name);
+    if (fixed_itr == options_.fixed_charger_map_.end()) {
       RS_LOG_WARN(
         "No fixed charger set for for [%s/%s]. No charging",
         fleet_name.c_str(),
@@ -2036,8 +2027,8 @@ void Scheduler::update_left_charger(
   const std::string & fleet_name,
   const std::string & robot_name)
 {
-  auto itr = dynamic_charger_aloc_map_.find(fleet_name);
-  if (itr == dynamic_charger_aloc_map_.end()) {
+  auto itr = options_.dynamic_charger_map_.find(fleet_name);
+  if (itr == options_.dynamic_charger_map_.end()) {
     return;
   }
   for (auto & charger_itr : itr->second) {

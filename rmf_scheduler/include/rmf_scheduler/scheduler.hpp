@@ -257,12 +257,6 @@ private:
     const std::unordered_map<std::string, data::Event> & events_to_update = {},
     const std::unordered_map<std::string, data::Event> & events_to_remove = {});
 
-  /***************** Dirty Fixes **************/
-  std::unordered_map<std::string,
-    std::unordered_map<std::string, std::string>> dynamic_charger_aloc_map_;
-  std::unordered_map<std::string, std::string> fixed_charger_aloc_map_;
-  /***************** Dirty Fixes **************/
-
   std::shared_ptr<rmf_notification::NotificationManager> notification_manager_;
 };
 
