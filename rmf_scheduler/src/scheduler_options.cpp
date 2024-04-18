@@ -87,4 +87,20 @@ SchedulerOptions & SchedulerOptions::cache_keep_last(size_t num)
   return *this;
 }
 
+SchedulerOptions & SchedulerOptions::dynamic_charger_map(
+  const SchedulerOptions::DynamicChargerMap & val
+)
+{
+  dynamic_charger_map_ = val;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::fixed_charger_map(
+  const SchedulerOptions::FixedChargerMap & val
+)
+{
+  fixed_charger_map_ = val;
+  return *this;
+}
+
 }  // namespace rmf_scheduler

@@ -24,7 +24,10 @@ SchedulerNode::SchedulerNode()
 {
 }
 
-SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
+SchedulerNode::SharedPtr SchedulerNode::make_node(
+  rclcpp::Node::SharedPtr node,
+  const rmf_scheduler::SchedulerOptions::DynamicChargerMap & dynamic_charger_map,
+  const rmf_scheduler::SchedulerOptions::FixedChargerMap & fixed_charger_map)
 {
   // QOS settings
   auto default_qos = rclcpp::SystemDefaultsQoS();
@@ -144,10 +147,18 @@ SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
     .enable_local_caching(enable_local_caching)
     .cache_dir(cache_dir)
     .cache_keep_last(static_cast<size_t>(cache_keep_last))
+    .dynamic_charger_map(dynamic_charger_map)
+    .fixed_charger_map(fixed_charger_map)
   );
   RCLCPP_INFO(scheduler_node->node()->get_logger(), "Scheduler node created.");
 
   return scheduler_node;
+}
+
+SchedulerNode::SharedPtr SchedulerNode::make_node(
+  rclcpp::Node::SharedPtr scheduler_node)
+{
+  return make_node(scheduler_node, {}, {});
 }
 
 void SchedulerNode::schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & msg)
