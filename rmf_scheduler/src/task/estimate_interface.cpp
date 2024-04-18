@@ -34,6 +34,22 @@ nlohmann::json EstimateState::json() const
   return result;
 }
 
+std::shared_ptr<EstimateState> EstimateState::from_json(
+  const nlohmann::json & json)
+{
+  auto state = std::make_shared<EstimateState>();
+  state->waypoint = json["waypoint"].get<int>();
+  state->orientation = json["orientation"].get<double>();
+  if (json.contains("consumables")) {
+    for (auto & itr : json["consumables"].items()) {
+      state->consumables.emplace(
+        itr.key(),
+        itr.value().get<double>());
+    }
+  }
+  return state;
+}
+
 }  // namespace task
 
 }  // namespace rmf_scheduler

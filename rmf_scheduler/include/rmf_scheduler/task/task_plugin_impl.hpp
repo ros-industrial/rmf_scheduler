@@ -52,9 +52,14 @@ load_task_plugin_impl(
     throw exception::PluginException("New runtime interface %s already exists.", name.c_str());
   }
 
-
-  auto plugin_loader = std::make_shared<pluginlib::ClassLoader<BasePluginT>>(
-    "rmf_scheduler", base_plugin_name);
+  using PluginLoaderT = pluginlib::ClassLoader<BasePluginT>;
+  std::shared_ptr<PluginLoaderT> plugin_loader;
+  if (!task_manager->loader_) {
+    plugin_loader = std::make_shared<PluginLoaderT>(
+      "rmf_scheduler", base_plugin_name);
+  } else {
+    plugin_loader = std::static_pointer_cast<PluginLoaderT>(task_manager->loader_);
+  }
 
   auto plugin_instance = plugin_loader->createSharedInstance(plugin);
 

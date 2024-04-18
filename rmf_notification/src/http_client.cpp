@@ -17,10 +17,12 @@
 #include "cpprest/http_client.h"
 
 #include "rmf_notification/http_client.hpp"
-#include "rmf_scheduler/log.hpp"
+#include "rclcpp/logging.hpp"
 
 namespace rmf_notification
 {
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("rmf_notification_http");
 
 class HTTPClient::Impl
 {
@@ -39,15 +41,66 @@ public:
     processing_thread_ = std::thread(
       [this]()
       {
-        RS_LOG_INFO(
+        RCLCPP_INFO(
+          LOGGER,
           "starting mobile notification background runner in processing thread");
         runner();
       });
   }
 
+  void init_keycloak_auth(
+    const std::string & username,
+    const std::string & password,
+    const std::string & client_id,
+    const std::string & url)
+  {
+    keycloak_auth_client_ptr_ = std::make_shared<http_client>(U(url));
+
+    web::http::uri_builder builder(U(""));
+    builder.append_query(U("username"), username);
+    builder.append_query(U("password"), password);
+    builder.append_query(U("client_id"), client_id);
+    builder.append_query(U("grant_type"), "password");
+    http_request request(web::http::methods::POST);
+    keycloak_query_ = builder.query();
+    utility::string_t token;
+    request_keycloak_token(token);
+  }
+
+  bool request_keycloak_token(utility::string_t & token)
+  {
+    RCLCPP_INFO(LOGGER, "Retrieving access token from keycloak");
+    web::json::value json_return;
+    keycloak_auth_client_ptr_->request(
+      web::http::methods::POST, U(""),
+      keycloak_query_,
+      U("application/x-www-form-urlencoded"))
+    .then(
+      [](const web::http::http_response & response) {
+        return response.extract_json();
+      })
+    .then(
+      [&json_return](const pplx::task<web::json::value> & task) {
+        try {
+          json_return = task.get();
+        } catch (const web::http::http_exception & e) {
+          std::cout << "error " << e.what() << std::endl;
+        }
+      })
+    .wait();
+
+    if (json_return.has_field("access_token")) {
+      token = json_return["access_token"].as_string();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   void publish(const Message & message)
   {
-    RS_LOG_INFO(
+    RCLCPP_INFO(
+      LOGGER,
       "mobile notification request raised for message with id: %s",
       message.message_id.c_str());
     std::unique_lock<std::mutex> lock(notify_mtx_);
@@ -84,31 +137,40 @@ private:
       while (!message_process_queue_.empty()) {
         auto message = message_process_queue_.front();
 
+        http_request msg(web::http::methods::POST);
         web::http::uri_builder builder(U(""));
         builder.append_query(U("message"), message.payload);
         builder.append_query(U("type"), message.type);
-
+        msg.set_request_uri(builder.to_string());
         bool status = false;
 
         try {
-          http_client_ptr_->request(
-            web::http::methods::POST, builder.to_string()).then(
+          // Retrieve keycloak token if enabled
+          if (keycloak_auth_client_ptr_) {
+            utility::string_t token;
+            if (request_keycloak_token(token)) {
+              msg.headers().add(U("Authorization"), U("Bearer ") + token);
+            }
+          }
+          http_client_ptr_->request(msg).then(
             [message, &status](http_response response)
             {
               if (response.status_code() < 400) {
-                RS_LOG_INFO(
+                RCLCPP_INFO(
+                  LOGGER,
                   "HTTP notification sent for message with id: %s",
                   message.message_id.c_str());
                 status = true;
               } else {
-                RS_LOG_ERROR(
+                RCLCPP_INFO(
+                  LOGGER,
                   "HTTP notification error for message with id: %s",
                   message.message_id.c_str());
                 status = false;
               }
             }).wait();
         } catch (const std::exception & e) {
-          RS_LOG_ERROR("HTTP notification error: %s", e.what());
+          RCLCPP_INFO(LOGGER, "HTTP notification error: %s", e.what());
           connected_ = false;
           break;
         }
@@ -125,6 +187,8 @@ private:
     }
   }
   std::shared_ptr<http_client> http_client_ptr_;
+  std::shared_ptr<http_client> keycloak_auth_client_ptr_;
+  utility::string_t keycloak_query_;
   std::queue<Message> message_process_queue_;
   std::mutex notify_mtx_;
   std::condition_variable notify_trigger_;
@@ -133,9 +197,17 @@ private:
   std::atomic_bool shutdown_ = true;
 };
 
-HTTPClient::HTTPClient()
+HTTPClient::HTTPClient(
+  const std::string & auth,
+  const std::string & username,
+  const std::string & password,
+  const std::string & client_id,
+  const std::string & token_url)
 : impl_ptr_(std::make_unique<Impl>())
 {
+  if (auth == "keycloak") {
+    impl_ptr_->init_keycloak_auth(username, password, client_id, token_url);
+  }
 }
 
 HTTPClient::~HTTPClient()

@@ -53,7 +53,7 @@ TEST_F(TestDAGExecutor, DAGExecutorBasic)
     {"task4", 4}
   };
 
-  runtime::DAGExecutor dag_executor;
+  std::shared_ptr<runtime::DAGExecutor> dag_executor = std::make_shared<runtime::DAGExecutor>();
 
   // Create a generator that generate the function call based on task id
   runtime::DAGExecutor::WorkGenerator work_generator =
@@ -65,6 +65,7 @@ TEST_F(TestDAGExecutor, DAGExecutorBasic)
       auto work = [ =, &tasks_finished, &mtx]() {
           std::this_thread::sleep_for(std::chrono::seconds(work_s));
 
+          std::cout << "Work completed" << std::endl;
           // Lock thread before writing to tasks_finished
           std::lock_guard<std::mutex> lk(mtx);
           tasks_finished.push_back(id);
@@ -73,7 +74,7 @@ TEST_F(TestDAGExecutor, DAGExecutorBasic)
     };
 
   // Run a full execution
-  auto future = dag_executor.run(dag_, work_generator);
+  auto future = dag_executor->run(dag_.description(), work_generator);
   future.get();
 
   std::cout << "Order of tasks finished" << std::endl;
@@ -89,13 +90,28 @@ TEST_F(TestDAGExecutor, DAGExecutorBasic)
   tasks_finished.clear();
 
   // Stop in the middle of the execution
-  future = dag_executor.run(dag_, work_generator);
+  future = dag_executor->run(dag_.description(), work_generator);
 
   // Sleep until the middle of task 2 being executed
   std::this_thread::sleep_for(std::chrono::seconds(3));
-  dag_executor.cancel();
+  dag_executor->cancel();
+  dag_executor->cancel_and_next(dag_.description(), work_generator);
+  dag_executor->cancel_and_next(dag_.description(), work_generator);
 
   future.get();
+
+  for (int i = 0; i < 20; i++) {
+    // Waiting
+    std::cout << "Waiting" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (!dag_executor->ongoing()) {
+      break;
+    }
+
+    if (i == 2) {
+      dag_executor->cancel_and_next(dag_.description(), work_generator);
+    }
+  }
 
   for (auto & task : tasks_finished) {
     std::cout << task << std::endl;

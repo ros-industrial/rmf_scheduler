@@ -12,30 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <fstream>
 #include <sstream>
 
 #include "gtest/gtest.h"
 #include "rmf_scheduler/scheduler.hpp"
+#include "rmf_scheduler/test_utils.hpp"
 #include "nlohmann/json.hpp"
-
-namespace rmf_scheduler::test_utils
-{
-
-std::string init_json_from_file(
-  const std::string & path,
-  bool relative = true)
-{
-  std::ifstream f_json(
-    relative ? std::string(TEST_DIRECTORY) + path : path);
-  std::stringstream b_json;
-  b_json << f_json.rdbuf();
-  return b_json.str();
-}
-
-}  // namespace rmf_scheduler::test_utils
-
-/////////////////////////////////////////
 
 // Test Add Schedule
 class TestAddSchedule : public ::testing::Test
@@ -46,7 +28,9 @@ protected:
     using namespace rmf_scheduler;  // NOLINT(build/namespaces)
     // Don't expand series
     scheduler_ = std::make_unique<Scheduler>(
-      SchedulerOptions().expand_series_automatically(false));  // Don't expand series
+      SchedulerOptions()
+      .expand_series_automatically(false)  // Don't expand series
+      .allow_past_events_duration(2e8));
   }
 
   rmf_scheduler::ErrorCode load_valid_schedule()

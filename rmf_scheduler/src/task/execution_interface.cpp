@@ -40,7 +40,7 @@ void ExecutionInterface::update(
   std::lock_guard lk(mtx_);
   auto itr = observers_.begin();
   while (itr != observers_.end()) {
-    (*itr)->completion_callback(id, remaining_time);
+    (*itr)->update(id, remaining_time);
     ++itr;
   }
 }
@@ -49,14 +49,14 @@ void ExecutionInterface::attach(
   std::shared_ptr<ExecutionObserverBase> observer)
 {
   std::lock_guard lk(mtx_);
-  observers_.emplace(observer);
+  observers_.push_front(observer);
 }
 
 void ExecutionInterface::detach(
-  std::shared_ptr<ExecutionObserverBase> observer)
+  std::shared_ptr<ExecutionObserverBase>/*observer*/)
 {
   std::lock_guard lk(mtx_);
-  observers_.erase(observer);
+  // observers_.push_back(observer);
 }
 
 }  // namespace task

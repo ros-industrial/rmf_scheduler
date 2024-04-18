@@ -330,6 +330,21 @@ DAG::DependencyInfo DAG::get_dependency_info(const std::string & id) const
   return out;
 }
 
+DAG::DependencyInfo DAG::get_successor_info(const std::string & id) const
+{
+  DependencyInfo out;
+  auto itr = node_list_.find(id);
+  if (itr == node_list_.end()) {
+    return out;
+  }
+
+  itr->second->for_each_successor(
+    [&out](tf::Task successor) mutable {
+      out.push_back(successor.name());
+    });
+  return out;
+}
+
 }  // namespace data
 
 }  // namespace rmf_scheduler

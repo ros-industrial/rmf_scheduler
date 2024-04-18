@@ -30,12 +30,15 @@
 #include "rmf_scheduler/exception.hpp"
 #include "rmf_scheduler/error_code.hpp"
 #include "rmf_scheduler/data/schedule.hpp"
+#include "rmf_scheduler/cache.hpp"
 #include "rmf_scheduler/scheduler_options.hpp"
 #include "rmf_scheduler/task/builder.hpp"
 #include "rmf_scheduler/task/estimator.hpp"
 #include "rmf_scheduler/task/executor.hpp"
 #include "rmf_scheduler/runtime/system_time_executor.hpp"
 #include "rmf_scheduler/runtime/dag_executor.hpp"
+#include "rmf_scheduler/window.hpp"
+#include "rmf_notification/notification_manager.hpp"
 
 
 namespace rmf_scheduler
@@ -173,10 +176,30 @@ public:
   void unload_builder_interface(
     const std::string & name);
 
+  void event_runtime_update(const std::string & event_id);
+  void dag_runtime_update(const std::string & dag_id);
+
   void optimize(uint64_t start_time, uint64_t end_time);
 
   void spin();
+  void tick_once();
   void stop();
+
+  /***************** Dirty Fixes **************/
+  bool enough_time_for_charging(
+    const std::string & fleet_name,
+    const std::string & robot_name,
+    uint64_t start_time,
+    uint64_t allowed_duration);
+
+  void send_to_best_charger(
+    const std::string & fleet_name,
+    const std::string & robot_name);
+
+  void update_left_charger(
+    const std::string & fleet_name,
+    const std::string & robot_name);
+  /***************** Dirty Fixes **************/
 
 private:
   // A small convenience function for converting a thread ID to a string
@@ -185,6 +208,7 @@ private:
   mutable std::shared_mutex mtx_;
   data::Schedule schedule_;
   SchedulerOptions options_;
+  std::shared_ptr<Cache> cache_manager_;
   uint64_t series_expand_time_;
 
   std::unique_ptr<SchemaValidator> schema_validator_;
@@ -204,19 +228,42 @@ private:
   // Runtime interface
   void _tick();
   void _push_events(uint64_t start_time, uint64_t end_time);
-  runtime::SystemTimeExecutor::Action _generate_dag_action(data::DAG & dag);
+  runtime::SystemTimeExecutor::Action _generate_dag_action(
+    uint64_t start_time, const std::string & dag_id,
+    const data::DAG::Description & dag);
   runtime::SystemTimeExecutor::Action _generate_event_action(
     const data::Event & event, bool blocking = false);
 
   // DAG executor and their status
-  std::vector<runtime::DAGExecutor> dag_executors_;
-  std::vector<std::shared_future<void>> dag_futures_;
+  std::unordered_map<std::string, std::unique_ptr<runtime::DAGExecutor>>
+  dag_executors_;
 
   runtime::SystemTimeExecutor ste_;
 
   uint64_t next_tick_time_;
   double tick_period_;  // ticking period, in seconds
   std::atomic_bool spinning_;
+
+  // Optimization related variables
+  std::shared_ptr<WindowUtils> window_utils_;
+  // A utility function to help implement dag changes least intrusively
+  void _generate_new_dags_recursive(
+    const data::DAG::DependencyInfo & info,
+    data::DAG & dag_to_extend,
+    const data::DAG & old_dag,
+    std::vector<data::DAG> & new_dags,
+    const std::string & previous_node = "",
+    int64_t previous_time_change = 0,
+    const std::unordered_map<std::string, data::Event> & events_to_update = {},
+    const std::unordered_map<std::string, data::Event> & events_to_remove = {});
+
+  /***************** Dirty Fixes **************/
+  std::unordered_map<std::string,
+    std::unordered_map<std::string, std::string>> dynamic_charger_aloc_map_;
+  std::unordered_map<std::string, std::string> fixed_charger_aloc_map_;
+  /***************** Dirty Fixes **************/
+
+  std::shared_ptr<rmf_notification::NotificationManager> notification_manager_;
 };
 
 namespace exception
@@ -241,6 +288,34 @@ public:
       msg, std::forward<Args>(args) ...)
   {
     add_prefix("ScheduleMultipleWriteException:\n  ");
+  }
+};
+
+class ScheduleWriteToPastException : public ExceptionTemplate
+{
+public:
+  template<typename ... Args>
+  ScheduleWriteToPastException(
+    const char * msg, Args && ... args)
+  : ExceptionTemplate(
+      ErrorCode::FAILURE | ErrorCode::RUNTIME,  // TODO(anyone): error code
+      msg, std::forward<Args>(args) ...)
+  {
+    add_prefix("ScheduleWriteToPastException:\n  ");
+  }
+};
+
+class ScheduleDeleteOngoingException : public ExceptionTemplate
+{
+public:
+  template<typename ... Args>
+  ScheduleDeleteOngoingException(
+    const char * msg, Args && ... args)
+  : ExceptionTemplate(
+      ErrorCode::FAILURE | ErrorCode::RUNTIME,  // TODO(anyone): error code
+      msg, std::forward<Args>(args) ...)
+  {
+    add_prefix("ScheduleDeleteOngoingException:\n  ");
   }
 };
 

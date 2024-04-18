@@ -194,8 +194,11 @@ void RobotTaskExecutionClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & response)
 {
   nlohmann::json task_state_json;
+  std::string task_id, status;
   try {
     task_state_json = nlohmann::json::parse(response.json_msg);
+    task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
+    status = task_state_json["data"]["status"].get<std::string>();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       node_->get_logger(),
@@ -203,12 +206,10 @@ void RobotTaskExecutionClient::handle_response(
       e.what());
     return;
   }
-  auto task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
   auto task_status_itr = task_status_map_.find(task_id);
   if (task_status_itr == task_status_map_.end()) {
     return;
   }
-  std::string status = task_state_json["data"]["status"].get<std::string>();
   if (status != task_status_itr->second) {
     RCLCPP_INFO(
       node_->get_logger(),
@@ -225,7 +226,19 @@ void RobotTaskExecutionClient::handle_response(
       task_id.c_str(),
       status.c_str());
     notify_completion(task_id, true, "completed");
+    return;
   }
+
+  if (status == "failed" ||
+    status == "canceled" ||
+    status == "killed")
+  {
+    notify_completion(task_id, false, status);
+    return;
+  }
+
+  // Update remaining time
+  update(task_id, 5 * 60 * 1e9);  // hardset to be 5 extra minutes
 }
 
 }  // namespace rmf_scheduler_plugins

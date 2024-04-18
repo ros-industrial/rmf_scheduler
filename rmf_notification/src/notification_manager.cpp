@@ -21,9 +21,8 @@
 #include "websocketpp/config/asio_client.hpp"
 #include "websocketpp/client.hpp"
 
-#include "rmf_scheduler/utils/uuid.hpp"
-#include "rmf_scheduler/log.hpp"
 #include "rmf_notification/notification_manager.hpp"
+#include "rmf_notification/uuid.hpp"
 
 namespace rmf_notification
 {
@@ -57,7 +56,7 @@ std::string NotificationManager::publish(
   Message message;
   message.payload = payload;
   message.type = type;
-  message.message_id = rmf_scheduler::utils::gen_uuid();
+  message.message_id = utils::gen_uuid();
   for (auto & client : clients_) {
     client.second->publish(message);
   }

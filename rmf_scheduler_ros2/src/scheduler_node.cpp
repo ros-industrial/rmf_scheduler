@@ -66,6 +66,14 @@ SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
   bool expand_series = true;
   double estimate_timeout = 2.0;  // 2s
 
+  bool enable_optimization = false;
+  std::string optimization_window = "";
+  std::string optimization_window_timezone = "Asia/Singapore";
+
+  bool enable_local_caching = false;
+  std::string cache_dir = ".";
+  int cache_keep_last = 5;
+
   // Get parameters for scheduler options
   declare_or_get_param<double>(
     tick_period, "tick_period",
@@ -92,6 +100,36 @@ SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
     node, node->get_logger(),
     estimate_timeout);
 
+  declare_or_get_param<bool>(
+    enable_optimization, "enable_optimization",
+    node, node->get_logger(),
+    enable_optimization);
+
+  declare_or_get_param<std::string>(
+    optimization_window, "optimization_window",
+    node, node->get_logger(),
+    optimization_window);
+
+  declare_or_get_param<std::string>(
+    optimization_window_timezone, "optimization_window_timezone",
+    node, node->get_logger(),
+    optimization_window_timezone);
+
+  declare_or_get_param<bool>(
+    enable_local_caching, "enable_local_caching",
+    node, node->get_logger(),
+    enable_local_caching);
+
+  declare_or_get_param<std::string>(
+    cache_dir, "cache_dir",
+    node, node->get_logger(),
+    cache_dir);
+
+  declare_or_get_param<int>(
+    cache_keep_last, "cache_keep_last",
+    node, node->get_logger(),
+    cache_keep_last);
+
   // Create Scheduler
   scheduler_node->_scheduler = std::make_shared<rmf_scheduler::Scheduler>(
     rmf_scheduler::SchedulerOptions()
@@ -100,6 +138,12 @@ SchedulerNode::SharedPtr SchedulerNode::make_node(rclcpp::Node::SharedPtr node)
     .series_max_expandable_duration(series_max_expandable_duration)
     .expand_series_automatically(expand_series)
     .estimate_timeout(estimate_timeout)
+    .enable_optimization(enable_optimization)
+    .optimization_window(optimization_window)
+    .optimization_window_timezone(optimization_window_timezone)
+    .enable_local_caching(enable_local_caching)
+    .cache_dir(cache_dir)
+    .cache_keep_last(static_cast<size_t>(cache_keep_last))
   );
   RCLCPP_INFO(scheduler_node->node()->get_logger(), "Scheduler node created.");
 
@@ -167,12 +211,13 @@ void SchedulerNode::schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & m
     auto error_code = _scheduler->handle_delete_schedule(*payload_it);
     response_msg.json_msg = error_code.json();
   } else {
-    RCLCPP_INFO(_node->get_logger(), "Received Invalid Schedule Request [%s].", type.c_str());
+    // skip
+    // RCLCPP_INFO(_node->get_logger(), "Received Invalid Schedule Request [%s].", type.c_str());
     return;
   }
 
   _scheduler_response_publisher->publish(response_msg);
-  RCLCPP_DEBUG(_node->get_logger(), "Response: %s", payload_it->dump().c_str());
+  RCLCPP_DEBUG(_node->get_logger(), "Response: %s", response_msg.json_msg.c_str());
 }
 
 void SchedulerNode::test_deconflict_cb(

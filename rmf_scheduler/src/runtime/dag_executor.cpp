@@ -23,45 +23,120 @@ namespace rmf_scheduler
 namespace runtime
 {
 
+DAGExecutor::Work DAGExecutor::EmptyWork()
+{
+  return []() {};
+}
+
 DAGExecutor::DAGExecutor(unsigned int concurrency)
 : executor_(std::make_unique<tf::Executor>(concurrency))
 {
 }
 
-DAGExecutor::DAGExecutor(DAGExecutor && rhs)
-{
-  executor_ = std::move(rhs.executor_);
-  future_ = std::move(rhs.future_);
-}
-
-DAGExecutor & DAGExecutor::operator=(DAGExecutor && rhs)
-{
-  executor_ = std::move(rhs.executor_);
-  future_ = std::move(rhs.future_);
-  return *this;
-}
-
 DAGExecutor::~DAGExecutor()
 {
+  cancel();
+  cancel_future_->get();
 }
 
 std::shared_future<void> DAGExecutor::run(
-  data::DAG & dag,
+  const data::DAG::Description & dag,
   WorkGenerator work_generator)
 {
+  // Deep copy the DAG
+  dag_ = std::make_unique<data::DAG>(dag);
+
   // Generate the work function for the DAG based on id
-  for (auto & itr : dag.node_list_) {
+  for (auto & itr : dag_->node_list_) {
     itr.second->work(work_generator(itr.first));
   }
 
-  future_ = std::make_shared<tf::Future<void>>(executor_->run(*dag.taskflow_));
-  return future_->share();
+  cancel_handler_ = std::make_shared<tf::Future<void>>(executor_->run(*dag_->taskflow_));
+  future_ = cancel_handler_->share();
+  return future_;
+}
+
+void DAGExecutor::cancel_and_next(const data::DAG::Description & dag, WorkGenerator work_generator)
+{
+  std::lock_guard<std::mutex> lock(next_dag_mtx_);
+
+  // Deep copy the DAG
+  next_dag_ = std::make_unique<data::DAG>(dag);
+
+  // Generate the work function for the DAG based on id
+  for (auto & itr : next_dag_->node_list_) {
+    itr.second->work(work_generator(itr.first));
+  }
+
+  // Skip if canceling in progress
+  if (cancel_future_ &&
+    cancel_future_->wait_for(std::chrono::microseconds(1)) !=
+    std::future_status::ready)
+  {
+    return;
+  }
+
+  cancel_future_ = std::make_shared<std::future<void>>(
+    std::async(
+      std::bind(&DAGExecutor::_cancel_and_next, this)));
 }
 
 void DAGExecutor::cancel()
 {
-  future_->cancel();
+  std::lock_guard<std::mutex> lock(next_dag_mtx_);
+
+  // Delete the next DAG
+  next_dag_.reset();
+
+  // Skip if canceling in progress
+  if (cancel_future_ &&
+    cancel_future_->wait_for(std::chrono::microseconds(1)) !=
+    std::future_status::ready)
+  {
+    return;
+  }
+
+  cancel_future_ = std::make_shared<std::future<void>>(
+    std::async(
+      std::bind(&DAGExecutor::_cancel_and_next, this)));
 }
+
+bool DAGExecutor::ongoing() const
+{
+  std::lock_guard<std::mutex> lock(next_dag_mtx_);
+  // Skip if canceling in progress
+  if (cancel_future_ &&
+    cancel_future_->wait_for(std::chrono::microseconds(1)) ==
+    std::future_status::timeout)
+  {
+    return true;
+  }
+  if (future_.valid() &&
+    future_.wait_for(std::chrono::microseconds(1)) ==
+    std::future_status::timeout)
+  {
+    return true;
+  }
+
+  return false;
+}
+
+void DAGExecutor::_cancel_and_next()
+{
+  if (future_.valid()) {
+    cancel_handler_->cancel();
+    future_.get();
+  }
+
+  // Lock to check if there is a next DAG
+  std::lock_guard<std::mutex> lock(next_dag_mtx_);
+  if (next_dag_) {
+    dag_ = std::move(next_dag_);
+    cancel_handler_ = std::make_shared<tf::Future<void>>(executor_->run(*dag_->taskflow_));
+    future_ = cancel_handler_->share();
+  }
+}
+
 
 }  // namespace runtime
 

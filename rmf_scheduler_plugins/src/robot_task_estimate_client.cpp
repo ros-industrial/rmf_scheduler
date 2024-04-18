@@ -89,7 +89,7 @@ RobotTaskEstimateClient::async_estimate(
     state["waypoint"] = request.state->waypoint;
     state["orientation"] = request.state->orientation;
     state["battery_soc"] = request.state->consumables["battery_soc"];
-    state["time"] = request.start_time / 1e6;
+    state["time"] = static_cast<uint64_t>(request.start_time / 1e6);
     task_request["state"] = state;
   }
 
