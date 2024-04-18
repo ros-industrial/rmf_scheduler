@@ -51,4 +51,40 @@ SchedulerOptions & SchedulerOptions::estimate_timeout(double sec)
   return *this;
 }
 
+SchedulerOptions & SchedulerOptions::enable_optimization(bool flag)
+{
+  enable_optimization_ = flag;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::optimization_window(const std::string & expr)
+{
+  optimization_window_ = expr;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::optimization_window_timezone(const std::string & tz)
+{
+  optimization_window_timezone_ = tz;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::enable_local_caching(bool flag)
+{
+  enable_local_caching_ = flag;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::cache_dir(const std::string & path)
+{
+  cache_dir_ = path;
+  return *this;
+}
+
+SchedulerOptions & SchedulerOptions::cache_keep_last(size_t num)
+{
+  cache_keep_last_ = num;
+  return *this;
+}
+
 }  // namespace rmf_scheduler

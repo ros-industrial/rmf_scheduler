@@ -15,6 +15,8 @@
 #include "rmf_scheduler/conflict/identifier.hpp"
 #include "rmf_scheduler/parser.hpp"
 
+#include "rmf_scheduler/log.hpp"
+
 namespace rmf_scheduler
 {
 
@@ -105,7 +107,14 @@ std::vector<Conflict> identify_conflicts_memory_intensive(
 {
   std::vector<Conflict> conflicts;
   for (auto itr = event_time_lookup.begin(); itr != event_time_lookup.end(); itr++) {
+    if (itr->second.event.duration == 0) {
+      continue;
+    }
     auto upper_itr = event_time_lookup.upper_bound(itr->first + itr->second.event.duration - 1);
+
+    if (upper_itr == itr) {
+      continue;
+    }
 
     // Start from the next iterator
     auto overlap_itr = itr;

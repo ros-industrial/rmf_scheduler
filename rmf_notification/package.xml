@@ -13,7 +13,6 @@
 
   <build_depend>nlohmann-json-dev</build_depend>
   <depend>rclcpp</depend>
-  <depend>rmf_scheduler</depend>
   <depend>libwebsocketpp-dev</depend>
   <depend>libcpprest-dev</depend>
   <depend>libssl-dev</depend>

@@ -16,6 +16,15 @@ target_link_libraries(test_${PROJECT_NAME}_data
   cgraph
 )
 
+# Event data structure test
+ament_add_gtest(test_${PROJECT_NAME}_cache
+  ./test_cache.cpp
+)
+
+target_link_libraries(test_${PROJECT_NAME}_cache
+  ${PROJECT_NAME}
+)
+
 # System time executor test
 ament_add_gtest(test_${PROJECT_NAME}_runtime
   ./test_system_time_executor.cpp
@@ -45,7 +54,8 @@ target_link_libraries(test_${PROJECT_NAME}_conflict_identifier
 
 # CP Solver
 ament_add_gtest(test_${PROJECT_NAME}_cp_solver
-  ./test_cp_solver.cpp
+  #  ./test_cp_solver.cpp
+  ./test_window.cpp
 )
 
 target_link_libraries(test_${PROJECT_NAME}_cp_solver

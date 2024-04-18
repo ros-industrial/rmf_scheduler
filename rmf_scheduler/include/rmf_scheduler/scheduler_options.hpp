@@ -15,6 +15,8 @@
 #ifndef RMF_SCHEDULER__SCHEDULER_OPTIONS_HPP_
 #define RMF_SCHEDULER__SCHEDULER_OPTIONS_HPP_
 
+#include <string>
+
 namespace rmf_scheduler
 {
 
@@ -33,6 +35,12 @@ public:
   SchedulerOptions & series_max_expandable_duration(double sec);
   SchedulerOptions & expand_series_automatically(bool);
   SchedulerOptions & estimate_timeout(double sec);
+  SchedulerOptions & enable_optimization(bool);
+  SchedulerOptions & optimization_window(const std::string &);
+  SchedulerOptions & optimization_window_timezone(const std::string &);
+  SchedulerOptions & enable_local_caching(bool);
+  SchedulerOptions & cache_dir(const std::string &);
+  SchedulerOptions & cache_keep_last(size_t);
 
 private:
   // TODO(Briancbn): use context here
@@ -41,6 +49,14 @@ private:
   double series_max_expandable_duration_ = 2 * 30 * 24 * 60 * 60;  // 2months
   bool expand_series_ = true;
   double estimate_timeout_ = 2.0;  // 2s
+
+  bool enable_optimization_ = false;
+  std::string optimization_window_ = "";
+  std::string optimization_window_timezone_ = "Asia/Singapore";
+
+  bool enable_local_caching_ = false;
+  std::string cache_dir_ = ".";
+  size_t cache_keep_last_ = 5;
 };
 
 }  // namespace rmf_scheduler

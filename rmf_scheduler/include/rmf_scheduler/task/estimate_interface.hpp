@@ -39,14 +39,15 @@ struct EstimateState
   double orientation;
   std::unordered_map<std::string, double> consumables;
   nlohmann::json json() const;
+  static std::shared_ptr<EstimateState> from_json(const nlohmann::json &);
 };
 
 struct EstimateStates
 {
   /// Estimated start state
-  EstimateState start;
+  std::shared_ptr<EstimateState> start;
   /// Estimated end state
-  EstimateState end;
+  std::shared_ptr<EstimateState> end;
 };
 
 struct EstimateRequest

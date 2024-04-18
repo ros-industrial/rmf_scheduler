@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <random>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_set>
@@ -233,6 +234,16 @@ inline void print_events(const std::vector<data::Event> & events)
   }
 }
 
+inline std::string init_json_from_file(
+  const std::string & path,
+  bool relative = true)
+{
+  std::ifstream f_json(
+    relative ? std::string(TEST_DIRECTORY) + path : path);
+  std::stringstream b_json;
+  b_json << f_json.rdbuf();
+  return b_json.str();
+}
 
 }  // namespace test_utils
 

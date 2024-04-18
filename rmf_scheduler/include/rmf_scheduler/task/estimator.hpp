@@ -55,20 +55,27 @@ public:
     std::unordered_map<std::string, data::Event> & events_to_add,
     double timeout);
 
+  bool validate_all_estimate_states() const;
+
   bool validate_estimate_states(
     const std::string & robot_name,
-    uint64_t start_time,
-    uint64_t end_time) const;
+    uint64_t start_time = 0,
+    uint64_t end_time = UINT64_MAX) const;
 
   void add_estimate_states(
     const std::string & robot_name,
     uint64_t time,
     const task::EstimateStates & estimated_state);
 
+  void add_estimate_states(
+    const std::vector<data::Event> & events);
+
   void delete_estimate_states(
     const std::string & robot_name,
     uint64_t start_time,
     uint64_t end_time);
+
+  void clear_estimate_states();
 
 private:
   std::unordered_map<std::string,

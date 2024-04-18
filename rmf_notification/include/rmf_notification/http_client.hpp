@@ -26,7 +26,12 @@ namespace rmf_notification
 class HTTPClient : public NotificationClientBase
 {
 public:
-  HTTPClient();
+  HTTPClient(
+    const std::string & auth = "",
+    const std::string & username = "",
+    const std::string & password = "",
+    const std::string & client_id = "",
+    const std::string & token_url = "");
   virtual ~HTTPClient();
   void init(const std::string & endpoint_uri) override;
 

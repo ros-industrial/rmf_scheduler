@@ -7,7 +7,6 @@ find_package(rclcpp REQUIRED)
 find_package(websocketpp REQUIRED)
 find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(rmf_scheduler REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -32,7 +31,6 @@ add_library(${PROJECT_NAME}
 ament_target_dependencies(${PROJECT_NAME}
   websocketpp
   rclcpp
-  rmf_scheduler
 )
 
 target_link_libraries(${PROJECT_NAME}

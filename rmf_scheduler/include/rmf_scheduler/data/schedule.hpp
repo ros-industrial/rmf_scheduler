@@ -145,6 +145,11 @@ public:
     const std::string & series_id,
     const std::string & event_occurrence);
 
+  /// Detach event occurrence from series
+  void detach_event_series_occurrence(
+    const std::string & series_id,
+    const std::string & event_occurrence);
+
   /// Delete a series with all its events
   void delete_event_series(
     const std::string & series_id);
@@ -186,6 +191,11 @@ public:
 
   /// Delete event occurrence from series
   void delete_dag_series_occurrence(
+    const std::string & series_id,
+    const std::string & dag_id);
+
+  /// Detach DAG occurrence from series
+  void detach_dag_series_occurrence(
     const std::string & series_id,
     const std::string & dag_id);
 
