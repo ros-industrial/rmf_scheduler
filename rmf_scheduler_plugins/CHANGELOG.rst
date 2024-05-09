@@ -2,8 +2,8 @@
 Changelog for package rmf_scheduler_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0
+-----
 * Add in battery allocation prototype and fixes for observer (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!32 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/32>`_)
 * Get task id from task state json instead of ros2 message's request id. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!29 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/29>`_)
 * Contributors: Chen Bainian, Lum Kai Wen
