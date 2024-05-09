@@ -2,6 +2,14 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Refactor to get charger info from config file (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!33 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/33>`_)
+* Add in battery allocation prototype and fixes for observer (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!32 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/32>`_)
+* Use ros parameters for plugin loading instead (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!27 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/27>`_)
+* Add new schemas for updating entire series. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!25 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/25>`_)
+* Contributors: Chen Bainian, Lum Kai Wen
+
 0.1.0
 -----
 * Add in functional estimation and executor plug-ins (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!23 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/23>`_)
