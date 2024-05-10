@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  industrial_ci:
+    strategy:
+      matrix:
+        env:
+          # GCC Coverage Build
+          - ICI_JOB_NAME: gcc-coverage
+            ROS_DISTRO: humble
+            TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
+            AFTER_SCRIPT: "./coverage.sh ci"
+            CODE_COVERAGE: "codecov.io"
+          # Clang Build
+          - ICI_JOB_NAME: clang
+            ROS_DISTRO: humble
+            CC: "clang"
+            CXX: "clang++"
+            TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
+          # Adress Sanitizer
+          - ICI_JOB_NAME: gcc-asan
+            ROS_DISTRO: humble
+            TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
+          # Thread Sanitizer
+          - ICI_JOB_NAME: gcc-tsan
+            ROS_DISTRO: humble
+            TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
+    env:
+      ISOLATION: "shell"
+      CCACHE_DIR: ~/.ccache
+      UPSTREAM_WORKSPACE: "deps.repos"
+    runs-on: ubuntu-latest
+    container:
+       image: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
+       credentials:
+          username: ${{ secrets.DOCKER_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_CONTAINER_REGISTRY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v2
+      # setup private keys
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_SERVER_HOSTKEYS }}
+      # step up caching
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.env.ROS_DISTRO }}-${{ matrix.env.ICI_JOB_NAME }}
+      # Run industrial_ci
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{matrix.env}}
+      # Upload Coverage report if configured
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.info
+          fail_ci_if_error: true
