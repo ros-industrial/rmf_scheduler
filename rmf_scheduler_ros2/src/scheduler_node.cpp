@@ -221,6 +221,18 @@ void SchedulerNode::schedule_request_cb(const rmf_task_msgs::msg::ApiRequest & m
     RCLCPP_INFO(_node->get_logger(), "Received Delete Schedule Request.");
     auto error_code = _scheduler->handle_delete_schedule(*payload_it);
     response_msg.json_msg = error_code.json();
+  } else if (type == "pause") {
+    RCLCPP_INFO(_node->get_logger(), "Received Pause Request.");
+    response_msg.json_msg = _scheduler->handle_pause(*payload_it).json();
+  } else if (type == "resume") {
+    RCLCPP_INFO(_node->get_logger(), "Received Resume Request.");
+    response_msg.json_msg = _scheduler->handle_resume(*payload_it).json();
+  } else if (type == "cancel") {
+    RCLCPP_INFO(_node->get_logger(), "Received Cancel Request.");
+    response_msg.json_msg = _scheduler->handle_cancel(*payload_it).json();
+  } else if (type == "toggle_pause") {
+    RCLCPP_INFO(_node->get_logger(), "Received Toggle Pause Request.");
+    response_msg.json_msg = _scheduler->handle_toggle_pause(*payload_it).json();
   } else {
     // skip
     // RCLCPP_INFO(_node->get_logger(), "Received Invalid Schedule Request [%s].", type.c_str());

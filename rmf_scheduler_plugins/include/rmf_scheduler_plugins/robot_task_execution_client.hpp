@@ -60,6 +60,8 @@ private:
 
   rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr task_request_publisher_;
 
+  rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr pause_resume_request_publisher_;
+
   rclcpp::Subscription<rmf_task_msgs::msg::ApiResponse>::SharedPtr task_states_sub_;
 };
 

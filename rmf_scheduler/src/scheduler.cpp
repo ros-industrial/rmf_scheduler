@@ -709,6 +709,82 @@ ErrorCode Scheduler::handle_update_event_time(
   return RMF_SCHEDULER_RESOLVE_ERROR_CODE(update_schedule(description));
 }
 
+
+ErrorCode Scheduler::handle_resume(const nlohmann::json & json)
+{
+  try {
+    std::string id = json["id"].get<std::string>();
+    if (!task_executor_.is_ongoing(id)) {
+      return ErrorCode::INVALID_EVENT;
+    }
+    task_executor_.resume(id);
+  } catch (const std::exception & e) {
+    return {
+      ErrorCode::FAILURE | ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+
+  return {ErrorCode::SUCCESS, ""};
+}
+
+ErrorCode Scheduler::handle_pause(const nlohmann::json & json)
+{
+  try {
+    std::string id = json["id"].get<std::string>();
+    if (!task_executor_.is_ongoing(id)) {
+      return ErrorCode::INVALID_EVENT;
+    }
+    task_executor_.pause(id);
+  } catch (const std::exception & e) {
+    return {
+      ErrorCode::FAILURE | ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+  return {ErrorCode::SUCCESS, ""};
+}
+
+ErrorCode Scheduler::handle_toggle_pause(const nlohmann::json & json)
+{
+  try {
+    std::string id = json["id"].get<std::string>();
+
+    if (!task_executor_.is_ongoing(id)) {
+      return {ErrorCode::FAILURE, "Task is currently not ongoing"};
+    }
+
+    // is_ongoing() returns true only when the task in ONGOING or
+    // PAUSED state. We can assume that at this point it is one of them
+    if ((task_executor_.get_status(id).state == task::Executor::State::ONGOING)) {
+      task_executor_.pause(id);
+    } else {
+      task_executor_.resume(id);
+    }
+  } catch (const std::exception & e) {
+    return {
+      ErrorCode::FAILURE | ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+  return {ErrorCode::SUCCESS, ""};
+}
+
+ErrorCode Scheduler::handle_cancel(const nlohmann::json & json)
+{
+  try {
+    std::string id = json["id"].get<std::string>();
+    task_executor_.cancel(id);
+  } catch (const std::exception & e) {
+    return {
+      ErrorCode::FAILURE | ErrorCode::INVALID_SCHEMA,
+      e.what()
+    };
+  }
+  return {ErrorCode::SUCCESS, ""};
+}
+
+
 nlohmann::json Scheduler::handle_get_schedule(
   const nlohmann::json & request_json)
 {

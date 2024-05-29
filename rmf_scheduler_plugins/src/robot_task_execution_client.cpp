@@ -34,6 +34,7 @@ namespace rmf_scheduler_plugins
 
 static constexpr char RMF_TASK_API_REQUEST_TOPIC[] = "/task_api_requests";
 static constexpr char RMF_TASK_API_RESPONSE_TOPIC[] = "/task_api_responses";
+static constexpr char PAUSE_RESUME_API_REQUEST_TOPIC[] = "/custom_api_requests";
 
 RobotTaskExecutionClient::RobotTaskExecutionClient()
 : schema_validator_({
@@ -75,6 +76,11 @@ void RobotTaskExecutionClient::init(
   task_request_publisher_ =
     node_->create_publisher<rmf_task_msgs::msg::ApiRequest>(
     RMF_TASK_API_REQUEST_TOPIC,
+    transient_local_qos);
+
+  pause_resume_request_publisher_ =
+    node_->create_publisher<rmf_task_msgs::msg::ApiRequest>(
+    PAUSE_RESUME_API_REQUEST_TOPIC,
     transient_local_qos);
 
   task_states_sub_ =
@@ -122,13 +128,9 @@ void RobotTaskExecutionClient::pause(const std::string & id)
 {
   try {
     std::string modified_id = "pause_" + id;
-    nlohmann::json interrupt_task_request_json = {{"task_id", id}};
-    auto json_uri = nlohmann::json_uri{
-      rmf_api_msgs::schemas::interrupt_task_request["$id"]
-    };
-    schema_validator_.validate(json_uri, interrupt_task_request_json);
+    nlohmann::json interrupt_task_request_json = {{"type", "pause_task_request"}, {"id", id}};
 
-    task_request_publisher_->publish(
+    pause_resume_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
       .json_msg(interrupt_task_request_json.dump())
       .request_id(modified_id)
@@ -146,13 +148,9 @@ void RobotTaskExecutionClient::resume(const std::string & id)
 {
   try {
     std::string modified_id = "resume_" + id;
-    nlohmann::json resume_task_request_json = {{"task_id", id}};
-    auto json_uri = nlohmann::json_uri{
-      rmf_api_msgs::schemas::resume_task_request["$id"]
-    };
-    schema_validator_.validate(json_uri, resume_task_request_json);
+    nlohmann::json resume_task_request_json = {{"type", "resume_task_request"}, {"id", id}};
 
-    task_request_publisher_->publish(
+    pause_resume_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
       .json_msg(resume_task_request_json.dump())
       .request_id(modified_id)
@@ -170,7 +168,7 @@ void RobotTaskExecutionClient::cancel(const std::string & id)
 {
   try {
     std::string modified_id = "cancel_" + id;
-    nlohmann::json cancel_task_request_json = {{"task_id", id}};
+    nlohmann::json cancel_task_request_json = {{"task_id", id}, {"type", "cancel_task_request"}};
     auto json_uri = nlohmann::json_uri{
       rmf_api_msgs::schemas::cancel_task_request["$id"]
     };
