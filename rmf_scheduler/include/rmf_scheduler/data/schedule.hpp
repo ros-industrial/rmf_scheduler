@@ -55,33 +55,33 @@ public:
   // DAG CRUD
   /// Add DAG graph for dangling events
   void add_dag(
-    const std::string & dag_id,
+    const std::string & dependency_id,
     DAG && dag);
 
   /// DAG add additional dependency to an event (within or outside the graph)
   void add_dag_dependency(
-    const std::string & dag_id,
+    const std::string & dependency_id,
     const std::string & event_id,
     const DAG::DependencyInfo & dependency_info);
 
   /// Update an existing dependency graph
   void update_dag(
-    const std::string & dag_id,
+    const std::string & dependency_id,
     DAG && dag);
 
   /// Remove an event from the dag
   void detach_dag_event(
-    const std::string & dag_id,
+    const std::string & dependency_id,
     const std::string & event_id);
 
   /// Delete dag and all events within the DAG
-  void delete_dag(const std::string & dag_id);
+  void delete_dag(const std::string & dependency_id);
 
   /// Automatically calculate start time of every event within a DAG based on dependency.
-  void generate_dag_event_start_time(const std::string & dag_id);
+  void generate_dag_event_start_time(const std::string & dependency_id);
 
   /// Get dag
-  const DAG & get_dag(const std::string & dag_id) const;
+  const DAG & get_dag(const std::string & dependency_id) const;
 
   /// Get the start time of a DAG based on the earliest event
   uint64_t get_dag_start_time(
@@ -90,7 +90,7 @@ public:
 
   /// Get the start time of a existing DAG based on the earliest event
   uint64_t get_dag_start_time(
-    const std::string & dag_id) const;
+    const std::string & dependency_id) const;
 
   // Event Series CRUD
   /// Add series based on dangling event
@@ -173,7 +173,7 @@ public:
   /// Update dag series CRON from a specific DAG
   void update_dag_series_cron(
     const std::string & series_id,
-    const std::string & dag_id,
+    const std::string & dependency_id,
     const DAG & new_dag,
     const std::string & new_cron,
     const std::string & timezone);
@@ -186,13 +186,13 @@ public:
   /// Update a single DAG occurrence to make an exception
   void update_dag_series_occurrence(
     const std::string & series_id,
-    const std::string & dag_id,
+    const std::string & dependency_id,
     const DAG & new_dag);
 
   /// Delete event occurrence from series
   void delete_dag_series_occurrence(
     const std::string & series_id,
-    const std::string & dag_id);
+    const std::string & dependency_id);
 
   /// Detach DAG occurrence from series
   void detach_dag_series_occurrence(
@@ -245,7 +245,7 @@ public:
 
   /// Validate delete DAG operation
   void validate_delete_dags(
-    const std::vector<std::string> & dag_ids) const;
+    const std::vector<std::string> & dependency_ids) const;
 
   bool is_dag_series(
     const std::vector<Series::Occurrence> & occurrences,

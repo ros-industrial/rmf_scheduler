@@ -36,7 +36,8 @@ struct Event
     uint64_t _duration,
     std::string _id,
     std::string _series_id,
-    std::string _dag_id,
+    std::string _resource_id,
+    std::string _dependency_id,
     std::string _event_details);
 
   Event() = default;
@@ -62,8 +63,11 @@ struct Event
   /// Series that the event belongs to
   std::string series_id;
 
-  /// DAG that the event belongs to
-  std::string dag_id;
+  /// ID of the resoruce used in this event
+  std::string resource_id;
+
+  /// Dependency ID that the event belongs to
+  std::string dependency_id;
 
   /// Event details
   std::string event_details;

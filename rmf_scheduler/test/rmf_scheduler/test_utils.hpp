@@ -58,6 +58,7 @@ inline std::vector<rmf_scheduler::data::Event> random_event_generator(
           event_id,
           "",
           "",
+          "",
           ""
         });
   }
@@ -73,7 +74,7 @@ inline bool is_event_equal(const data::Event & lhs, const data::Event & rhs)
     lhs.duration == rhs.duration &&
     lhs.id == rhs.id &&
     lhs.series_id == rhs.series_id &&
-    lhs.dag_id == rhs.dag_id &&
+    lhs.dependency_id == rhs.dependency_id &&
     lhs.event_details == rhs.event_details;
 }
 
@@ -156,7 +157,8 @@ inline std::vector<data::Event> load_clashing_events(
             duration,                         // duration
             id,                               // id
             "",                               // series id
-            "",                               // dag id
+            "",                               // resource id
+            "",                               // dependency id
             event_details_json.dump()         // event_details
           }
       );
@@ -179,7 +181,8 @@ inline std::vector<data::Event> load_clashing_events(
           duration,                         // duration
           id,                               // id
           "",                               // series id
-          "",                               // dag id
+          "",                               // resource id
+          "",                               // dependency id
           event_details_json.dump(),        // event details
         }
     );
@@ -208,7 +211,8 @@ inline std::vector<data::Event> load_no_clashing_events(
             duration,               // duration
             id,                     // id
             "",                     // series id
-            "",                     // dag id
+            "",                     // resource id
+            "",                     // dependency id
             event_details,          // event details
           }
       );

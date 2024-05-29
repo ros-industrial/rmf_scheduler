@@ -105,7 +105,7 @@ public:
       Event event = eh_.get_event(node_id);
       event.id = new_node_id;
       event.start_time = event.start_time - ref_occurrence.time + new_occurrence.time;
-      event.dag_id = new_occurrence.id;
+      event.dependency_id = new_occurrence.id;
       eh_.add_event(event);
     }
     dags_[new_occurrence.id] = std::move(new_dag);
@@ -157,7 +157,7 @@ void Schedule::add_event(const Event & event)
 void Schedule::update_event(const Event & event)
 {
   // Update the series occurrence only if it is an event serie
-  if (!event.series_id.empty() && event.dag_id.empty()) {
+  if (!event.series_id.empty() && event.dependency_id.empty()) {
     uint64_t old_start_time = eh_.get_event(event.id).start_time;
     auto series_itr = series_map_.find(event.series_id);
     if (series_itr == series_map_.end()) {
@@ -183,59 +183,58 @@ Event Schedule::get_event(const std::string & event_id) const
 }
 
 void Schedule::add_dag(
-  const std::string & dag_id,
+  const std::string & dependency_id,
   DAG && dag)
 {
   for (auto & event_id : dag.all_nodes()) {
     Event event = eh_.get_event(event_id);
-    event.dag_id = dag_id;
+    event.dependency_id = dependency_id;
     eh_.update_event(event);
   }
 
-  dags_[dag_id] = std::move(dag);
+  dags_[dependency_id] = std::move(dag);
 }
 
 void Schedule::add_dag_dependency(
-  const std::string & dag_id,
+  const std::string & dependency_id,
   const std::string & event_id,
   const DAG::DependencyInfo & dependency_info)
 {
   for (auto & dependant_event_id : dependency_info) {
     Event event = eh_.get_event(dependant_event_id);
-    event.dag_id = dag_id;
+    event.dependency_id = dependency_id;
     eh_.update_event(event);
   }
-  dags_[dag_id].add_dependency(event_id, dependency_info);
+  dags_[dependency_id].add_dependency(event_id, dependency_info);
 }
 
 void Schedule::update_dag(
-  const std::string & dag_id,
+  const std::string & dependency_id,
   DAG && dag)
 {
   std::string series_id;
   bool series_found = false;
-  for (auto & event_id : dags_.at(dag_id).all_nodes()) {
+  for (auto & event_id : dags_.at(dependency_id).all_nodes()) {
     Event event = eh_.get_event(event_id);
     if (!event.series_id.empty() && !series_found) {
       series_id = event.series_id;
       series_found = true;
     }
-    event.dag_id = "";
-    event.series_id = "";
+    event.dependency_id = "";
     eh_.update_event(event);
   }
   for (auto & event_id : dag.all_nodes()) {
     Event event = eh_.get_event(event_id);
-    event.dag_id = dag_id;
+    event.dependency_id = dependency_id;
     if (event.series_id.empty() && series_found) {
       event.series_id = series_id;
     }
     eh_.update_event(event);
   }
-  dags_[dag_id] = std::move(dag);
+  dags_[dependency_id] = std::move(dag);
 
   // Update dag start time here so we can use it later
-  generate_dag_event_start_time(dag_id);
+  generate_dag_event_start_time(dependency_id);
 
   // Generate the start time for events based on DAG
   if (series_found) {
@@ -245,7 +244,7 @@ void Schedule::update_dag(
               series_id.c_str(),
               "Series ID [%s] from DAG [%s] does not exist in schedule",
               series_id.c_str(),
-              dag_id.c_str());
+              dependency_id.c_str());
     }
     uint64_t old_dag_start_time = series_itr->second.get_occurrence_time(dag_id);
 
@@ -255,7 +254,8 @@ void Schedule::update_dag(
       return;
     }
     // update_dag_series_occurrence(
-    uint64_t new_dag_start_time = get_dag_start_time(dag_id);
+    uint64_t old_dag_start_time = series_itr->second.get_occurrence_time(dependency_id);
+    uint64_t new_dag_start_time = get_dag_start_time(dependency_id);
     std::ostringstream oss;
     oss << "Old start time ["
         << old_dag_start_time
@@ -269,18 +269,18 @@ void Schedule::update_dag(
 }
 
 void Schedule::detach_dag_event(
-  const std::string & dag_id,
+  const std::string & dependency_id,
   const std::string & event_id)
 {
   Event event = eh_.get_event(event_id);
-  event.dag_id = "";
-  dags_[dag_id].delete_node(event_id);
+  event.dependency_id = "";
+  dags_[dependency_id].delete_node(event_id);
 }
 
 void Schedule::delete_dag(
-  const std::string & dag_id)
+  const std::string & dependency_id)
 {
-  auto dag_itr = dags_.find(dag_id);
+  auto dag_itr = dags_.find(dependency_id);
   auto events_to_delete = dag_itr->second.all_nodes();
   for (auto & event_id : events_to_delete) {
     eh_.delete_event(event_id);
@@ -288,7 +288,7 @@ void Schedule::delete_dag(
   dags_.erase(dag_itr);
 }
 
-void Schedule::generate_dag_event_start_time(const std::string & dag_id)
+void Schedule::generate_dag_event_start_time(const std::string & dependency_id)
 {
   // Perform a fake execution to estimate time
   // Contains all of the calculated start time from execution of the task ahead
@@ -296,7 +296,7 @@ void Schedule::generate_dag_event_start_time(const std::string & dag_id)
 
   // Use single thread for simplification
   runtime::DAGExecutor dag_executor(1);
-  auto & dag = dags_[dag_id];
+  auto & dag = dags_[dependency_id];
   runtime::DAGExecutor::WorkGenerator work_generator =
     [&calculated_end_time,
       & eh = eh_, &dag](const std::string & id)
@@ -328,9 +328,9 @@ void Schedule::generate_dag_event_start_time(const std::string & dag_id)
   future.get();
 }
 
-const DAG & Schedule::get_dag(const std::string & dag_id) const
+const DAG & Schedule::get_dag(const std::string & dependency_id) const
 {
-  return dags_.at(dag_id);
+  return dags_.at(dependency_id);
 }
 
 uint64_t Schedule::get_dag_start_time(
@@ -355,9 +355,9 @@ uint64_t Schedule::get_dag_start_time(
   return start_time;
 }
 
-uint64_t Schedule::get_dag_start_time(const std::string & dag_id) const
+uint64_t Schedule::get_dag_start_time(const std::string & dependency_id) const
 {
-  auto & dag = dags_.at(dag_id);
+  auto & dag = dags_.at(dependency_id);
   // Send an empty map of events so that we will use existing events
   return get_dag_start_time(dag);
 }
@@ -548,12 +548,12 @@ void Schedule::expand_dag_series_until(
 
 void Schedule::update_dag_series_cron(
   const std::string & series_id,
-  const std::string & dag_id,
+  const std::string & dependency_id,
   const DAG & new_dag,
   const std::string & new_cron,
   const std::string & timezone)
 {
-  const auto & old_dag = dags_.at(dag_id);
+  const auto & old_dag = dags_.at(dependency_id);
   uint64_t old_start_time = get_dag_start_time(old_dag);
   uint64_t new_start_time = get_dag_start_time(new_dag);
   auto & series = series_map_[series_id];
@@ -569,10 +569,10 @@ void Schedule::update_dag_series_until(
 
 void Schedule::update_dag_series_occurrence(
   const std::string & series_id,
-  const std::string & dag_id,
+  const std::string & dependency_id,
   const DAG & new_dag)
 {
-  const auto & old_dag = dags_.at(dag_id);
+  const auto & old_dag = dags_.at(dependency_id);
   uint64_t old_start_time = get_dag_start_time(old_dag);
   uint64_t new_start_time = get_dag_start_time(new_dag);
 
@@ -582,9 +582,9 @@ void Schedule::update_dag_series_occurrence(
 
 void Schedule::delete_dag_series_occurrence(
   const std::string & series_id,
-  const std::string & dag_id)
+  const std::string & dependency_id)
 {
-  const auto & dag = dags_.at(dag_id);
+  const auto & dag = dags_.at(dependency_id);
   uint64_t start_time = get_dag_start_time(dag);
   series_map_[series_id].delete_occurrence(start_time);
 }
@@ -673,9 +673,9 @@ void Schedule::validate_add_events(
               "Event [%s] already exists, use a different ID",
               event_itr.first.c_str());
     }
-    // Keep series_id and dag_ids empty
+    // Keep series_id and dependency_ids empty
     auto result = valid_events.emplace(event_itr.first, event_itr.second);
-    result.first->second.dag_id = "";
+    result.first->second.dependency_id = "";
     result.first->second.series_id = "";
   }
 }
@@ -693,10 +693,10 @@ void Schedule::validate_update_events(
               "Event [%s] doesn't exists, use a different ID",
               event_itr.first.c_str());
     }
-    // Keep series_id and dag_ids unchanged
+    // Keep series_id and dependency_ids unchanged
     Event old_event = eh_.get_event(event_itr.first);
     auto result = valid_events.emplace(event_itr.first, event_itr.second);
-    result.first->second.dag_id = old_event.dag_id;
+    result.first->second.dependency_id = old_event.dependency_id;
     result.first->second.series_id = old_event.series_id;
   }
 }
@@ -786,16 +786,16 @@ void Schedule::validate_dag(
 }
 
 void Schedule::validate_delete_dags(
-  const std::vector<std::string> & dag_ids) const
+  const std::vector<std::string> & dependency_ids) const
 {
-  for (auto & dag_id : dag_ids) {
-    auto dag_itr = dags_.find(dag_id);
+  for (auto & dependency_id : dependency_ids) {
+    auto dag_itr = dags_.find(dependency_id);
     if (dag_itr == dags_.end()) {
       throw exception::DAGIDException(
-              dag_id.c_str(),
+              dependency_id.c_str(),
               "delete_dependency error "
               "dependency [%s] doesn't exists, use a different ID",
-              dag_id.c_str());
+              dependency_id.c_str());
     }
   }
 }

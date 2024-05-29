@@ -865,13 +865,13 @@ data::Schedule::Description Scheduler::get_schedule(
     schedule_description.events.emplace(event.id, event);
 
     // Add Dependency information if needed
-    if (!event.dag_id.empty() &&
-      schedule_description.dependencies.find(event.dag_id) ==
+    if (!event.dependency_id.empty() &&
+      schedule_description.dependencies.find(event.dependency_id) ==
       schedule_description.dependencies.end())
     {
       schedule_description.dependencies.emplace(
-        event.dag_id,
-        schedule_.get_dag(event.dag_id).description());
+        event.dependency_id,
+        schedule_.get_dag(event.dependency_id).description());
     }
 
     // Add series information if needed
@@ -982,49 +982,29 @@ void Scheduler::delete_schedule(
               last_writer_.c_str(), utils::to_localtime(last_write_time_));
     }
 
-    // Update schedule cache
-    // Delete events from the cache
-    // Store dags deleted along the way
-    std::unordered_set<std::string> dag_deleted;
-    for (auto & event_id : event_ids) {
-      data::Event event = schedule_.get_event(event_id);
+    bool is_dag = !event.dependency_id.empty();
+    bool is_series = !event.series_id.empty();
 
-      bool is_dag = !event.dag_id.empty();
-      bool is_series = !event.series_id.empty();
-
-      // Initiate runtime update
-      if (is_dag) {
-        dag_runtime_update(event.dag_id);
-      } else {
-        event_runtime_update(event.id);
-      }
-
-      if (is_dag) {
-        // Special operation if DAG is reoccurring
-        if (is_series) {
-          // Delete DAG if it only contains the event to be deleted
-          auto all_nodes = schedule_.get_dag(event.dag_id).all_nodes();
-          if (all_nodes.size() == 1 && all_nodes.front() == event_id) {
-            schedule_.delete_dag_series_occurrence(
-              event.series_id,
-              event.dag_id);
-            dag_deleted.emplace(event.dag_id);
-          } else {
-            // TODO(anyone): Make this cleaner maybe?
-            // Detach the event from the DAG before deletion
-            data::DAG new_dag(schedule_.get_dag(event.dag_id).description());
-            new_dag.delete_node(event_id);
-            // Make this DAG an exception in the series
-            schedule_.update_dag_series_occurrence(
-              event.series_id,
-              event.dag_id,
-              new_dag);
-            schedule_.update_dag(event.dag_id, std::move(new_dag));
-            schedule_.delete_event(event_id);
-          }
+    if (is_dag) {
+      // Special operation if DAG is reoccurring
+      if (is_series) {
+        // Delete DAG if it only contains the event to be deleted
+        auto all_nodes = schedule_.get_dag(event.dependency_id).all_nodes();
+        if (all_nodes.size() == 1 && all_nodes.front() == event_id) {
+          schedule_.delete_dag_series_occurrence(
+            event.series_id,
+            event.dependency_id);
+          dag_deleted.emplace(event.dependency_id);
         } else {
           // Detach the event from the DAG before deletion
-          schedule_.detach_dag_event(event.dag_id, event_id);
+          data::DAG new_dag(schedule_.get_dag(event.dependency_id).description());
+          new_dag.delete_node(event_id);
+          // Make this DAG an exception in the series
+          schedule_.update_dag_series_occurrence(
+            event.series_id,
+            event.dependency_id,
+            new_dag);
+          schedule_.update_dag(event.dependency_id, std::move(new_dag));
           schedule_.delete_event(event_id);
         }
       } else if (is_series) {
@@ -1033,32 +1013,27 @@ void Scheduler::delete_schedule(
           event.series_id,
           event_id);
       } else {
+        // Detach the event from the DAG before deletion
+        schedule_.detach_dag_event(event.dependency_id, event_id);
         schedule_.delete_event(event_id);
       }
     }
 
-    // Delete dags from the cache
-    for (auto & dag_id : dependency_ids) {
-      // Run DAG runtime update
-      dag_runtime_update(dag_id);
-      if (dag_deleted.find(dag_id) != dag_deleted.end()) {
-        continue;
-      }
-      auto all_nodes = schedule_.get_dag(dag_id).all_nodes();
-      if (!all_nodes.empty() &&
-        !schedule_.get_event(all_nodes.front()).series_id.empty())
-      {
-        // DAG is part of a series
-        auto series_id = schedule_.get_event(all_nodes.front()).series_id;
-        schedule_.delete_dag_series_occurrence(
-          series_id, dag_id);
-      } else {
-        schedule_.delete_dag(dag_id);
-      }
+  // Delete dags from the cache
+  for (auto & dependency_id : dependency_ids) {
+    if (dag_deleted.find(dependency_id) != dag_deleted.end()) {
+      continue;
     }
-
-    for (auto & series_id : event_series_ids) {
-      schedule_.delete_event_series(series_id);
+    auto all_nodes = schedule_.get_dag(dependency_id).all_nodes();
+    if (!all_nodes.empty() &&
+      !schedule_.get_event(all_nodes.front()).series_id.empty())
+    {
+      // DAG is part of a series
+      auto series_id = schedule_.get_event(all_nodes.front()).series_id;
+      schedule_.delete_dag_series_occurrence(
+        series_id, dependency_id);
+    } else {
+      schedule_.delete_dag(dependency_id);
     }
 
     for (auto & series_id : dag_series_ids) {
@@ -1653,7 +1628,8 @@ void Scheduler::spin()
     0,                          // duration
     ticking_event_id,           // id
     "",                         // series id
-    "",                         // dag id
+    "",                         // resource id
+    "",                         // dependency id
     ""                          // event details
   };
 
@@ -1715,7 +1691,8 @@ void Scheduler::_tick()
       0,                          // duration
       ticking_event_id,           // id
       "",                         // series id
-      "",                         // dag id
+      "",                         // resource id
+      "",                         // dependency id
       ""                          // event details
     };
 
@@ -1799,8 +1776,8 @@ void Scheduler::_push_events(uint64_t start_time, uint64_t end_time)
       continue;
     }
 
-    bool dag_action = !event.dag_id.empty();
-    std::string action_id = dag_action ? event.dag_id : event.id;
+    bool dag_action = !event.dependency_id.empty();
+    std::string action_id = dag_action ? event.dependency_id : event.id;
 
     // Check ignore actions that are already pushed
     if (pushed_action_ids_.find(action_id) != pushed_action_ids_.end()) {
@@ -1826,7 +1803,8 @@ void Scheduler::_push_events(uint64_t start_time, uint64_t end_time)
         0,                          // duration
         action_id,                  // id
         "",                         // series id
-        "",                         // dag id
+        "",                         // resource id
+        "",                         // dependency id
         ""                          // event details
       };
       action = _generate_dag_action(start_time, action_id, dag.description());

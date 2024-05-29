@@ -31,7 +31,7 @@ void json_to_events(
     std::string id = itr.key();
 
     uint64_t duration = 0;
-    std::string series_id, dependency_id, event_details;
+    std::string series_id, dependency_id, resource_id, event_details, task_details;
 
     // Check for optional items first
     if (event_json.contains("duration")) {
@@ -46,9 +46,14 @@ void json_to_events(
       dependency_id = event_json["dependency_id"];
     }
 
+    if (event_json.contains("resource_id")) {
+      resource_id = event_json["resource_id"];
+    }
+
     if (event_json.contains("event_details")) {
       event_details = event_json["event_details"].dump();
     }
+
 
     // Create event
     data::Event event {
@@ -57,14 +62,11 @@ void json_to_events(
       static_cast<uint64_t>(event_json["start_time"].get<double>() * 1e9),  // start time
       duration,                                                             // duration
       id,                                                                   // id
-      series_id,                                                            // series id
+      series_id,
+      resource_id,                                                          // series id
       dependency_id,                                                        // dag id
       event_details                                                         // event details
     };
-
-    if (event_json.contains("task_details")) {
-      event.task_details = event_json["task_details"].dump();
-    }
 
     events_description.emplace(id, std::move(event));
   }
@@ -218,8 +220,8 @@ void events_to_json(
       event_json["series_id"] = event.series_id;
     }
 
-    if (!event.dag_id.empty()) {
-      event_json["dependency_id"] = event.dag_id;
+    if (!event.dependency_id.empty()) {
+      event_json["dependency_id"] = event.dependency_id;
     }
 
     if (!event.task_details.empty() && full) {

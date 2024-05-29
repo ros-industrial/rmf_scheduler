@@ -27,7 +27,8 @@ Event::Event(
   uint64_t _duration,
   std::string _id,
   std::string _series_id,
-  std::string _dag_id,
+  std::string _resource_id,
+  std::string _dependency_id,
   std::string _event_details)
 : description(_description),
   type(_type),
@@ -35,7 +36,8 @@ Event::Event(
   duration(_duration),
   id(_id),
   series_id(_series_id),
-  dag_id(_dag_id),
+  resource_id(_resource_id),
+  dependency_id(_dependency_id),
   event_details(_event_details)
 {
 }

@@ -10,9 +10,9 @@
     "start_time": { "type": "number" },
     "duration": {"type": "number"},
     "series_id": { "type": "string" },
+    "resource_id": {"type": "string"},
     "dependency_id": { "type": "string" },
-    "event_details": { "type": "object" },
-    "task_details": { "type": "object" }
+    "event_details": { "type": "object" }
   },
   "required": ["description", "type", "start_time", "event_details"],
   "additionalProperties": false

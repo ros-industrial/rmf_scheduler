@@ -137,7 +137,8 @@ TEST_F(TestSystemTimeExecutor, ExecuteImmediately)
     0,                          // duration
     event_id,                   // id
     "",                         // series id
-    "",                         // dag id
+    "",                         // resource id
+    "",                         // dependency id
     ""                          // event details
   };
   start_time_ = utils::now();
@@ -185,7 +186,8 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
     0,                          // duration
     event_id,                   // id
     "",                         // series id
-    "",                         // dag id
+    "",                         // resource id
+    "",                         // dependency id
     ""                          // event details
   };
 
@@ -213,7 +215,8 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
     0,                          // duration
     event_id,                   // id
     "",                         // series id
-    "",                         // dag id
+    "",                         // resource id
+    "",                         // dependency id
     ""                          // event details
   };
 

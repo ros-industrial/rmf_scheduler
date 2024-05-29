@@ -30,7 +30,8 @@ TEST(TestEventsHandler, BasicCRUD) {
     10,                         // duration
     event_id,                   // id
     "",                         // series id
-    "",                         // dag id
+    "",                         // resource id
+    "",                         // dependency id
     ""                          // event details
   };
 
@@ -60,6 +61,7 @@ TEST(TestEventsHandler, BasicCRUD) {
     10,
     event_id,  // id stays the same
     "dks",
+    "some_resoruce_id",
     "aaa",
     ""
   };
