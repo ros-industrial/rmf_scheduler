@@ -135,6 +135,14 @@ public:
     uint64_t start_time = 0,
     uint64_t end_time = UINT64_MAX) const;
 
+  ErrorCode handle_pause(const nlohmann::json & request);
+
+  ErrorCode handle_resume(const nlohmann::json & request);
+
+  ErrorCode handle_toggle_pause(const nlohmann::json & request);
+
+  ErrorCode handle_cancel(const nlohmann::json & request);
+
   void expand_schedule(uint64_t end_time);
 
   ErrorCode handle_delete_schedule(const nlohmann::json & request_json);

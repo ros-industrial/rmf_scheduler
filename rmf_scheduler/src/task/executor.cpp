@@ -57,15 +57,6 @@ public:
     }
   }
 
-  void cancel_callback(
-    const std::string & id)
-  {
-    const auto & status = status_[id];
-    auto itr = ongoing_task_sig_.find(id);
-    itr->second.set_value(status);
-    ongoing_task_sig_.erase(itr);
-  }
-
   void update(
     const std::string & /*id*/,
     uint64_t /*remaining_time*/) final
@@ -208,7 +199,6 @@ void Executor::cancel(const std::string & id)
   // return the future object too
   auto completion_observer = std::dynamic_pointer_cast<ExecutionStatusCompletionObserver>(
     runtime_status_completion_observer_);
-  completion_observer->cancel_callback(id);
 }
 
 const Executor::Status & Executor::get_status(const std::string & id) const
