@@ -66,10 +66,12 @@ Cache::Cache(
   size_t size = rf.tellg();
   size_t old_keep_last = size / 36;
   rf.seekg(0, std::ios::beg);
-  char uuid[36];
+  char uuid[37];
   bool found_valid_cache = false;
   for (size_t i = 0; i < old_keep_last; i++) {
-    rf.read(uuid, sizeof(uuid));
+    rf.read(uuid, 36);
+    // Null terminate the string
+    uuid[36] = '\0';
     if (found_valid_cache) {
       // Remove the rest of the cache
       // if there is already one valid
