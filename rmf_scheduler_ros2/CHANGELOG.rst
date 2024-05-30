@@ -2,6 +2,11 @@
 Changelog for package rmf_scheduler_ros2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add feature to pause, resume and cancel ongoing tasks. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!34 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/34>`_)
+* Contributors: Lum Kai Wen
+
 0.2.0
 -----
 * Refactor to get charger info from config file (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!33 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/33>`_)
