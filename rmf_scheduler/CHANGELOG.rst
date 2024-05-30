@@ -2,8 +2,8 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1
+-----
 * Fix cache filename buffer overflow (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!35 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/35>`_)
 * Add feature to pause, resume and cancel ongoing tasks. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!34 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/34>`_)
 * Contributors: Chen Bainian, Lum Kai Wen
