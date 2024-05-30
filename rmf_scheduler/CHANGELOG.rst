@@ -2,6 +2,12 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix cache filename buffer overflow (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!35 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/35>`_)
+* Add feature to pause, resume and cancel ongoing tasks. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!34 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/34>`_)
+* Contributors: Chen Bainian, Lum Kai Wen
+
 0.2.0
 -----
 * Refactor to get charger info from config file (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!33 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/33>`_)
