@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rmf_scheduler_ros2</name>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <description>ROS2 Interface for the rmf_scheduler package</description>
   <maintainer email="lum_kai_wen@artc.a-star.edu.sg">Lum Kai Wen</maintainer>
   <maintainer email="chenbn@artc.a-star.edu.sg">Chen Bainian</maintainer>
