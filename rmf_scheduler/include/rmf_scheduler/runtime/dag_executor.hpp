@@ -26,6 +26,7 @@ namespace tf
 template<typename T>
 class Future;
 class Executor;
+class Taskflow;
 }  // namespace tf
 
 namespace rmf_scheduler
@@ -56,7 +57,7 @@ public:
   bool ongoing() const;
 
 protected:
-  void _cancel_and_next();
+  std::unique_ptr<tf::Taskflow> taskflow_;
   std::unique_ptr<tf::Executor> executor_;
   std::unique_ptr<data::DAG> dag_;
   std::unique_ptr<data::DAG> next_dag_;

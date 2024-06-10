@@ -43,17 +43,30 @@ std::shared_future<void> DAGExecutor::run(
   const data::DAG::Description & dag,
   WorkGenerator work_generator)
 {
-  // Deep copy the DAG
-  dag_ = std::make_unique<data::DAG>(dag);
+  // Create a task flow graph using DAG
+  taskflow_ = std::make_unique<tf::Taskflow>();
+  std::unordered_map<std::string, tf::Task> tasks;
 
-  // Generate the work function for the DAG based on id
-  for (auto & itr : dag_->node_list_) {
-    itr.second->work(work_generator(itr.first));
+  // Create tasks based on the DAG in taskflow
+  dag.graph_.for_each_node(
+    [&tasks, &work_generator, this](data::Node::ConstPtr node) {
+      tf::Task task = taskflow_->emplace(
+        work_generator(node->id())
+      ).name(node->id());
+      tasks[node->id()] = task;
+    }
+  );
+
+  // Add dependency based the DAG in taskflow
+  for (auto & itr : tasks) {
+    data::Node::ConstPtr source_node = dag.graph_.get_node(itr.first);
+    for (auto & destination_id : source_node->outbound_edges()) {
+      itr.second.precede(tasks.at(destination_id));
+    }
   }
 
-  cancel_handler_ = std::make_shared<tf::Future<void>>(executor_->run(*dag_->taskflow_));
-  future_ = cancel_handler_->share();
-  return future_;
+  future_ = std::make_shared<tf::Future<void>>(executor_->run(*taskflow_));
+  return future_->share();
 }
 
 void DAGExecutor::cancel_and_next(const data::DAG::Description & dag, WorkGenerator work_generator)

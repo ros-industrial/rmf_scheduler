@@ -31,6 +31,8 @@ add_library(${PROJECT_NAME}
   src/cache.cpp
   src/conflict/identifier.cpp
   src/conflict/cp_solver.cpp
+  src/data/node.cpp
+  src/data/graph.cpp
   src/data/dag.cpp
   src/data/event.cpp
   src/data/events_handler.cpp

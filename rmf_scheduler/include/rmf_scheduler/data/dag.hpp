@@ -23,14 +23,9 @@
 #include <utility>
 #include <vector>
 
+#include "rmf_scheduler/data/graph.hpp"
 #include "rmf_scheduler/exception.hpp"
 #include "rmf_scheduler/error_code.hpp"
-
-namespace tf
-{
-class Task;
-class Taskflow;
-}  // namespace tf
 
 namespace rmf_scheduler
 {
@@ -42,7 +37,6 @@ class DAGExecutor;
 
 namespace data
 {
-
 class DAG
 {
   friend class runtime::DAGExecutor;
@@ -50,13 +44,16 @@ class DAG
 public:
   using DependencyInfo = std::vector<std::string>;
   using Description = std::unordered_map<std::string, DependencyInfo>;
-  using NodeList = std::unordered_map<std::string, std::unique_ptr<tf::Task>>;
 
   DAG();
+
+  // Not copiable
   DAG(const DAG &) = delete;
   DAG & operator=(const DAG &) = delete;
-  DAG(DAG &&);
-  DAG & operator=(DAG && rhs);
+
+  // Movable
+  DAG(DAG &&) = default;
+  DAG & operator=(DAG &&) = default;
 
   /// Construct a DAG based on description
   /**
@@ -119,8 +116,7 @@ public:
   DependencyInfo get_successor_info(const std::string &) const;
 
 protected:
-  std::unique_ptr<tf::Taskflow> taskflow_;
-  NodeList node_list_;
+  Graph graph_;
 
 private:
   // DFS function to find if a cycle exists

@@ -76,6 +76,15 @@ TEST_F(TestDAG, BasicDAGCRUD) {
   ));
   EXPECT_TRUE(dag_.get_dependency_info("task6").empty());
 
+  // Add dependencies that exists (should ignore)
+  dag_.add_dependency("task5", {"task6", "task2"});
+  // Dependency info unchanged
+  EXPECT_TRUE(
+    test_utils::is_vector_equal(
+      dag_.get_dependency_info("task5"),
+      {"task6", "task2"}
+  ));
+
   // out = dag_.description();
   // for (auto & itr : out) {
   //   std::cout << itr.first << ": ";
