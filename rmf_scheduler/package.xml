@@ -19,7 +19,7 @@
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
   <depend>ortools_vendor</depend>
-  <depend>rmf_notification</depend>
+  <depend>tinyxml2_vendor</depend>
   <test_depend>graphviz-dev</test_depend>
 
   <test_depend>ament_lint_auto</test_depend>

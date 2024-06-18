@@ -11,7 +11,8 @@ find_package(pluginlib REQUIRED)
 find_package(taskflow_vendor REQUIRED)
 find_package(croncpp_vendor REQUIRED)
 find_package(ortools REQUIRED)
-find_package(rmf_notification REQUIRED)
+find_package(tinyxml2_vendor REQUIRED)
+find_package(TinyXML2 REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -52,6 +53,7 @@ add_library(${PROJECT_NAME}
   src/task/execution_interface.cpp
   src/task/executor.cpp
   src/utils/system_time_utils.cpp
+  src/utils/dag_bt_converter.cpp
   src/log.cpp
   src/default_log_handler.cpp
   src/window.cpp
@@ -69,6 +71,7 @@ target_link_libraries(${PROJECT_NAME}
   nlohmann_json::nlohmann_json
   nlohmann_json_schema_validator
   ortools::ortools
+  tinyxml2
 )
 
 rmf_api_generate_schema_headers(

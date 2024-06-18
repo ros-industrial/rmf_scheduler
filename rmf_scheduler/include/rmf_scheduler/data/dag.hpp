@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <stack>
 #include <utility>
 #include <vector>
 
@@ -44,6 +45,7 @@ class DAG
 public:
   using DependencyInfo = std::vector<std::string>;
   using Description = std::unordered_map<std::string, DependencyInfo>;
+  using TaskInfo = std::function<std::string(const std::string &)>;
 
   DAG();
 
@@ -113,7 +115,9 @@ public:
 
   DependencyInfo get_dependency_info(const std::string &) const;
 
-  DependencyInfo get_successor_info(const std::string &) const;
+  std::string generate_bt_xml(const std::string & bt_id, const TaskInfo & API_callback);
+  // not a const function due to adding of null node if >1 entry node
+  std::string generate_ordered_tree();
 
 protected:
   Graph graph_;
@@ -124,6 +128,11 @@ private:
     const std::string & id,
     std::unordered_map<std::string, bool> & visited,
     std::unordered_map<std::string, bool> & rec_stack) const;
+
+  void _get_tree(
+    const std::string & id, std::unordered_map<std::string, bool> & visited,
+    bool & if_task_before, bool & is_parallel, std::ostream & oss, size_t & parallel_count,
+    std::stack<size_t> & parallel_count_stack);
 
   Description temp_description_info_;
 };

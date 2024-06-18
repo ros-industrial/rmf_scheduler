@@ -117,6 +117,54 @@ TEST_F(TestDAG, BasicDAGCRUD) {
   }
 }
 
+TEST_F(TestDAG, DAGBTXML) {
+  using namespace rmf_scheduler;  // NOLINT(build/namespaces)
+
+  std::string bt_id{"5"};
+  std::unordered_map<std::string, std::string> map = {
+    {"task1", "TrayID: A0221, Vehicle: Robot2, OriginID: 35, DestinationID: 6"},
+    {"task2", "TrayID: A0221, Vehicle: Robot2, OriginID: 40, DestinationID: 8"},
+    {"task3", "TrayID: A0221, Vehicle: Robot2, OriginID: 25, DestinationID: 90"},
+    {"task4", "TrayID: A0221, Vehicle: Robot2, OriginID: 10, DestinationID: 15"},
+    {"task5", "TrayID: A0221, Vehicle: Robot2, OriginID: 15, DestinationID: 13"},
+    {"task6", "TrayID: A0221, Vehicle: Robot2, OriginID: 13, DestinationID: 28"},
+    {"task7", "TrayID: A0221, Vehicle: Robot2, OriginID: 19, DestinationID: 35"},
+    {"task8", "TrayID: A0221, Vehicle: Robot2, OriginID: 60, DestinationID: 65"},
+    {"task9", "TrayID: A0221, Vehicle: Robot2, OriginID: 49, DestinationID: 40"},
+    {"task10", "TrayID: A0221, Vehicle: Robot2, OriginID: 20, DestinationID: 29"},
+    {"task11", "TrayID: A0221, Vehicle: Robot2, OriginID: 80, DestinationID: 35"},
+    {"task12", "TrayID: A0221, Vehicle: Robot2, OriginID: 65, DestinationID: 54"},
+    {"task13", "TrayID: A0221, Vehicle: Robot2, OriginID: 30, DestinationID: 32"},
+    {"task14", "TrayID: A0221, Vehicle: Robot2, OriginID: 29, DestinationID: 4"}
+  };
+  static const char * xml_text =
+    R"(<root BTCPP_format="4">
+    <BehaviorTree ID="5">
+        <Sequence>
+            <Script code="MO1:=&apos;A0221,task1,35,6&apos;"/>
+            <MovementOrder MO="{MO1}"/>
+            <Parallel>
+                <Script code="MO2:=&apos;A0221,task3,25,90&apos;"/>
+                <MovementOrder MO="{MO2}"/>
+                <Script code="MO3:=&apos;A0221,task4,10,15&apos;"/>
+                <MovementOrder MO="{MO3}"/>
+            </Parallel>
+            <Script code="MO4:=&apos;A0221,task2,40,8&apos;"/>
+            <MovementOrder MO="{MO4}"/>
+        </Sequence>
+    </BehaviorTree>
+</root>
+)";
+  std::function<std::string(const std::string &)> f5 = [&map](const std::string & id)
+    -> std::string {
+      std::string description;
+      description = map.at(id);
+      return description;
+    };
+  auto str = dag_.generate_bt_xml(bt_id, f5);
+  EXPECT_EQ(str, xml_text);
+  // std::cout << str << std::endl;
+}
 // Graphviz leaks due to its upstream dependencies
 // https://gitlab.com/graphviz/graphviz/-/issues/1461
 // Disable address sanitizer

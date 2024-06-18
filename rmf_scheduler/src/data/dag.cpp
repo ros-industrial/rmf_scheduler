@@ -14,8 +14,9 @@
 
 #include <ostream>
 #include <sstream>
-
+#include <cassert>
 #include "rmf_scheduler/data/dag.hpp"
+#include "rmf_scheduler/utils/dag_bt_converter.hpp"
 
 namespace rmf_scheduler
 {
@@ -262,21 +263,92 @@ DAG::DependencyInfo DAG::get_dependency_info(const std::string & id) const
   };
 }
 
-DAG::DependencyInfo DAG::get_successor_info(const std::string & id) const
+std::string DAG::generate_bt_xml(const std::string & bt_id, const TaskInfo & callback_func)
 {
-  DependencyInfo out;
-  auto itr = node_list_.find(id);
-  if (itr == node_list_.end()) {
-    return out;
-  }
-
-  itr->second->for_each_successor(
-    [&out](tf::Task successor) mutable {
-      out.push_back(successor.name());
-    });
-  return out;
+  auto tasks = generate_ordered_tree();
+  // std::cout << tasks << std::endl;
+  bt_converter::BTConverter xml(tasks);
+  xml.generate_tree(bt_id, callback_func);
+  return xml.get_xml_str();
 }
 
+std::string DAG::generate_ordered_tree()
+{
+  bool if_task_before = false;
+  bool is_parallel = false;
+  std::unordered_map<std::string, bool> visited;
+  // stack for keeping track of nodes in parallel for string formatting
+  std::stack<size_t> parallel_count_stack;
+  size_t parallel_count{0};
+  // check to see if what was stored previously in oss was a symbol or task
+  // check to see if the current recursion call is a node in parallel sequence
+  std::ostringstream oss;
+  auto node_list = graph_.get_all_nodes();
+  for (auto & node : node_list) {
+    visited[node.first] = false;
+  }
+  auto entry_nodes_ = entry_nodes();
+  // TODO(DillonChew98) implement check for null node and removal of null node
+  if (entry_nodes_.size() > 1) {
+    assert(false);
+    add_node("null");
+    _get_tree(
+      "null", visited, if_task_before, is_parallel, oss, parallel_count,
+      parallel_count_stack);
+  } else {
+    _get_tree(
+      *(entry_nodes_.begin()), visited, if_task_before, is_parallel, oss, parallel_count,
+      parallel_count_stack);
+  }
+  return oss.str();
+}
+
+void DAG::_get_tree(
+  const std::string & id, std::unordered_map<std::string, bool> & visited,
+  bool & if_task_before, bool & is_parallel, std::ostream & oss, size_t & parallel_count,
+  std::stack<size_t> & parallel_count_stack)
+{
+  visited[id] = true;
+  auto successor_list = graph_.get_node(id)->outbound_edges();
+  auto dependency_list = graph_.get_node(id)->inbound_edges();
+  // return if there are still dependencies to prevent duplication of node
+  for (auto it = dependency_list.begin(); it != dependency_list.end(); ++it) {
+    if (!visited[*it]) {
+      return;
+    }
+  }
+  // if there are no successors, it is an end node, sets the current node as an action in a sequence
+  if (successor_list.empty()) {
+    if (if_task_before) {
+      oss << ", ";
+    }
+    oss << "-> " << id << " ";
+    if_task_before = true;
+  } else if (successor_list.size() == 1) {  // if parent node only has one child
+    oss << "-> " << id << " ";
+    if_task_before = true;
+    is_parallel = false;
+    _get_tree(
+      *(successor_list.begin()), visited, if_task_before, is_parallel, oss, parallel_count,
+      parallel_count_stack);
+  } else if (successor_list.size() > 1) {  // branching node, has multiple children
+    oss << "-> " << id << " ";
+    ++parallel_count;
+    parallel_count_stack.push(parallel_count);
+    is_parallel = true;
+    for (auto & successor : successor_list) {
+      for (size_t i{0}; i < parallel_count_stack.top(); ++i) {
+        oss << "/";
+      }
+      if_task_before = false;
+      _get_tree(
+        successor, visited, if_task_before, is_parallel, oss, parallel_count,
+        parallel_count_stack);
+      if_task_before = true;
+    }
+    parallel_count_stack.pop();
+  }
+}
 }  // namespace data
 
 }  // namespace rmf_scheduler
