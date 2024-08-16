@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <mutex>
 
 #include "nlohmann/json.hpp"
 #include "nlohmann/json-schema.hpp"
@@ -49,6 +50,8 @@ private:
     const rmf_task_msgs::msg::ApiResponse & request);
 
   rclcpp::Node::SharedPtr node_;
+
+  std::mutex mutex_;
 
   rmf_scheduler::SchemaValidator schema_validator_;
 

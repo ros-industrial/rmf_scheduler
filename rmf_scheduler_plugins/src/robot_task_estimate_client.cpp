@@ -79,6 +79,7 @@ RobotTaskEstimateClient::async_estimate(
   const std::string & id,
   const rmf_scheduler::task::EstimateRequest & request)
 {
+  std::lock_guard<std::mutex> lk(mutex_);
   // Get validation error if any
   // TODO(Briancbn): exception handling
   nlohmann::json task_request;
@@ -124,6 +125,7 @@ RobotTaskEstimateClient::async_estimate(
 void RobotTaskEstimateClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & msg)
 {
+  std::lock_guard<std::mutex> lk(mutex_);
   auto response_map_itr = response_map_.find(msg.request_id);
   if (response_map_itr == response_map_.end()) {
     return;
