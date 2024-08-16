@@ -2,8 +2,8 @@
 Changelog for package rmf_scheduler_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2
+-----
 * Fix race conditions when accessing unordered map. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!36 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/36>`_)
 * Contributors: Lum Kai Wen
 
