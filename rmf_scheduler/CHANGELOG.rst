@@ -2,6 +2,9 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.2.1
 -----
 * Fix cache filename buffer overflow (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!35 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/35>`_)
