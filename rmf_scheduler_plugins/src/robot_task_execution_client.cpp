@@ -90,6 +90,9 @@ void RobotTaskExecutionClient::init(
     std::bind(
       &RobotTaskExecutionClient::handle_response, this,
       std::placeholders::_1));
+
+  task_state_health_update_thread_ =
+    std::thread(&RobotTaskExecutionClient::update_loop, this);
 }
 
 void RobotTaskExecutionClient::start(
@@ -108,7 +111,9 @@ void RobotTaskExecutionClient::start(
     };
     schema_validator_.validate(json_uri, task_request);
 
-    task_status_map_[id] = "idle";
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    task_status_map_[id] =
+      std::make_tuple("idle", std::chrono::system_clock::now(), 0);
 
     task_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
@@ -204,17 +209,23 @@ void RobotTaskExecutionClient::handle_response(
       e.what());
     return;
   }
-  auto task_status_itr = task_status_map_.find(task_id);
-  if (task_status_itr == task_status_map_.end()) {
-    return;
-  }
-  if (status != task_status_itr->second) {
-    RCLCPP_INFO(
-      node_->get_logger(),
-      "Received new task status [%s] for task [%s];",
-      status.c_str(),
-      task_id.c_str());
-    task_status_itr->second = status;
+
+  {
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    auto task_status_itr = task_status_map_.find(task_id);
+    if (task_status_itr == task_status_map_.end()) {
+      return;
+    }
+    std::get<1>(task_status_itr->second) = std::chrono::system_clock::now();
+    std::get<2>(task_status_itr->second) = 0;
+    if (status != std::get<0>(task_status_itr->second)) {
+      RCLCPP_INFO(
+        node_->get_logger(),
+        "Received new task status [%s] for task [%s];",
+        status.c_str(),
+        task_id.c_str());
+      std::get<0>(task_status_itr->second) = status;
+    }
   }
 
   if (status == "completed") {
@@ -237,6 +248,48 @@ void RobotTaskExecutionClient::handle_response(
 
   // Update remaining time
   update(task_id, 5 * 60 * 1e9);  // hardset to be 5 extra minutes
+}
+
+void RobotTaskExecutionClient::update_loop()
+{
+  update_health();
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  update_loop();
+}
+
+void RobotTaskExecutionClient::update_health()
+{
+  auto now = std::chrono::system_clock::now();
+
+  std::vector<std::string> to_remove;
+  {
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    for (auto & task : task_status_map_) {
+      auto task_state = std::get<0>(task.second);
+      if (task_state == "killed" || task_state == "completed" ||
+        task_state == "failed" || task_state == "canceled" ||
+        task_state == "queued")
+      {
+        continue;
+      }
+      auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+        now -
+        std::get<1>(task.second)).count();
+      if (duration > 1000 * 10) {
+        to_remove.push_back(task.first);
+        continue;
+      }
+      std::get<2>(task.second) = duration;
+    }
+  }
+  for (auto & task_id : to_remove) {
+    {
+      std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+      std::get<0>(task_status_map_[task_id]) = "failed";
+    }
+    notify_completion(task_id, false, "failed");
+  }
 }
 
 }  // namespace rmf_scheduler_plugins
