@@ -16,8 +16,11 @@
 #define RMF_SCHEDULER_PLUGINS__ROBOT_TASK_EXECUTION_CLIENT_HPP_
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <chrono>
+#include <tuple>
 
 #include "rmf_scheduler/task/execution_interface.hpp"
 #include "rmf_scheduler/schema_validator.hpp"
@@ -26,6 +29,8 @@
 
 #include "rmf_task_msgs/msg/api_request.hpp"
 #include "rmf_task_msgs/msg/api_response.hpp"
+
+using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
 namespace rmf_scheduler_plugins
 {
@@ -49,14 +54,22 @@ public:
   void cancel(const std::string & id) override;
 
 private:
+  std::thread task_state_health_update_thread_;
+
+  std::mutex task_status_map_mutex_;
+
   rmf_scheduler::SchemaValidator schema_validator_;
 
   rclcpp::Node::SharedPtr node_;
 
+  void update_health();
+
+  void update_loop();
+
   void handle_response(
     const rmf_task_msgs::msg::ApiResponse & response);
 
-  std::unordered_map<std::string, std::string> task_status_map_;
+  std::unordered_map<std::string, std::tuple<std::string, TimePoint, double>> task_status_map_;
 
   rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr task_request_publisher_;
 
