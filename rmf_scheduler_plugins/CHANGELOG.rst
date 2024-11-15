@@ -2,6 +2,11 @@
 Changelog for package rmf_scheduler_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add task state health watchdog capability to exeuction client. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!31 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/31>`_)
+* Contributors: Lum Kai Wen
+
 0.2.2
 -----
 * Fix race conditions when accessing unordered map. (`ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler!36 <https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/rmf_scheduler/-/merge_requests/36>`_)

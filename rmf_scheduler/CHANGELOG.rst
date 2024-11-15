@@ -2,6 +2,9 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.2.2
 -----
 
