@@ -21,7 +21,6 @@ humble-nightly-gcc-coverage:
     ISOLATION: "shell"
     ROS_DISTRO: "humble"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    UPSTREAM_WORKSPACE: "deps.repos"
     TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
 
   script:
@@ -47,7 +46,6 @@ humble-nightly-gcc-asan:
     ISOLATION: "shell"
     ROS_DISTRO: "humble"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    UPSTREAM_WORKSPACE: "deps.repos"
     TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
 
   script:
@@ -68,7 +66,6 @@ humble-nightly-gcc-tsan:
     ISOLATION: "shell"
     ROS_DISTRO: "humble"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    UPSTREAM_WORKSPACE: "deps.repos"
     TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
 
   script:
@@ -89,7 +86,6 @@ humble-nightly-clang:
     ISOLATION: "shell"
     ROS_DISTRO: "humble"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    UPSTREAM_WORKSPACE: "deps.repos"
     CC: "clang"
     CXX: "clang++"
     TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
