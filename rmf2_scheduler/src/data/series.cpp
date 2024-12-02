@@ -19,7 +19,7 @@
 
 #include "rmf2_scheduler/data/series.hpp"
 #include "rmf2_scheduler/data/uuid.hpp"
-#include "rmf2_scheduler/utils.hpp"
+#include "rmf2_scheduler/utils/utils.hpp"
 
 namespace rmf2_scheduler
 {

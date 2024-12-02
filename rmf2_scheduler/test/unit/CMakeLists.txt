@@ -67,3 +67,8 @@ ament_add_gmock(test_data_uuid
   data/test_uuid.cpp
 )
 target_link_libraries(test_data_uuid ${PROJECT_NAME})
+
+ament_add_gmock(test_utils_tree_converter
+  utils/test_tree_converter.cpp
+)
+target_link_libraries(test_utils_tree_converter ${PROJECT_NAME})

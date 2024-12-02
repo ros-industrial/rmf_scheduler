@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMF2_SCHEDULER__UTILS_HPP_
-#define RMF2_SCHEDULER__UTILS_HPP_
+#ifndef RMF2_SCHEDULER__UTILS__UTILS_HPP_
+#define RMF2_SCHEDULER__UTILS__UTILS_HPP_
 
 #include <ctime>
 #include <iomanip>
@@ -109,4 +109,4 @@ inline void set_timezone(const char * tz)
 
 }  // namespace rmf2_scheduler
 
-#endif  // RMF2_SCHEDULER__UTILS_HPP_
+#endif  // RMF2_SCHEDULER__UTILS__UTILS_HPP_

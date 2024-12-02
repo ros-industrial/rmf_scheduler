@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "rmf2_scheduler/data/series.hpp"
-#include "rmf2_scheduler/utils.hpp"
+#include "rmf2_scheduler/utils/utils.hpp"
 #include "../../utils/gtest_macros.hpp"
 #include "./test_series_observer.hpp"
 

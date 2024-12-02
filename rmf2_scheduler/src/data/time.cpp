@@ -23,7 +23,7 @@
 #include <stdexcept>
 
 #include "rmf2_scheduler/data/time.hpp"
-#include "rmf2_scheduler/utils.hpp"
+#include "rmf2_scheduler/utils/utils.hpp"
 
 
 namespace rmf2_scheduler
