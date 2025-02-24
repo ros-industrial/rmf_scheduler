@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "rmf_api_msgs/schemas/task_request.hpp"
-#include "rmf_api_msgs/schemas/task_estimate_request.hpp"
-#include "rmf_api_msgs/schemas/task_estimate_response.hpp"
+// #include "rmf_api_msgs/schemas/task_estimate_request.hpp"
+// #include "rmf_api_msgs/schemas/task_estimate_response.hpp"
 #include "rmf_api_msgs/schemas/robot_task_request.hpp"
 #include "rmf_api_msgs/schemas/robot_task_response.hpp"
 #include "rmf_api_msgs/schemas/dispatch_task_request.hpp"
@@ -39,8 +39,8 @@ RobotTaskEstimateClient::RobotTaskEstimateClient()
     rmf_api_msgs::schemas::dispatch_task_response,
     rmf_api_msgs::schemas::robot_task_request,
     rmf_api_msgs::schemas::robot_task_response,
-    rmf_api_msgs::schemas::task_estimate_request,
-    rmf_api_msgs::schemas::task_estimate_response,
+    // rmf_api_msgs::schemas::task_estimate_request,
+    // rmf_api_msgs::schemas::task_estimate_response,
   })
 {
 }
@@ -102,10 +102,12 @@ RobotTaskEstimateClient::async_estimate(
   estimate_request["robot"] = request.details["robot"].get<std::string>();
   estimate_request["fleet"] = request.details["fleet"].get<std::string>();
   std::string error;
-  auto json_uri = nlohmann::json_uri{
-    rmf_api_msgs::schemas::task_estimate_request["$id"]
-  };
-  schema_validator_.validate(json_uri, estimate_request);
+
+  // Commented till task_estimate_request schema is available.
+  // auto json_uri = nlohmann::json_uri{
+  //   rmf_api_msgs::schemas::task_estimate_request["$id"]
+  // };
+  // schema_validator_.validate(json_uri, estimate_request);
 
   response_map_[id] = std::promise<rmf_scheduler::task::EstimateResponse>();
 
@@ -130,10 +132,11 @@ void RobotTaskEstimateClient::handle_response(
   nlohmann::json raw_response;
   try {
     raw_response = nlohmann::json::parse(msg.json_msg);
-    auto json_uri = nlohmann::json_uri{
-      rmf_api_msgs::schemas::task_estimate_response["$id"]
-    };
-    schema_validator_.validate(json_uri, raw_response);
+    // Commented till task_estimate_request schema is available.
+    // auto json_uri = nlohmann::json_uri{
+    //   rmf_api_msgs::schemas::task_estimate_response["$id"]
+    // };
+    // schema_validator_.validate(json_uri, raw_response);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       node_->get_logger(),
