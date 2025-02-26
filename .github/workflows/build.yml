@@ -35,21 +35,10 @@ jobs:
     env:
       ISOLATION: "shell"
       CCACHE_DIR: ~/.ccache
-      UPSTREAM_WORKSPACE: "deps.repos"
     runs-on: ubuntu-latest
     container:
-       image: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
-       credentials:
-          username: ${{ secrets.DOCKER_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.DOCKER_CONTAINER_REGISTRY_PASSWORD }}
+      image: osrf/ros:humble-desktop
     steps:
-      - uses: actions/checkout@v2
-      # setup private keys
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: ${{ secrets.SSH_SERVER_HOSTKEYS }}
       # step up caching
       - uses: actions/cache@v2
         with:
@@ -59,10 +48,3 @@ jobs:
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}
       # Upload Coverage report if configured
-      - name: Upload coverage reports to Codecov
-        if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.info
-          fail_ci_if_error: true
