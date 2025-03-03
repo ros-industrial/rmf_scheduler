@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # step up caching
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.env.ROS_DISTRO }}-${{ matrix.env.ICI_JOB_NAME }}
