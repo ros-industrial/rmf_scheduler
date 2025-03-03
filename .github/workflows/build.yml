@@ -50,6 +50,8 @@ jobs:
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}
       # Upload Coverage report if configured
+      - name: Install dependency for Codecov
+        run: sudo apt install curl -y
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
         uses: codecov/codecov-action@v5
