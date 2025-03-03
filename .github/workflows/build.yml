@@ -15,6 +15,7 @@ jobs:
           # Clang Build
           - ICI_JOB_NAME: clang
             ROS_DISTRO: humble
+            ADDITIONAL_DEBS: clang lld
             CC: "clang"
             CXX: "clang++"
             TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
