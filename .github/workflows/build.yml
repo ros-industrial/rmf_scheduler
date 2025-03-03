@@ -33,6 +33,7 @@ jobs:
     container:
       image: osrf/ros:humble-desktop
     steps:
+      - uses: actions/checkout@v2
       # step up caching
       - uses: actions/cache@v2
         with:
