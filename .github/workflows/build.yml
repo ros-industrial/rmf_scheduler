@@ -12,6 +12,12 @@ jobs:
     strategy:
       matrix:
         env:
+          # GCC Coverage Build
+          - ICI_JOB_NAME: gcc-coverage
+            ROS_DISTRO: humble
+            TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
+            AFTER_SCRIPT: "./coverage.sh ci"
+            CODE_COVERAGE: "codecov.io"
           # Clang Build
           - ICI_JOB_NAME: clang
             ROS_DISTRO: humble
@@ -44,3 +50,10 @@ jobs:
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}
       # Upload Coverage report if configured
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.info
+          fail_ci_if_error: true
