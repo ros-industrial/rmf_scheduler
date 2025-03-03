@@ -11,7 +11,7 @@ jobs:
   industrial_ci:
     strategy:
       matrix:
-        env:git s
+        env:
           # Clang Build
           - ICI_JOB_NAME: clang
             ROS_DISTRO: humble
