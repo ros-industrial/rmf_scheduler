@@ -38,7 +38,7 @@ jobs:
       CCACHE_DIR: ~/.ccache
     runs-on: ubuntu-latest
     container:
-      image: osrf/ros:humble-desktop
+      image: ros:humble-ros-core
     steps:
       - uses: actions/checkout@v2
       # step up caching
