@@ -21,6 +21,7 @@ jobs:
           # Clang Build
           - ICI_JOB_NAME: clang
             ROS_DISTRO: humble
+            ADDITIONAL_DEBS: clang lld
             CC: "clang"
             CXX: "clang++"
             TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
@@ -35,21 +36,11 @@ jobs:
     env:
       ISOLATION: "shell"
       CCACHE_DIR: ~/.ccache
-      UPSTREAM_WORKSPACE: "deps.repos"
     runs-on: ubuntu-latest
     container:
-       image: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
-       credentials:
-          username: ${{ secrets.DOCKER_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.DOCKER_CONTAINER_REGISTRY_PASSWORD }}
+      image: ros:humble-ros-core
     steps:
       - uses: actions/checkout@v2
-      # setup private keys
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: ${{ secrets.SSH_SERVER_HOSTKEYS }}
       # step up caching
       - uses: actions/cache@v2
         with:
@@ -59,9 +50,11 @@ jobs:
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{matrix.env}}
       # Upload Coverage report if configured
+      - name: Install dependency for Codecov
+        run: sudo apt install curl -y
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.info
