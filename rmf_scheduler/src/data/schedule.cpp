@@ -221,6 +221,7 @@ void Schedule::update_dag(
       series_found = true;
     }
     event.dag_id = "";
+    event.series_id = "";
     eh_.update_event(event);
   }
   for (auto & event_id : dag.all_nodes()) {
@@ -246,8 +247,14 @@ void Schedule::update_dag(
               series_id.c_str(),
               dag_id.c_str());
     }
-    // update_dag_series_occurrence(
     uint64_t old_dag_start_time = series_itr->second.get_occurrence_time(dag_id);
+
+    // Delete the DAG occurrence if it is empty
+    if (dags_.at(dag_id).all_nodes().empty()) {
+      series_itr->second.delete_occurrence(old_dag_start_time);
+      return;
+    }
+    // update_dag_series_occurrence(
     uint64_t new_dag_start_time = get_dag_start_time(dag_id);
     std::ostringstream oss;
     oss << "Old start time ["
@@ -317,7 +324,7 @@ void Schedule::generate_dag_event_start_time(const std::string & dag_id)
              };
     };
   // Run the execution
-  auto future = dag_executor.run(dag, work_generator);
+  auto future = dag_executor.run(dag.description(), work_generator);
   future.get();
 }
 
@@ -459,6 +466,18 @@ void Schedule::delete_event_series_occurrence(
   series_map_[series_id].delete_occurrence(old_event.start_time);
 }
 
+void Schedule::detach_event_series_occurrence(
+  const std::string & series_id,
+  const std::string & event_id)
+{
+  auto old_event = eh_.get_event(event_id);
+  series_map_[series_id].delete_occurrence(old_event.start_time);
+
+  // Add back the old event
+  old_event.series_id = "";
+  eh_.add_event(old_event);
+}
+
 void Schedule::delete_event_series(
   const std::string & series_id)
 {
@@ -568,6 +587,30 @@ void Schedule::delete_dag_series_occurrence(
   const auto & dag = dags_.at(dag_id);
   uint64_t start_time = get_dag_start_time(dag);
   series_map_[series_id].delete_occurrence(start_time);
+}
+
+void Schedule::detach_dag_series_occurrence(
+  const std::string & series_id,
+  const std::string & dag_id)
+{
+  const auto & dag = dags_.at(dag_id);
+  auto dag_description = dag.description();
+  auto all_nodes = dag.all_nodes();
+  // Get all old events
+  std::vector<Event> old_events;
+  for (auto & node : all_nodes) {
+    old_events.push_back(eh_.get_event(node));
+  }
+
+  uint64_t start_time = get_dag_start_time(dag);
+  series_map_[series_id].delete_occurrence(start_time);
+
+  // Add back old event and dag
+  for (auto & event : old_events) {
+    event.series_id = "";
+    eh_.add_event(event);
+  }
+  dags_.emplace(dag_id, dag_description);
 }
 
 void Schedule::delete_dag_series(const std::string & series_id)

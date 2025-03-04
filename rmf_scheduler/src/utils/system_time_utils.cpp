@@ -49,10 +49,16 @@ uint64_t time_max()
   return to_ns(std::chrono::system_clock::time_point::max());
 }
 
-char * to_localtime(uint64_t ns)
+char * to_localtime(
+  uint64_t ns,
+  const std::string & fmt)
 {
   time_t t = ns / 1e9;
-  return std::asctime(std::localtime(&t));
+  std::tm ltime;
+  localtime_r(&t, &ltime);
+  static char mbstr[50];
+  std::strftime(mbstr, sizeof(mbstr), fmt.c_str(), &ltime);
+  return mbstr;
 }
 
 uint64_t from_localtime(

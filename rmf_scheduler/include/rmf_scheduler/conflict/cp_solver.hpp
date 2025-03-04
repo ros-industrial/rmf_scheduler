@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include "rmf_scheduler/data/event.hpp"
+#include "rmf_scheduler/window.hpp"
 
 namespace rmf_scheduler
 {
@@ -39,11 +40,6 @@ class CpSolver
 {
 public:
   class Impl;
-  struct Window
-  {
-    uint64_t start;
-    uint64_t end;
-  };
 
   /// Initiate the solver with a list of events
   /**

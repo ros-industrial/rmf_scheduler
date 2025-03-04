@@ -120,7 +120,7 @@ void CpSolver::init(
   const Window & window,
   double time_limit)
 {
-  if (window.end <= window.start) {
+  if (window.end_time <= window.start_time) {
     throw std::invalid_argument("INVALID WINDOW GIVEN");
   }
 
@@ -224,7 +224,7 @@ void CpSolver::mark_fixed(
 CpSolver::Impl::EventVarPtr CpSolver::Impl::new_var(const data::Event & event)
 {
   // Create variables
-  Domain domain(window.start, window.end);
+  Domain domain(window.start_time, window.end_time);
   IntVar start = p->model_builder.NewIntVar(domain).WithName(event.id);
   IntervalVar interval = p->model_builder.NewFixedSizeIntervalVar(start, event.duration)
     .WithName("interval_" + event.id);
@@ -243,8 +243,8 @@ void CpSolver::Impl::add_abs_diff(
   // Calculate the absolute value of the difference in scheduled start time
   // and original start time
   Domain diff_domain(
-    -int64_t(window.end - window.start),
-    int64_t(window.end - window.start));
+    -int64_t(window.end_time - window.start_time),
+    int64_t(window.end_time - window.start_time));
   IntVar negative_diff =
     p->model_builder.NewIntVar(diff_domain).WithName("negative_diff_" + event.id);
 
@@ -254,7 +254,7 @@ void CpSolver::Impl::add_abs_diff(
   p->model_builder.AddEquality((event_var->start - event.start_time) + negative_diff, 0);
 
   // abs_x
-  IntVar abs_diff = p->model_builder.NewIntVar({0, int64_t(window.end - window.start)})
+  IntVar abs_diff = p->model_builder.NewIntVar({0, int64_t(window.end_time - window.start_time)})
     .WithName("abs_diff_" + event.id);
 
   // abs_x = max(x, y)

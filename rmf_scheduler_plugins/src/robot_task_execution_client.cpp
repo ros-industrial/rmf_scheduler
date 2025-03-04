@@ -34,6 +34,7 @@ namespace rmf_scheduler_plugins
 
 static constexpr char RMF_TASK_API_REQUEST_TOPIC[] = "/task_api_requests";
 static constexpr char RMF_TASK_API_RESPONSE_TOPIC[] = "/task_api_responses";
+static constexpr char PAUSE_RESUME_API_REQUEST_TOPIC[] = "/custom_api_requests";
 
 RobotTaskExecutionClient::RobotTaskExecutionClient()
 : schema_validator_({
@@ -77,6 +78,11 @@ void RobotTaskExecutionClient::init(
     RMF_TASK_API_REQUEST_TOPIC,
     transient_local_qos);
 
+  pause_resume_request_publisher_ =
+    node_->create_publisher<rmf_task_msgs::msg::ApiRequest>(
+    PAUSE_RESUME_API_REQUEST_TOPIC,
+    transient_local_qos);
+
   task_states_sub_ =
     node_->create_subscription<rmf_task_msgs::msg::ApiResponse>(
     "/task_states",
@@ -84,6 +90,9 @@ void RobotTaskExecutionClient::init(
     std::bind(
       &RobotTaskExecutionClient::handle_response, this,
       std::placeholders::_1));
+
+  task_state_health_update_thread_ =
+    std::thread(&RobotTaskExecutionClient::update_loop, this);
 }
 
 void RobotTaskExecutionClient::start(
@@ -102,7 +111,9 @@ void RobotTaskExecutionClient::start(
     };
     schema_validator_.validate(json_uri, task_request);
 
-    task_status_map_[id] = "idle";
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    task_status_map_[id] =
+      std::make_tuple("idle", std::chrono::system_clock::now(), 0);
 
     task_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
@@ -122,13 +133,9 @@ void RobotTaskExecutionClient::pause(const std::string & id)
 {
   try {
     std::string modified_id = "pause_" + id;
-    nlohmann::json interrupt_task_request_json = {{"task_id", id}};
-    auto json_uri = nlohmann::json_uri{
-      rmf_api_msgs::schemas::interrupt_task_request["$id"]
-    };
-    schema_validator_.validate(json_uri, interrupt_task_request_json);
+    nlohmann::json interrupt_task_request_json = {{"type", "pause_task_request"}, {"id", id}};
 
-    task_request_publisher_->publish(
+    pause_resume_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
       .json_msg(interrupt_task_request_json.dump())
       .request_id(modified_id)
@@ -146,13 +153,9 @@ void RobotTaskExecutionClient::resume(const std::string & id)
 {
   try {
     std::string modified_id = "resume_" + id;
-    nlohmann::json resume_task_request_json = {{"task_id", id}};
-    auto json_uri = nlohmann::json_uri{
-      rmf_api_msgs::schemas::resume_task_request["$id"]
-    };
-    schema_validator_.validate(json_uri, resume_task_request_json);
+    nlohmann::json resume_task_request_json = {{"type", "resume_task_request"}, {"id", id}};
 
-    task_request_publisher_->publish(
+    pause_resume_request_publisher_->publish(
       rmf_task_msgs::build<rmf_task_msgs::msg::ApiRequest>()
       .json_msg(resume_task_request_json.dump())
       .request_id(modified_id)
@@ -170,7 +173,7 @@ void RobotTaskExecutionClient::cancel(const std::string & id)
 {
   try {
     std::string modified_id = "cancel_" + id;
-    nlohmann::json cancel_task_request_json = {{"task_id", id}};
+    nlohmann::json cancel_task_request_json = {{"task_id", id}, {"type", "cancel_task_request"}};
     auto json_uri = nlohmann::json_uri{
       rmf_api_msgs::schemas::cancel_task_request["$id"]
     };
@@ -194,8 +197,11 @@ void RobotTaskExecutionClient::handle_response(
   const rmf_task_msgs::msg::ApiResponse & response)
 {
   nlohmann::json task_state_json;
+  std::string task_id, status;
   try {
     task_state_json = nlohmann::json::parse(response.json_msg);
+    task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
+    status = task_state_json["data"]["status"].get<std::string>();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       node_->get_logger(),
@@ -203,19 +209,23 @@ void RobotTaskExecutionClient::handle_response(
       e.what());
     return;
   }
-  auto task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
-  auto task_status_itr = task_status_map_.find(task_id);
-  if (task_status_itr == task_status_map_.end()) {
-    return;
-  }
-  std::string status = task_state_json["data"]["status"].get<std::string>();
-  if (status != task_status_itr->second) {
-    RCLCPP_INFO(
-      node_->get_logger(),
-      "Received new task status [%s] for task [%s];",
-      status.c_str(),
-      task_id.c_str());
-    task_status_itr->second = status;
+
+  {
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    auto task_status_itr = task_status_map_.find(task_id);
+    if (task_status_itr == task_status_map_.end()) {
+      return;
+    }
+    std::get<1>(task_status_itr->second) = std::chrono::system_clock::now();
+    std::get<2>(task_status_itr->second) = 0;
+    if (status != std::get<0>(task_status_itr->second)) {
+      RCLCPP_INFO(
+        node_->get_logger(),
+        "Received new task status [%s] for task [%s];",
+        status.c_str(),
+        task_id.c_str());
+      std::get<0>(task_status_itr->second) = status;
+    }
   }
 
   if (status == "completed") {
@@ -225,6 +235,60 @@ void RobotTaskExecutionClient::handle_response(
       task_id.c_str(),
       status.c_str());
     notify_completion(task_id, true, "completed");
+    return;
+  }
+
+  if (status == "failed" ||
+    status == "canceled" ||
+    status == "killed")
+  {
+    notify_completion(task_id, false, status);
+    return;
+  }
+
+  // Update remaining time
+  update(task_id, 5 * 60 * 1e9);  // hardset to be 5 extra minutes
+}
+
+void RobotTaskExecutionClient::update_loop()
+{
+  update_health();
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  update_loop();
+}
+
+void RobotTaskExecutionClient::update_health()
+{
+  auto now = std::chrono::system_clock::now();
+
+  std::vector<std::string> to_remove;
+  {
+    std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+    for (auto & task : task_status_map_) {
+      auto task_state = std::get<0>(task.second);
+      if (task_state == "killed" || task_state == "completed" ||
+        task_state == "failed" || task_state == "canceled" ||
+        task_state == "queued")
+      {
+        continue;
+      }
+      auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+        now -
+        std::get<1>(task.second)).count();
+      if (duration > 1000 * 10) {
+        to_remove.push_back(task.first);
+        continue;
+      }
+      std::get<2>(task.second) = duration;
+    }
+  }
+  for (auto & task_id : to_remove) {
+    {
+      std::lock_guard<std::mutex> lk(task_status_map_mutex_);
+      std::get<0>(task_status_map_[task_id]) = "failed";
+    }
+    notify_completion(task_id, false, "failed");
   }
 }
 

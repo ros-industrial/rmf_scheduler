@@ -11,6 +11,7 @@ find_package(pluginlib REQUIRED)
 find_package(taskflow_vendor REQUIRED)
 find_package(croncpp_vendor REQUIRED)
 find_package(ortools REQUIRED)
+find_package(rmf_notification REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -27,6 +28,7 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   SHARED
+  src/cache.cpp
   src/conflict/identifier.cpp
   src/conflict/cp_solver.cpp
   src/data/dag.cpp
@@ -50,6 +52,7 @@ add_library(${PROJECT_NAME}
   src/utils/system_time_utils.cpp
   src/log.cpp
   src/default_log_handler.cpp
+  src/window.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME}
@@ -57,6 +60,7 @@ ament_target_dependencies(${PROJECT_NAME}
   croncpp_vendor
   pluginlib
   rclcpp
+  rmf_notification
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -93,6 +97,7 @@ ament_export_include_directories(
 )
 ament_export_dependencies(
   rclcpp
+  rmf_notification
 )
 
 ament_export_libraries(

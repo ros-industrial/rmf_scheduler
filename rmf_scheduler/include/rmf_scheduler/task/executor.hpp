@@ -81,6 +81,9 @@ public:
 
   const Status & get_status(const std::string &) const;
 
+  bool is_ongoing(const std::string &) const;
+  bool is_completed(const std::string &) const;
+
   const std::unordered_map<std::string, Status> & all_status() const;
 
 private:

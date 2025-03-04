@@ -41,22 +41,29 @@ class DAGExecutor
 public:
   using Work = std::function<void ()>;
   using WorkGenerator = std::function<Work(const std::string &)>;
+  static Work EmptyWork();
 
   explicit DAGExecutor(unsigned int concurrency = std::thread::hardware_concurrency());
-  DAGExecutor(const DAGExecutor &) = delete;
-  DAGExecutor & operator=(const DAGExecutor &) = delete;
-  DAGExecutor(DAGExecutor &&);
-  DAGExecutor & operator=(DAGExecutor && rhs);
 
   virtual ~DAGExecutor();
 
-  std::shared_future<void> run(data::DAG &, WorkGenerator);
+  std::shared_future<void> run(const data::DAG::Description &, WorkGenerator);
+
+  void cancel_and_next(const data::DAG::Description &, WorkGenerator);
 
   void cancel();
 
+  bool ongoing() const;
+
 protected:
+  void _cancel_and_next();
   std::unique_ptr<tf::Executor> executor_;
-  std::shared_ptr<tf::Future<void>> future_;
+  std::unique_ptr<data::DAG> dag_;
+  std::unique_ptr<data::DAG> next_dag_;
+  mutable std::mutex next_dag_mtx_;
+  std::shared_ptr<tf::Future<void>> cancel_handler_;
+  std::shared_future<void> future_;
+  std::shared_ptr<std::future<void>> cancel_future_;
 };
 
 }  // namespace runtime

@@ -19,7 +19,7 @@
 #include <mutex>
 #include <functional>
 #include <string>
-#include <unordered_set>
+#include <deque>
 #include <vector>
 
 #include "nlohmann/json.hpp"
@@ -79,7 +79,7 @@ public:
 
 private:
   std::mutex mtx_;
-  std::unordered_set<std::shared_ptr<ExecutionObserverBase>> observers_;
+  std::deque<std::shared_ptr<ExecutionObserverBase>> observers_;
 };
 
 }  // namespace task

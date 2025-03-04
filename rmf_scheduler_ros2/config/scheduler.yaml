@@ -7,6 +7,13 @@ scheduler_node:
     expand_series: true
     estimate_timeout: 0.5  # 0.5s
 
+    # Opimization related parameters
+    optimization_window: 1d
+
+    # Caching related parameters
+    enable_local_caching: true
+    cache_dir: "~/.rs_cache"
+    cache_keep_last: 5
 
 # Estimate client
 scheduler_node_estimate_client:

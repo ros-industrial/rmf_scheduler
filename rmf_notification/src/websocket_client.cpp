@@ -18,10 +18,12 @@
 #include "nlohmann/json.hpp"
 
 #include "rmf_notification/websocket_client.hpp"
-#include "rmf_scheduler/log.hpp"
+#include "rclcpp/logging.hpp"
 
 namespace rmf_notification
 {
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("rmf_notification_websocket");
 
 class WebsocketClient::Impl
 {
@@ -43,7 +45,7 @@ public:
       [this](
         websocketpp::connection_hdl hdl)
       {
-        RS_LOG_INFO("websocket connection is open");
+        RCLCPP_INFO(LOGGER, "websocket connection is open");
         hdl_ptr_ = hdl.lock();
         connected_ = true;
       });
@@ -53,7 +55,7 @@ public:
       [this](
         websocketpp::connection_hdl)
       {
-        RS_LOG_INFO("websocket connection is closed");
+        RCLCPP_INFO(LOGGER, "websocket connection is closed");
         connected_ = false;
       });
 
@@ -62,7 +64,7 @@ public:
       [this](
         websocketpp::connection_hdl)
       {
-        RS_LOG_INFO("websocket connection request failed");
+        RCLCPP_INFO(LOGGER, "websocket connection request failed");
         connected_ = false;
       });
 
@@ -70,7 +72,8 @@ public:
     websocket_client_ptr_->connect(
       websocket_client_ptr_->get_connection(websocket_uri, ec_for_new));
     if (ec_for_new) {
-      RS_LOG_ERROR(
+      RCLCPP_ERROR(
+        LOGGER,
         "new websocket connection failed for reason: %s",
         ec_for_new.message().c_str());
     }
@@ -79,7 +82,7 @@ public:
     client_thread_ = std::thread(
       [this]()
       {
-        RS_LOG_INFO("starting websocket run inside client thread");
+        RCLCPP_INFO(LOGGER, "starting websocket run inside client thread");
         websocket_client_ptr_->run();
       });
 
@@ -88,14 +91,15 @@ public:
     processing_thread_ = std::thread(
       [this]()
       {
-        RS_LOG_INFO("starting websocket background runner in processing thread");
+        RCLCPP_INFO(LOGGER, "starting websocket background runner in processing thread");
         runner();
       });
   }
 
   void publish(const Message & message)
   {
-    RS_LOG_INFO(
+    RCLCPP_INFO(
+      LOGGER,
       "websocket notification request raised for message with id: %s",
       message.message_id.c_str());
     std::unique_lock<std::mutex> lock(notify_mtx_);
@@ -155,7 +159,8 @@ private:
         ));
 
         if (ec_for_reconnection) {
-          RS_LOG_INFO(
+          RCLCPP_INFO(
+            LOGGER,
             "reconnecting websocket failed for reason: %s",
             ec_for_reconnection.message().c_str());
         }
@@ -180,11 +185,13 @@ private:
         );
 
         if (ec_for_sending) {
-          RS_LOG_ERROR(
+          RCLCPP_ERROR(
+            LOGGER,
             "unable to publish websocket message: %s",
             ec_for_sending.message().c_str());
         } else {
-          RS_LOG_INFO(
+          RCLCPP_INFO(
+            LOGGER,
             "websocket broacasted message with id: %s",
             message.message_id.c_str());
           message_process_queue_.pop();

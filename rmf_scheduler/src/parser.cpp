@@ -201,8 +201,14 @@ void events_to_json(
     event_json["description"] = event.description;
     event_json["type"] = event.type;
     event_json["start_time"] = 1e-9 * event.start_time;
-    event_json["event_details"] = nlohmann::json::parse(event.event_details);
 
+    // event_details may not be valid
+    try {
+      event_json["event_details"] = nlohmann::json::parse(event.event_details);
+    } catch (const std::exception & e) {
+      // Additional Error handling?
+      event_json["event_details"] = nlohmann::json();
+    }
     // Optional items
     if (event.duration > 0) {
       event_json["duration"] = 1e-9 * event.duration;

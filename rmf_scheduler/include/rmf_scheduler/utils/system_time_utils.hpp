@@ -33,7 +33,9 @@ uint64_t now();
 
 uint64_t time_max();
 
-char * to_localtime(uint64_t ns);
+char * to_localtime(
+  uint64_t ns,
+  const std::string & fmt = "%b %d %H:%M:%S %Y");
 
 uint64_t from_localtime(
   const std::string & localtime,

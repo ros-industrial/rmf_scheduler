@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>rmf_scheduler</name>
-  <version>0.1.0</version>
+  <version>0.2.3</version>
   <description>
     An event scheduler for RMF.
     These events including robot tasks and other events that is related to the robot operation.
@@ -19,6 +19,7 @@
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
   <depend>ortools_vendor</depend>
+  <depend>rmf_notification</depend>
   <test_depend>graphviz-dev</test_depend>
 
   <test_depend>ament_lint_auto</test_depend>

@@ -116,6 +116,8 @@ public:
 
   DependencyInfo get_dependency_info(const std::string &) const;
 
+  DependencyInfo get_successor_info(const std::string &) const;
+
 protected:
   std::unique_ptr<tf::Taskflow> taskflow_;
   NodeList node_list_;

@@ -83,25 +83,12 @@ void Estimator::estimate(
 
   // Go through the order based on start time and existing estimation state
   for (auto & robot_event_itr : event_lookup) {
-    uint64_t last_estimated_event_end_time = 0;
-    EstimateState * last_estimated_event_end_state = nullptr;
+    // uint64_t last_estimated_event_end_time = 0;
+    std::shared_ptr<EstimateState> last_estimated_event_end_state;
 
     // Check if there are existing estimated events under the same robot
-    auto stored_task_estimate_state_itr = robot_estimate_states_.find(robot_event_itr.first);
 
     for (auto & event_itr : robot_event_itr.second) {
-      // Retrieve stored estimation state, if the robot already has one
-      if (stored_task_estimate_state_itr != robot_estimate_states_.end()) {
-        auto itr = stored_task_estimate_state_itr->second.upper_bound(event_itr.second.start_time);
-
-        // Compare the stored end state with the temporary ones
-        // use the latest end state
-        if (itr->first > last_estimated_event_end_time) {
-          last_estimated_event_end_time = itr->first;
-          last_estimated_event_end_state = &itr->second.end;
-        }
-      }
-
       auto & event = event_itr.second;
 
       // Retrieve the estimation interface
@@ -115,7 +102,7 @@ void Estimator::estimate(
       EstimateRequest request;
       request.start_time = event.start_time;
       request.details = task_details;
-      request.state = last_estimated_event_end_state;
+      request.state = last_estimated_event_end_state.get();
       try {
         future = estimate_interface->async_estimate(
           utils::gen_uuid(),
@@ -154,19 +141,23 @@ void Estimator::estimate(
         task_details["start_state"] = last_estimated_event_end_state->json();
       }
       orig_event.task_details = task_details.dump();
-      last_estimated_event_end_time = event.start_time + duration;
+      // last_estimated_event_end_time = event.start_time + duration;
 
       // Update last estimated end state
-      if (last_estimated_event_end_state == nullptr) {
-        last_estimated_event_end_state = new EstimateState(result.state);
-      } else {
-        *last_estimated_event_end_state = result.state;
-      }
-    }
-    if (last_estimated_event_end_state != nullptr) {
-      delete last_estimated_event_end_state;
+      last_estimated_event_end_state = std::make_shared<EstimateState>(result.state);
     }
   }
+}
+
+
+bool Estimator::validate_all_estimate_states() const
+{
+  for (auto & itr : robot_estimate_states_) {
+    if (!validate_estimate_states(itr.first)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 
@@ -190,13 +181,17 @@ bool Estimator::validate_estimate_states(
   auto itr = itr_to_validate->second.lower_bound(start_time);
   auto upper_itr = itr_to_validate->second.upper_bound(end_time);
   for (; itr != upper_itr; itr++) {
+    if (!itr->second.start || !itr->second.end) {
+      return false;
+    }
+
     if (last_event_end_state != nullptr &&
-      *last_event_end_state != itr->second.start)
+      *last_event_end_state != *itr->second.start)
     {
       return false;
     }
 
-    last_event_end_state = &(itr->second.end);
+    last_event_end_state = itr->second.end.get();
   }
   return true;
 }
@@ -207,6 +202,62 @@ void Estimator::add_estimate_states(
   const EstimateStates & estimated_state)
 {
   robot_estimate_states_[robot_name].emplace(time, estimated_state);
+}
+
+void Estimator::add_estimate_states(
+  const std::vector<data::Event> & events)
+{
+  for (auto & event : events) {
+    // Filter out robot information
+    std::string robot_name;
+    bool result = parser::filter_event_details<std::string>(
+      event.task_details,
+      "robot",
+      robot_name
+    );
+    if (!result) {
+      continue;
+    }
+
+    nlohmann::json task_details;
+    try {
+      task_details = nlohmann::json::parse(event.task_details);
+    } catch (const std::exception & e) {
+      RS_LOG_ERROR(
+        "Invalid [%s] task details JSON, cannot load estimate info.%s",
+        event.id.c_str(),
+        e.what());
+      continue;
+    }
+
+    EstimateStates states;
+
+    // Load start state
+    if (task_details.contains("start_state")) {
+      try {
+        states.start = EstimateState::from_json(task_details["start_state"]);
+      } catch (const std::exception & e) {
+        RS_LOG_ERROR(
+          "Unable to load [%s] estimate start_state info.%s",
+          event.id.c_str(),
+          e.what());
+        continue;
+      }
+    }
+
+    if (task_details.contains("end_state")) {
+      try {
+        states.end = EstimateState::from_json(task_details["end_state"]);
+      } catch (const std::exception & e) {
+        RS_LOG_ERROR(
+          "Unable to load [%s] estimate end_state info.%s",
+          event.id.c_str(),
+          e.what());
+        continue;
+      }
+    }
+    add_estimate_states(robot_name, event.start_time, states);
+  }
 }
 
 void Estimator::delete_estimate_states(
@@ -221,6 +272,11 @@ void Estimator::delete_estimate_states(
   auto lower_itr = itr_to_delete->second.lower_bound(start_time);
   auto upper_itr = itr_to_delete->second.lower_bound(end_time);
   itr_to_delete->second.erase(lower_itr, upper_itr);
+}
+
+void Estimator::clear_estimate_states()
+{
+  robot_estimate_states_.clear();
 }
 
 }  // namespace task
