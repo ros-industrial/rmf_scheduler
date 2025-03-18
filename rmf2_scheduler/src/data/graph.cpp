@@ -32,6 +32,21 @@ Graph::~Graph()
 {
 }
 
+Graph::Graph(const Graph & rhs)
+{
+  for (auto & itr : rhs.nodes_) {
+    nodes_.emplace(itr.first, std::make_shared<Node>(*itr.second));
+  }
+}
+
+Graph & Graph::operator=(const Graph & rhs)
+{
+  for (auto & itr : rhs.nodes_) {
+    nodes_.emplace(itr.first, std::make_shared<Node>(*itr.second));
+  }
+  return *this;
+}
+
 void Graph::add_node(const std::string & id)
 {
   // Check new ID against old ID
@@ -259,9 +274,9 @@ void Graph::dump(std::ostream & oss) const
         node->outbound_edges().end(),
       };
       for (auto & outbound_edge : ordered_outbound_edges) {
-        oss << node->id() << " -> ";
+        oss << "  \"" << node->id() << "\" -> \"";
         oss << outbound_edge.first;
-        oss << " [label=" << outbound_edge.second.type << "];" << std::endl;
+        oss << "\" [label=" << outbound_edge.second.type << "];" << std::endl;
       }
     });
   oss << "}" << std::endl;

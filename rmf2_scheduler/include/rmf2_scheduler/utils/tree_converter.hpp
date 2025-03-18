@@ -15,6 +15,7 @@
 #ifndef RMF2_SCHEDULER__UTILS__TREE_CONVERTER_HPP_
 #define RMF2_SCHEDULER__UTILS__TREE_CONVERTER_HPP_
 
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -34,6 +35,8 @@ class TreeConversion
 public:
   class Implementation;
 
+  using MakeTreeCallback = std::function<std::string(const std::string &)>;
+
   TreeConversion();
 
   ~TreeConversion();
@@ -45,24 +48,20 @@ public:
    * \throws std::logic_error if cycles are detected in graph during conversion
    * \return std::string containing a behaviour tree in XML format
    */
-  [[nodiscard]] std::string convert_to_tree(const data::Graph & graph);
-
-  /// function to check whether a graph contains cycle(s)
-  bool is_cyclic(const data::Graph & graph) const;
+  [[nodiscard]] std::string convert_to_tree(
+    const data::Graph & graph,
+    const MakeTreeCallback & callback = [] (const std::string & id) {return id;}
+  );
 
 private:
   /// make_tree
   /**
    * main point of entry for the recursive function to generate trees
    */
-  void make_tree(const data::Graph & graph, std::ostream & oss);
-
-  /// helper function to check whether a graph contains cycle(s)
-  bool _is_cyclic_util(
-    const std::string & id,
-    std::unordered_map<std::string, bool> & visited,
-    std::unordered_map<std::string, bool> & rec_stack,
-    std::unordered_map<std::string, data::Node::ConstPtr> node_list) const;
+  void make_tree(
+    const data::Graph & graph, std::ostream & oss,
+    const MakeTreeCallback & callback
+  );
 
   std::unique_ptr<Implementation> p_;
 };

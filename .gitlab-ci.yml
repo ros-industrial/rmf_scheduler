@@ -8,9 +8,9 @@ workflow:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^develop/
 
-humble-nightly-gcc-coverage:
+humble-gcc-coverage:
   image:
-    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
+    name: ros:humble-ros-core
 
   cache:
     key: ${CI_JOB_NAME}
@@ -22,6 +22,7 @@ humble-nightly-gcc-coverage:
     ROS_DISTRO: "humble"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
     TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
+    UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
     - apt-get update && apt-get install -y git
@@ -33,9 +34,9 @@ humble-nightly-gcc-coverage:
     - chmod +x codecov
     - ./codecov -f ./coverage.info
 
-humble-nightly-gcc-asan:
+humble-clang:
   image:
-    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
+    name: ros:humble-ros-core
 
   cache:
     key: ${CI_JOB_NAME}
@@ -45,50 +46,98 @@ humble-nightly-gcc-asan:
   variables:
     ISOLATION: "shell"
     ROS_DISTRO: "humble"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
-
-  script:
-    - apt-get update && apt-get install -y git
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-humble-nightly-gcc-tsan:
-  image:
-    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "humble"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
-
-  script:
-    - apt-get update && apt-get install -y git
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-humble-nightly-clang:
-  image:
-    name: registry.gitlab.com/rosi-ap/rosi-ap_infrastructure/rosiap_docker_images/ros:rmf-humble-nightly
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "humble"
+    ADDITIONAL_DEBS: "clang lld"
     CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
     CC: "clang"
     CXX: "clang++"
     TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
+    UPSTREAM_WORKSPACE: "deps.repos"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
+
+jazzy-gcc:
+  image:
+    name: ros:jazzy-ros-core
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "jazzy"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    UPSTREAM_WORKSPACE: "deps.repos"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
+
+jazzy-gcc-asan:
+  image:
+    name: ros:jazzy-ros-core
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "jazzy"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
+    UPSTREAM_WORKSPACE: "deps.repos"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
+
+jazzy-gcc-tsan:
+  image:
+    name: ros:jazzy-ros-core
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "jazzy"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
+    UPSTREAM_WORKSPACE: "deps.repos"
+
+  script:
+    - apt-get update && apt-get install -y git
+    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
+    - .industrial_ci/gitlab.sh
+
+jazzy-clang:
+  image:
+    name: ros:jazzy-ros-core
+
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - .ccache/
+
+  variables:
+    ISOLATION: "shell"
+    ROS_DISTRO: "jazzy"
+    ADDITIONAL_DEBS: "clang lld"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
+    CC: "clang"
+    CXX: "clang++"
+    TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
+    UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
     - apt-get update && apt-get install -y git

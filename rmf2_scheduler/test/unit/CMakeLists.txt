@@ -3,6 +3,7 @@ find_package(ament_cmake_gmock REQUIRED)
 
 add_definitions(-DTEST_RESOURCES_DIRECTORY="${TEST_RESOURCES_DIRECTORY}")
 
+# DATA
 ament_add_gtest(test_data_json_serializer
   data/test_json_serializer.cpp
 )
@@ -68,7 +69,56 @@ ament_add_gmock(test_data_uuid
 )
 target_link_libraries(test_data_uuid ${PROJECT_NAME})
 
+ament_add_gtest(test_data_schedule_change_record
+  data/test_schedule_change_record.cpp
+)
+target_link_libraries(test_data_schedule_change_record ${PROJECT_NAME})
+
+
+# CACHE
+ament_add_gtest(test_cache_action
+  cache/test_action.cpp
+)
+target_link_libraries(test_cache_action ${PROJECT_NAME})
+
+ament_add_gtest(test_cache_event_action
+  cache/test_event_action.cpp
+)
+target_link_libraries(test_cache_event_action ${PROJECT_NAME})
+
+ament_add_gtest(test_cache_task_action
+  cache/test_task_action.cpp
+)
+target_link_libraries(test_cache_task_action ${PROJECT_NAME})
+
+ament_add_gtest(test_cache_process_action
+  cache/test_process_action.cpp
+)
+target_link_libraries(test_cache_process_action ${PROJECT_NAME})
+
+# UTILS
+ament_add_gmock(test_utils_dag_helper
+  utils/test_dag_helper.cpp
+)
+target_link_libraries(test_utils_dag_helper ${PROJECT_NAME})
+
 ament_add_gmock(test_utils_tree_converter
   utils/test_tree_converter.cpp
 )
 target_link_libraries(test_utils_tree_converter ${PROJECT_NAME})
+
+ament_add_gmock(test_http_connection
+  http/test_connection_curl.cpp
+)
+target_link_libraries(test_http_connection ${PROJECT_NAME})
+
+# ROOT
+ament_add_gtest(test_system_time_executor
+  test_system_time_executor.cpp
+)
+target_link_libraries(test_system_time_executor ${PROJECT_NAME})
+
+ament_add_gtest(test_time_window_lookup
+  test_time_window_lookup.cpp
+)
+target_link_libraries(test_time_window_lookup ${PROJECT_NAME})

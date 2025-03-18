@@ -41,13 +41,13 @@ Graph::UPtr make_preset_graph()
 }  // namespace data
 }  // namespace rmf2_scheduler
 
-class TestDataGraph : public ::testing::Test
+class TestUtilsTreeConverter : public ::testing::Test
 {
 protected:
   rmf2_scheduler::utils::TreeConversion converter;
 };
 
-TEST_F(TestDataGraph, empty) {
+TEST_F(TestUtilsTreeConverter, empty) {
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
 
   // empty graph conversion test
@@ -66,7 +66,7 @@ TEST_F(TestDataGraph, empty) {
   EXPECT_EQ(expected_tree, converter.convert_to_tree(empty));
 }
 
-TEST_F(TestDataGraph, basic_configuration) {
+TEST_F(TestUtilsTreeConverter, basic_configuration) {
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
   // basic sequence test
   Graph basic;
@@ -109,7 +109,7 @@ TEST_F(TestDataGraph, basic_configuration) {
 )";
   EXPECT_EQ(converter.convert_to_tree(basic), expected_tree);
 }
-TEST_F(TestDataGraph, multiple_entry_nodes) {
+TEST_F(TestUtilsTreeConverter, multiple_entry_nodes) {
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
 
   Graph::UPtr graph = make_preset_graph();
@@ -191,7 +191,7 @@ TEST_F(TestDataGraph, multiple_entry_nodes) {
   EXPECT_EQ(expected_tree, converter.convert_to_tree(*graph));
 }
 
-TEST_F(TestDataGraph, common_ancestors) {
+TEST_F(TestUtilsTreeConverter, common_ancestors) {
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
 
   // binary tree configuration test

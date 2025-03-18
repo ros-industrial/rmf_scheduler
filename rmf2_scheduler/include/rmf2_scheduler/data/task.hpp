@@ -31,10 +31,7 @@ namespace data
 /// Additional information for a Task
 struct Task : public Event
 {
-  using Ptr = std::shared_ptr<Task>;
-  using ConstPtr = std::shared_ptr<const Task>;
-  using UPtr = std::unique_ptr<Task>;
-  using ConstUPtr = std::unique_ptr<const Task>;
+  RS_SMART_PTR_DEFINITIONS(Task)
 
   /// Empty Constructor
   Task() = default;
@@ -134,6 +131,8 @@ struct Task : public Event
     task_details(_task_details)
   {
   }
+
+  virtual ~Task() = default;
 
   /// Resource ID
   std::optional<std::string> resource_id;

@@ -16,8 +16,10 @@
 #define RMF2_SCHEDULER__UTILS__UTILS_HPP_
 
 #include <ctime>
+#include <iterator>
 #include <iomanip>
 #include <limits>
+#include <memory>
 
 namespace rmf2_scheduler
 {
@@ -103,6 +105,44 @@ inline void set_timezone(const char * tz)
   setenv("TZ", tz, 1);
   tzset();
 #endif
+}
+
+
+template<class Container, class InputConstItr>
+auto remove_iterator_const(
+  Container & c,
+  const InputConstItr & itr_const
+) -> decltype(std::begin(c))
+{
+  static_assert(std::is_same_v<InputConstItr, decltype(std::cbegin(c))>);
+
+  auto itr = std::begin(c);
+  std::advance(
+    itr,
+    std::distance<InputConstItr>(
+      std::cbegin(c),
+      itr_const
+    )
+  );
+
+  return itr;
+}
+
+template<class T>
+bool is_deep_equal(
+  const std::shared_ptr<T> & lhs,
+  const std::shared_ptr<T> & rhs
+)
+{
+  if (lhs == rhs) {
+    return true;
+  }
+
+  if (lhs && rhs && *lhs == *rhs) {
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace utils

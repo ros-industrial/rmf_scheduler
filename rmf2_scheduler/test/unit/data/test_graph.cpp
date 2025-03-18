@@ -255,10 +255,10 @@ TEST_F(TestDataGraph, dump) {
 
   std::string expected_dot =
     R"(digraph DAG {
-node_0 -> node_2 [label=hard];
-node_1 -> node_2 [label=soft];
-node_2 -> node_3 [label=hard];
-node_2 -> node_4 [label=soft];
+  "node_0" -> "node_2" [label=hard];
+  "node_1" -> "node_2" [label=soft];
+  "node_2" -> "node_3" [label=hard];
+  "node_2" -> "node_4" [label=soft];
 }
 )";
 

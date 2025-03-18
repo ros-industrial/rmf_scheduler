@@ -183,10 +183,18 @@ public:
    */
   char * to_localtime(const std::string & fmt = "%b %d %H:%M:%S %Y") const;
 
+  /// Convert Time into a localtime string in ISO format
+  char * to_ISOtime() const;
+
   /// Create a Time object from a string representing localtime
   static Time from_localtime(
     const std::string & localtime,
     const std::string & fmt = "%b %d %H:%M:%S %Y"
+  );
+
+  /// Create a Time object from a string representing localtime in ISO format
+  static Time from_ISOtime(
+    const std::string & localtime
   );
 
 private:

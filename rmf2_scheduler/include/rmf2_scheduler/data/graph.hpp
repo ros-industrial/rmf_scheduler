@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "rmf2_scheduler/data/node.hpp"
+#include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -32,10 +33,7 @@ namespace data
 class Graph
 {
 public:
-  using Ptr = std::shared_ptr<Graph>;
-  using ConstPtr = std::shared_ptr<const Graph>;
-  using UPtr = std::unique_ptr<Graph>;
-  using ConstUPtr = std::unique_ptr<const Graph>;
+  RS_SMART_PTR_DEFINITIONS(Graph)
 
   /// Constructor
   Graph();
@@ -43,9 +41,9 @@ public:
   /// Destructor
   virtual ~Graph();
 
-  // Not copiable
-  Graph(const Graph &) = delete;
-  Graph & operator=(const Graph &) = delete;
+  // Special copy constructor
+  Graph(const Graph &);
+  Graph & operator=(const Graph &);
 
   // movable
   Graph(Graph &&) = default;

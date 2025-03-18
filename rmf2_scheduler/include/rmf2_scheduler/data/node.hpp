@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "rmf2_scheduler/data/edge.hpp"
+#include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -30,10 +31,7 @@ namespace data
 class Node
 {
 public:
-  using Ptr = std::shared_ptr<Node>;
-  using ConstPtr = std::shared_ptr<const Node>;
-  using UPtr = std::unique_ptr<Node>;
-  using ConstUPtr = std::unique_ptr<const Node>;
+  RS_SMART_PTR_DEFINITIONS(Node)
 
   class Restricted;
 
@@ -42,14 +40,6 @@ public:
 
   /// Destructor
   virtual ~Node();
-
-  // Not copiable
-  Node(const Node &) = delete;
-  Node & operator=(const Node &) = delete;
-
-  // Not movable
-  Node(Node &&) = delete;
-  Node & operator=(Node &&) = delete;
 
   /// Node ID
   const std::string & id() const;

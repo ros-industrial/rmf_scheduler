@@ -18,11 +18,17 @@
 #include "rmf2_scheduler/data/duration.hpp"
 #include "rmf2_scheduler/data/event.hpp"
 #include "rmf2_scheduler/data/json_serializer.hpp"
+#include "rmf2_scheduler/utils/utils.hpp"
 #include "../../utils/gtest_macros.hpp"
 
 
 class TestJSONSerializer : public ::testing::Test
 {
+protected:
+  void SetUp() override
+  {
+    rmf2_scheduler::utils::set_timezone("UTC");
+  }
 };
 
 TEST_F(TestJSONSerializer, time) {
@@ -30,16 +36,25 @@ TEST_F(TestJSONSerializer, time) {
   using json = nlohmann::json;
   {
     // Serialization
-    EXPECT_EQ(R"(1.0)"_json, json(Time(1, 0)));
-    EXPECT_EQ(R"(4.5)"_json, json(Time(4, 500000000)));
-    EXPECT_EQ(R"(2.5)"_json, json(Time(0, 2500000000)));
+    EXPECT_EQ(R"("1970-01-01T00:00:01Z")"_json, json(Time(1, 0)));
+    EXPECT_EQ(R"("1970-01-01T00:00:04.500Z")"_json, json(Time(4, 500000000)));
+    EXPECT_EQ(R"("1970-01-01T00:00:02.500Z")"_json, json(Time(0, 2500000000)));
   }
 
   {
     // Deserialization
-    EXPECT_EQ(R"(1.0)"_json.template get<Time>().nanoseconds(), Time(1, 0).nanoseconds());
-    EXPECT_EQ(R"(4.5)"_json.template get<Time>().nanoseconds(), Time(4, 500000000).nanoseconds());
-    EXPECT_EQ(R"(2.5)"_json.template get<Time>().nanoseconds(), Time(0, 2500000000).nanoseconds());
+    EXPECT_EQ(
+      R"("1970-01-01T00:00:01Z")"_json.template get<Time>().nanoseconds(),
+      Time(1, 0).nanoseconds()
+    );
+    EXPECT_EQ(
+      R"("1970-01-01T00:00:04.500Z")"_json.template get<Time>().nanoseconds(),
+      Time(4, 500000000).nanoseconds()
+    );
+    EXPECT_EQ(
+      R"("1970-01-01T00:00:02.500Z")"_json.template get<Time>().nanoseconds(),
+      Time(0, 2500000000).nanoseconds()
+    );
   }
 }
 
@@ -116,7 +131,7 @@ TEST_F(TestJSONSerializer, event) {
       "id": "",
       "type": "",
       "description": null,
-      "start_time": 0.0,
+      "start_time": "1970-01-01T00:00:00Z",
       "end_time": null,
       "series_id": null,
       "process_id": null
@@ -141,7 +156,7 @@ TEST_F(TestJSONSerializer, event) {
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "event_type",
       "description": null,
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T02:15:00Z",
       "end_time": null,
       "series_id": null,
       "process_id": null
@@ -151,7 +166,7 @@ TEST_F(TestJSONSerializer, event) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "event_type",
-      "start_time": 1672625700.0
+      "start_time": "2023-01-02T02:15:00Z"
     })"_json;
 
     // Serialization
@@ -188,8 +203,8 @@ TEST_F(TestJSONSerializer, event) {
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "event_type",
       "description": "This is a event!",
-      "start_time": 1672625700.0,
-      "end_time": 1672629300.0,
+      "start_time": "2023-01-02T02:15:00Z",
+      "end_time": "2023-01-02T03:15:00Z",
       "series_id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "process_id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
     })"_json;
@@ -214,8 +229,8 @@ TEST_F(TestJSONSerializer, event) {
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "event_type",
       "description": "This is a event!",
-      "start_time": 1672625700.0,
-      "end_time": 1672624700.0,
+      "start_time": "2023-01-02T02:15:00Z",
+      "end_time": "2023-01-02T00:55:00Z",
       "series_id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "process_id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
     })"_json;
@@ -242,7 +257,7 @@ TEST_F(TestJSONSerializer, task) {
       "id": "",
       "type": "",
       "description": null,
-      "start_time": 0.0,
+      "start_time": "1970-01-01T00:00:00Z",
       "end_time": null,
       "series_id": null,
       "process_id": null,
@@ -277,7 +292,7 @@ TEST_F(TestJSONSerializer, task) {
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
       "description": null,
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T02:15:00Z",
       "end_time": null,
       "series_id": null,
       "process_id": null,
@@ -296,7 +311,7 @@ TEST_F(TestJSONSerializer, task) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T02:15:00Z",
       "status": "draft"
     })"_json;
 
@@ -343,18 +358,18 @@ TEST_F(TestJSONSerializer, task) {
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
       "description": "This is a task!",
-      "start_time": 1672625700.0,
-      "end_time": 1672629300.0,
+      "start_time": "2023-01-02T02:15:00Z",
+      "end_time": "2023-01-02T03:15:00Z",
       "series_id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "process_id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
       "resource_id": "09d5323d-43e0-4668-b53a-3cf33f9b9a96",
-      "deadline": 1672632900.0,
+      "deadline": "2023-01-02T04:15:00Z",
       "status": "ongoing",
-      "planned_start_time": 1672625700.0,
-      "planned_end_time": 1672629300.0,
+      "planned_start_time": "2023-01-02T02:15:00Z",
+      "planned_end_time": "2023-01-02T03:15:00Z",
       "estimated_duration": 3700.0,
-      "actual_start_time": 1672625760.0,
-      "actual_end_time": 1672629520.0,
+      "actual_start_time": "2023-01-02T02:16:00Z",
+      "actual_end_time": "2023-01-02T03:18:40Z",
       "task_details": {
         "some_field": "some_value"
       }
@@ -379,10 +394,10 @@ TEST_F(TestJSONSerializer, task) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T10:15:00Z",
       "status": "draft",
       "planned_start_time": null,
-      "planned_end_time": 1672629300.0
+      "planned_end_time": "2023-01-02T11:15:00Z"
     })"_json;
 
     // Expect throw
@@ -400,10 +415,10 @@ TEST_F(TestJSONSerializer, task) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T10:15:00Z",
       "status": "draft",
-      "planned_start_time": 1672625700.0,
-      "planned_end_time": 1672624700.0
+      "planned_start_time": "2023-01-02T10:15:00Z",
+      "planned_end_time": "2023-01-02T09:58:20Z"
     })"_json;
 
     // Expect throw
@@ -421,10 +436,10 @@ TEST_F(TestJSONSerializer, task) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T10:15:00Z",
       "status": "draft",
       "actual_start_time": null,
-      "actual_end_time": 1672629520.0
+      "actual_end_time": "2023-01-02T11:18:40Z"
     })"_json;
 
     // Expect throw
@@ -442,10 +457,10 @@ TEST_F(TestJSONSerializer, task) {
       R"({
       "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
       "type": "task_type",
-      "start_time": 1672625700.0,
+      "start_time": "2023-01-02T10:15:00Z",
       "status": "draft",
-      "actual_start_time": 1672625760.0,
-      "actual_end_time": 1672624760.0
+      "actual_start_time": "2023-01-02T10:16:00Z",
+      "actual_end_time": "2023-01-02T09:59:20Z"
     })"_json;
 
     // Expect throw
@@ -532,7 +547,7 @@ TEST_F(TestJSONSerializer, occurrence) {
   json occurrence_json =
     R"({
     "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
-    "time": 1672625700.0
+    "time": "2023-01-02T02:15:00Z"
   })"_json;
 
   // Serialization
@@ -566,11 +581,11 @@ TEST_F(TestJSONSerializer, series) {
       "id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "type": "task",
       "occurrences":[
-        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": 1672625700.0},
-        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": 1672712100.0},
-        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": 1672798500.0},
-        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": 1672884900.0},
-        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": 1672971300.0}
+        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T10:15:00Z"},
+        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T10:15:00Z"},
+        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T10:15:00Z"},
+        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T10:15:00Z"},
+        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T10:15:00Z"}
       ],
       "cron": "0 15 10 ? * MON-FRI",
       "timezone": "Asia/Singapore"
@@ -605,15 +620,15 @@ TEST_F(TestJSONSerializer, series) {
       "id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "type": "task",
       "occurrences":[
-        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": 1672625700.0},
-        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": 1672720682.0},
-        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": 1672798500.0},
-        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": 1672884900.0},
-        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": 1672971300.0}
+        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T10:15:00Z"},
+        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T12:38:02Z"},
+        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T10:15:00Z"},
+        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T10:15:00Z"},
+        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T10:15:00Z"}
       ],
       "cron": "0 15 10 ? * MON-FRI",
       "timezone": "Asia/Singapore",
-      "until": 1696299300.0,
+      "until": "2023-10-03T10:15:00Z",
       "exception_ids": [
         "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936"
       ]

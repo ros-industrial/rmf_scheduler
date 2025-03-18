@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "rmf2_scheduler/data/time.hpp"
+#include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -32,10 +33,7 @@ namespace data
 /// Basic information about the Event
 struct Event
 {
-  using Ptr = std::shared_ptr<Event>;
-  using ConstPtr = std::shared_ptr<const Event>;
-  using UPtr = std::unique_ptr<Event>;
-  using ConstUPtr = std::unique_ptr<const Event>;
+  RS_SMART_PTR_DEFINITIONS(Event)
 
   /// Empty Constructor
   Event() = default;
@@ -73,6 +71,8 @@ struct Event
     process_id(_process_id)
   {
   }
+
+  virtual ~Event() = default;
 
   /// Event ID
   /*

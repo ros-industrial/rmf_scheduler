@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "rmf2_scheduler/utils/dag_helper.hpp"
 #include "rmf2_scheduler/utils/tree_converter.hpp"
 
 namespace rmf2_scheduler
@@ -125,7 +126,9 @@ public:
     const std::unordered_map<std::string, data::Node::ConstPtr> & node_map,
     std::unordered_map<std::string, tinyxml2::XMLNode *> & xml_nodes,
     std::set<std::string> & wait_nodes, tinyxml2::XMLNode * parent,
-    tinyxml2::XMLDocument & doc)
+    tinyxml2::XMLDocument & doc,
+    const MakeTreeCallback & callback
+  )
   {
     visited.at(node->id()) = true;
     for (const auto & [id, edge] : node->inbound_edges()) {
@@ -155,22 +158,28 @@ public:
     // if there are any errors in the tree creation structure, most likely a logic error
     // in the following block of code. Adopted from: https://arxiv.org/pdf/2101.01964.pdf
     if (node->outbound_edges().size() == 0) {
-      tinyxml2::XMLElement * leaf_node = doc.NewElement(node->id().c_str());
+      tinyxml2::XMLElement * leaf_node = doc.NewElement(
+        callback(node->id()).c_str()
+      );
       parent->InsertEndChild(leaf_node);
       xml_nodes.insert({node->id(), parent});
     } else if (node->outbound_edges().size() == 1) {
       tinyxml2::XMLNode * tag = doc.NewElement("Sequence");
-      tinyxml2::XMLElement * task = doc.NewElement(node->id().c_str());
+      tinyxml2::XMLElement * task = doc.NewElement(
+        callback(node->id()).c_str()
+      );
       parent->InsertEndChild(tag);
       tag->InsertEndChild(task);
       xml_nodes.insert({node->id(), parent});
       recursively_create_tree(
         node_map.at(node->outbound_edges().begin()->first), visited,
-        node_map, xml_nodes, wait_nodes, parent, doc);
+        node_map, xml_nodes, wait_nodes, parent, doc, callback);
     } else {
       tinyxml2::XMLNode * tag = doc.NewElement("Sequence");
       parent->InsertEndChild(tag);
-      tinyxml2::XMLElement * task = doc.NewElement(node->id().c_str());
+      tinyxml2::XMLElement * task = doc.NewElement(
+        callback(node->id()).c_str()
+      );
       tag->InsertEndChild(task);
       xml_nodes.insert({node->id(), tag});
       tinyxml2::XMLNode * sub_tag = doc.NewElement("Parallel");
@@ -180,7 +189,8 @@ public:
         sub_tag->InsertEndChild(branch_seq);
         recursively_create_tree(
           node_map.at(id), visited, node_map, xml_nodes, wait_nodes, branch_seq,
-          doc);
+          doc, callback
+        );
       }
     }
   }
@@ -219,7 +229,10 @@ TreeConversion::TreeConversion()
 
 TreeConversion::~TreeConversion() {}
 
-std::string TreeConversion::convert_to_tree(const data::Graph & graph)
+std::string TreeConversion::convert_to_tree(
+  const data::Graph & graph,
+  const MakeTreeCallback & callback
+)
 {
   if (graph.empty()) {
     return "";
@@ -235,15 +248,19 @@ std::string TreeConversion::convert_to_tree(const data::Graph & graph)
         }
       });
   }
-  if (is_cyclic(graph)) {
+  if (!is_valid_dag(graph)) {
     throw std::logic_error("Cycle(s) detected in graph! Cannot convert graph to tree!");
   }
   std::ostringstream oss;
-  make_tree(graph, oss);
+  make_tree(graph, oss, callback);
   return oss.str();
 }
 
-void TreeConversion::make_tree(const data::Graph & graph, std::ostream & oss)
+void TreeConversion::make_tree(
+  const data::Graph & graph,
+  std::ostream & oss,
+  const MakeTreeCallback & callback
+)
 {
   std::unordered_map<std::string, bool> visited;
 
@@ -278,11 +295,14 @@ void TreeConversion::make_tree(const data::Graph & graph, std::ostream & oss)
     tinyxml2::XMLNode * tag = doc.NewElement("Parallel");
     main_seq->InsertEndChild(tag);
     for (const auto & node : entry_nodes) {
-      p_->recursively_create_tree(node, visited, node_map, xml_nodes, wait_nodes, tag, doc);
+      p_->recursively_create_tree(
+        node, visited, node_map, xml_nodes, wait_nodes, tag, doc, callback
+      );
     }
   } else {
     p_->recursively_create_tree(
-      entry_nodes.front(), visited, node_map, xml_nodes, wait_nodes, main_seq, doc);
+      entry_nodes.front(), visited, node_map, xml_nodes, wait_nodes, main_seq, doc, callback
+    );
   }
   p_->validate_tree(main_seq, doc, node_map);
   tinyxml2::XMLPrinter printer;
@@ -291,55 +311,6 @@ void TreeConversion::make_tree(const data::Graph & graph, std::ostream & oss)
   oss << str;
 }
 
-bool TreeConversion::is_cyclic(const data::Graph & graph) const
-{
-  // Mark all the vertices as not visited
-  // and not part of recursion stack
-  std::unordered_map<std::string, bool> visited, rec_stack;
-  auto node_list = graph.get_all_nodes();
-  for (const auto & [id, node] : node_list) {
-    visited[id] = false;
-    rec_stack[id] = false;
-  }
-
-  // Call the recursive helper function
-  // to detect cycle in different DFS trees
-  for (const auto & [id, node] : node_list) {
-    if (!visited.at(id) &&
-      _is_cyclic_util(id, visited, rec_stack, node_list))
-    {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool TreeConversion::_is_cyclic_util(
-  const std::string & id,
-  std::unordered_map<std::string, bool> & visited,
-  std::unordered_map<std::string, bool> & rec_stack,
-  std::unordered_map<std::string, data::Node::ConstPtr> node_list) const
-{
-  if (!visited.at(id)) {
-    // Mark the current node as visited
-    // and part of recursion stack
-    visited[id] = true;
-    rec_stack[id] = true;
-
-    // Recur for all the vertices adjacent to this vertex
-    for (const auto & [dependent_id, edge] : node_list.at(id)->inbound_edges()) {
-      if (!visited.at(dependent_id) &&
-        _is_cyclic_util(dependent_id, visited, rec_stack, node_list))
-      {
-        return true;
-      } else if (rec_stack.at(dependent_id)) {
-        return true;
-      }
-    }
-  }
-  rec_stack[id] = false;
-  return false;
-}
 }  // namespace utils
 
 }  // namespace rmf2_scheduler

@@ -25,6 +25,7 @@
 
 #include "rmf2_scheduler/data/time.hpp"
 #include "rmf2_scheduler/data/occurrence.hpp"
+#include "rmf2_scheduler/macros.hpp"
 
 namespace cron
 {
@@ -42,10 +43,7 @@ namespace data
 class Series
 {
 public:
-  using Ptr = std::shared_ptr<Series>;
-  using ConstPtr = std::shared_ptr<const Series>;
-  using UPtr = std::unique_ptr<Series>;
-  using ConstUPtr = std::unique_ptr<const Series>;
+  RS_SMART_PTR_DEFINITIONS(Series)
 
 
   class ObserverBase
@@ -66,8 +64,8 @@ public:
   };
 
   Series();
-  Series(const Series &) = delete;
-  Series & operator=(const Series &) = delete;
+  Series(const Series &);
+  Series & operator=(const Series &);
   Series(Series &&);
   Series & operator=(Series && rhs);
 

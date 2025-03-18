@@ -34,6 +34,31 @@ Series::Series()
 {
 }
 
+Series::Series(const Series & rhs)
+{
+  id_ = rhs.id_;
+  type_ = rhs.type_;
+  cron_ = std::make_unique<cron::cronexpr>(cron::make_cron(rhs.cron()));
+  tz_ = rhs.tz_;
+  until_ = rhs.until_;
+  occurrence_lookup_ = rhs.occurrence_lookup_;
+  exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
+}
+
+Series & Series::operator=(const Series & rhs)
+{
+  id_ = rhs.id_;
+  type_ = rhs.type_;
+  cron_ = std::make_unique<cron::cronexpr>(cron::make_cron(rhs.cron()));
+  tz_ = rhs.tz_;
+  until_ = rhs.until_;
+  occurrence_lookup_ = rhs.occurrence_lookup_;
+  exception_ids_ = rhs.exception_ids_;
+  observers_ = rhs.observers_;
+  return *this;
+}
+
 Series::Series(Series && rhs) = default;
 
 Series & Series::operator=(Series && rhs) = default;

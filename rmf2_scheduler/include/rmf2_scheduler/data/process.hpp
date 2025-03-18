@@ -15,9 +15,11 @@
 #ifndef RMF2_SCHEDULER__DATA__PROCESS_HPP_
 #define RMF2_SCHEDULER__DATA__PROCESS_HPP_
 
+#include <memory>
 #include <string>
 
 #include "rmf2_scheduler/data/graph.hpp"
+#include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -27,6 +29,8 @@ namespace data
 
 struct Process
 {
+  RS_SMART_PTR_DEFINITIONS(Process)
+
   std::string id;
   Graph graph;
 

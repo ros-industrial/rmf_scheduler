@@ -17,6 +17,7 @@
 // https://github.com/ros2/rclcpp/blob/master/rclcpp/src/rclcpp/time.cpp
 
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
@@ -56,6 +57,10 @@ Time::Time(const Time & rhs) = default;
 Time::Time(Time && rhs) noexcept = default;
 
 Time::~Time() = default;
+
+Time::operator rs_time_point_value_t() const {
+  return time_value_;
+}
 
 Time &
 Time::operator=(const Time & rhs) = default;
@@ -216,6 +221,30 @@ char * Time::to_localtime(
   return mbstr;
 }
 
+char * Time::to_ISOtime() const
+{
+  // to format [yyyy-mm-ddThh:mm:ss[.mmm]]
+  char * iso_time_base = to_localtime("%FT%T");
+
+  int truncated_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+    std::chrono::nanoseconds(time_value_)
+  ).count();
+  double delta_ns = seconds() - truncated_seconds;
+
+  static char iso_time[40];
+  std::memcpy(iso_time, iso_time_base, sizeof(iso_time));
+
+  if (delta_ns > 0) {
+    std::stringstream ss;
+    ss << std::setprecision(3) << std::fixed << delta_ns;
+    snprintf(iso_time, sizeof(iso_time), "%s%sZ", iso_time_base, ss.str().substr(1).c_str());
+  } else {
+    snprintf(iso_time, sizeof(iso_time), "%sZ", iso_time_base);
+  }
+
+  return iso_time;
+}
+
 data::Time Time::from_localtime(
   const std::string & localtime,
   const std::string & fmt)
@@ -231,6 +260,19 @@ data::Time Time::from_localtime(
   }
   time_t t_s = std::mktime(&t);
   return data::Time(t_s, 0);
+}
+
+data::Time Time::from_ISOtime(
+  const std::string & localtime
+)
+{
+  data::Time base_time = from_localtime(localtime, "%Y-%m-%dT%H:%M:%S");
+  if (localtime.size() <= 20) {
+    return base_time;
+  }
+
+  double delta_ns = stod(localtime.substr(19, 4));
+  return base_time + Duration::from_seconds(delta_ns);
 }
 
 

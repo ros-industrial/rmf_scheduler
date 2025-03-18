@@ -64,13 +64,12 @@ struct adl_serializer<rmf2_scheduler::data::Time>
 {
   static void from_json(const json & j, rmf2_scheduler::data::Time & time)
   {
-    time = rmf2_scheduler::data::Time(0, 0) +
-      rmf2_scheduler::data::Duration::from_seconds(j.template get<double>());
+    time = rmf2_scheduler::data::Time::from_ISOtime(j.template get<std::string>());
   }
 
   static void to_json(json & j, const rmf2_scheduler::data::Time & time)
   {
-    j = time.seconds();
+    j = time.to_ISOtime();
   }
 };
 
@@ -95,7 +94,12 @@ struct adl_serializer<rmf2_scheduler::data::Graph>
 {
   static void from_json(const json & j, rmf2_scheduler::data::Graph & graph)
   {
-    auto graph_v = j.template get<std::vector<json>>();
+    std::vector<json> graph_v;
+    if (j.is_array()) {
+      graph_v = j.template get<std::vector<json>>();
+    } else {
+      graph_v = {j};
+    }
 
     // Add nodes
     for (auto & itr : graph_v) {
@@ -110,7 +114,12 @@ struct adl_serializer<rmf2_scheduler::data::Graph>
       itr.at("id").get_to(destination);
 
       std::vector<json> dependencies;
-      itr.at("needs").get_to(dependencies);
+      auto & dependencies_j = itr.at("needs");
+      if (dependencies_j.is_array()) {
+        dependencies_j.get_to(dependencies);
+      } else {
+        dependencies = {dependencies_j};
+      }
       for (auto & dependency_itr : dependencies) {
         std::string source;
         std::string edge_type;
