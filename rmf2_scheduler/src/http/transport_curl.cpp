@@ -14,7 +14,6 @@
 
 #include "rmf2_scheduler/http/transport_curl.hpp"
 #include "rmf2_scheduler/http/connection_curl.hpp"
-#include "rmf2_scheduler/http/request.hpp"
 #include "rmf2_scheduler/log.hpp"
 
 namespace rmf2_scheduler
@@ -30,10 +29,22 @@ Transport::Transport(const std::shared_ptr<CURLInterface> & curl_interface)
 : curl_interface_(curl_interface)
 {
   // TODO(Briancbn): setup CA
+  LOG_DEBUG("curl::Transport created");
+}
+
+Transport::Transport(
+  const std::shared_ptr<CURLInterface> & curl_interface,
+  const std::string & proxy
+)
+: curl_interface_{curl_interface}, proxy_{proxy}
+{
+  // TODO(Briancbn): setup CA
+  LOG_DEBUG("curl::Transport created with proxy %s", proxy_.c_str());
 }
 
 Transport::~Transport()
 {
+  LOG_DEBUG("curl::Transport destroyed");
 }
 
 std::shared_ptr<http::Connection> Transport::create_connection(
@@ -77,7 +88,11 @@ std::shared_ptr<http::Connection> Transport::create_connection(
     code = curl_interface_->easy_setopt_str(curl_handle, CURLOPT_REFERER, referer);
   }
 
-  // TODO(Briancbn): set proxy, dns and more
+  if (code == CURLE_OK && !proxy_.empty()) {
+    code = curl_interface_->easy_setopt_str(curl_handle, CURLOPT_PROXY, proxy_);
+  }
+
+  // TODO(Briancbn): set dns and more
 
   // Setup HTTP request method and optional request body.
   if (code == CURLE_OK) {

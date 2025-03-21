@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, List, Tuple
-
 from datetime import datetime
+from functools import partial
+import json
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
+import amqp
 from numpy.random import normal
-from rmf2_scheduler import TimeWindow
-from rmf2_scheduler.data import Duration, Edge, Process, Task, Time, json_serializer
-from rmf2_scheduler.cache import ScheduleCache
-from rmf2_scheduler.cache import TaskAction, ProcessAction
-from rmf2_scheduler.cache.task_action import Payload as TaskActionPayload
-from rmf2_scheduler.cache.process_action import Payload as ProcessActionPayload
-from rmf2_scheduler.cache.schedule_action import ActionType
+
+from rmf2_scheduler.cache import Action, ActionPayload, ScheduleCache
+from rmf2_scheduler.data import (
+    action_type,
+    Duration,
+    Edge,
+    Process,
+    Task,
+    Time,
+    TimeWindow,
+)
 from rmf2_scheduler.storage import ScheduleStream
+from rmf2_scheduler.utils import TreeConversion
 
 
 def _add_tasks_and_processes(
@@ -33,36 +40,36 @@ def _add_tasks_and_processes(
 ) -> Optional[ScheduleCache]:
     for task in tasks:
         # Add task
-        task_action = TaskAction(ActionType.TASK_ADD, TaskActionPayload().task(task))
+        task_action = Action.create(action_type.TASK_ADD, ActionPayload().task(task))
         result, error = task_action.validate(cache)
         if not result:
             print(error)
             return None
 
-        task_action.apply(cache)
+        task_action.apply()
 
     for process in processes:
         # Add process
-        process_add_action = ProcessAction(
-            ActionType.PROCESS_ADD, ProcessActionPayload().process(process)
+        process_add_action = Action.create(
+            action_type.PROCESS_ADD, ActionPayload().process(process)
         )
         result, error = process_add_action.validate(cache)
         if not result:
             print(error)
             return None
 
-        process_add_action.apply(cache)
+        process_add_action.apply()
 
         # Update process start time
-        process_update_start_time_action = ProcessAction(
-            ActionType.PROCESS_UPDATE_START_TIME, ProcessActionPayload().id(process.id)
+        process_update_start_time_action = Action.create(
+            action_type.PROCESS_UPDATE_START_TIME, ActionPayload().id(process.id)
         )
         result, error = process_update_start_time_action.validate(cache)
         if not result:
             print(error)
             return None
 
-        process_update_start_time_action.apply(cache)
+        process_update_start_time_action.apply()
 
     return cache
 
@@ -86,29 +93,29 @@ def generate_preset_manufacturing_tasks(
     # MM move to workcell
     task1 = Task()
     task1.id = str(uuid4())
-    task1.type = "rmf2/go_to_place"
+    task1.type = 'rmf2/go_to_place'
     task1.start_time = start_time
     task1.status = status
-    task1.description = f"{mm_name} moves to {workcell_name}"
+    task1.description = f'{mm_name} moves to {workcell_name}'
     task1.duration = Duration.from_seconds(move_duration)
     task1.resource_id = mm_id
     task1.task_details = {
-        "end_location": workcell_id,
+        'end_location': workcell_id,
     }
 
     # MM dock to workcell
     task2 = Task()
     task2.id = str(uuid4())
-    task2.type = "dsvc/workcell_docking"
+    task2.type = 'dsvc/workcell_docking'
     task2.start_time = start_time
     task2.status = status
-    task2.description = f"{mm_name} docks to {workcell_name}"
+    task2.description = f'{mm_name} docks to {workcell_name}'
     task2.duration = Duration.from_seconds(dock_duration)
-    task2.resource_id = "MM_01"
+    task2.resource_id = mm_id
     task2.task_details = {
-        "workcell_id": workcell_id,
-        "mm_command_type": mm_base_type,
-        "workflow_type": "dock",
+        'workcell_id': workcell_id,
+        'mm_command_type': mm_base_type,
+        'workflow_type': 'dock',
     }
 
     # Workcell operation
@@ -116,32 +123,32 @@ def generate_preset_manufacturing_tasks(
     for i in range(len(workcell_operations)):
         task = Task()
         task.id = str(uuid4())
-        task.type = "dsvc/workcell_generic"
+        task.type = 'dsvc/workcell_generic'
         task.start_time = start_time
         task.status = status
-        task.description = f"{mm_name} {workcell_operations[i]} at {workcell_name}"
+        task.description = f'{mm_name} {workcell_operations[i]} at {workcell_name}'
         task.duration = Duration.from_seconds(workcell_operations_durations[i])
         task.resource_id = mm_id
         task.task_details = {
-            "workcell_id": workcell_id,
-            "mm_command_type": mm_arm_type,
-            "workflow_type": workcell_operations[i],
+            'workcell_id': workcell_id,
+            'mm_command_type': mm_arm_type,
+            'workflow_type': workcell_operations[i],
         }
         workcell_tasks.append(task)
 
     # Workcell undocking
     task3 = Task()
     task3.id = str(uuid4())
-    task3.type = "dsvc/workcell_docking"
+    task3.type = 'dsvc/workcell_docking'
     task3.start_time = start_time
     task3.status = status
-    task3.description = f"{mm_name} undock from {workcell_name}"
+    task3.description = f'{mm_name} undock from {workcell_name}'
     task3.duration = Duration.from_seconds(undock_duration)
     task3.resource_id = mm_id
     task3.task_details = {
-        "workcell_id": workcell_id,
-        "mm_command_type": mm_base_type,
-        "workflow_type": "undock",
+        'workcell_id': workcell_id,
+        'mm_command_type': mm_base_type,
+        'workflow_type': 'undock',
     }
 
     return [task1, task2] + workcell_tasks + [task3]
@@ -155,13 +162,13 @@ def generate_preset_sequence1(
     dock_to_parts_station_durations = normal(60, 2, 2)
     pick_at_parts_station_durations = normal(60, 2, 1)
     parts_station_tasks = generate_preset_manufacturing_tasks(
-        "MM 01",
-        "MM_01",
-        "MIR",
-        "UR10",
-        "Parts Station",
-        "parts_station",
-        ["pick"],
+        'MM 01',
+        'MM_01',
+        'MIR',
+        'UR10',
+        'Parts Station',
+        'parts_station',
+        ['pick'],
         move_to_parts_station_durations[0],
         (dock_to_parts_station_durations[0], dock_to_parts_station_durations[1]),
         pick_at_parts_station_durations.tolist(),
@@ -174,13 +181,13 @@ def generate_preset_sequence1(
     dock_to_cnc_durations = normal(60, 2, 2)
     pick_at_cnc_durations = normal(60, 2, 2)
     cnc_tasks = generate_preset_manufacturing_tasks(
-        "MM 01",
-        "MM_01",
-        "MIR",
-        "UR10",
-        "CNC Machine",
-        "CNC",
-        ["place", "pick"],
+        'MM 01',
+        'MM_01',
+        'MIR',
+        'UR10',
+        'CNC Machine',
+        'CNC',
+        ['place', 'pick'],
         move_to_cnc_durations[0],
         (dock_to_cnc_durations[0], dock_to_cnc_durations[1]),
         pick_at_cnc_durations.tolist(),
@@ -193,13 +200,13 @@ def generate_preset_sequence1(
     dock_to_robot_cell_durations = normal(60, 2, 2)
     pick_at_robot_cell_durations = normal(60, 2, 1)
     robot_cell_tasks = generate_preset_manufacturing_tasks(
-        "MM 01",
-        "MM_01",
-        "MIR",
-        "UR10",
-        "Robot Cell",
-        "robot_cell",
-        ["place"],
+        'MM 01',
+        'MM_01',
+        'MIR',
+        'UR10',
+        'Robot Cell',
+        'robot_cell',
+        ['place'],
         move_to_robot_cell_durations[0],
         (dock_to_robot_cell_durations[0], dock_to_robot_cell_durations[1]),
         pick_at_robot_cell_durations.tolist(),
@@ -229,13 +236,13 @@ def generate_preset_sequence2(
     dock_to_cmm_durations = normal(60, 2, 2)
     pick_at_cmm_durations = normal(60, 2, 2)
     cmm_tasks = generate_preset_manufacturing_tasks(
-        "MM 02",
-        "MM_02",
-        "MIR",
-        "UR10",
-        "CNC Machine",
-        "CNC",
-        ["place", "pick"],
+        'MM 02',
+        'MM_02',
+        'MIR',
+        'UR10',
+        'CMM Machine',
+        'CMM',
+        ['place', 'pick'],
         move_to_cmm_durations[0],
         (dock_to_cmm_durations[0], dock_to_cmm_durations[1]),
         pick_at_cmm_durations.tolist(),
@@ -248,13 +255,13 @@ def generate_preset_sequence2(
     dock_to_robot_cell_durations = normal(60, 2, 2)
     pick_at_robot_cell_durations = normal(60, 2, 1)
     robot_cell_tasks = generate_preset_manufacturing_tasks(
-        "MM 01",
-        "MM_01",
-        "MIR",
-        "UR10",
-        "Robot Cell",
-        "robot_cell",
-        ["place"],
+        'MM 02',
+        'MM_02',
+        'MIR',
+        'UR10',
+        'Robot Cell',
+        'robot_cell',
+        ['place'],
         move_to_robot_cell_durations[0],
         (dock_to_robot_cell_durations[0], dock_to_robot_cell_durations[1]),
         pick_at_robot_cell_durations.tolist(),
@@ -276,53 +283,117 @@ def generate_preset_sequence2(
     return all_tasks, process
 
 
-def generate_manufacturing_tasks(
-    start_time: Time, task_types: List[str]
-) -> Optional[ScheduleCache]:
-    status = "queued"
+def generate_manufacturing_tasks(start_time: Time) -> Optional[ScheduleCache]:
+    status = 'queued'
 
     tasks1, process1 = generate_preset_sequence1(start_time, status)
     tasks2, process2 = generate_preset_sequence2(start_time, status)
 
-    cache = ScheduleCache(task_types)
+    cache = ScheduleCache()
 
     tasks = tasks1 + tasks2
     processes = [process1, process2]
     return _add_tasks_and_processes(tasks, processes, cache)
 
 
+def to_bt_node(task_id: str, cache: ScheduleCache):
+    task = cache.get_task(task_id)
+    if task.type == 'rmf2/go_to_place':
+        return (
+            'SubTree ID="ReplaceMAPF" '
+            + f"task_id=\"{'urn:ngsi-ld:Task:' + task.id}\" "
+            + f'asset_name="{task.resource_id}" '
+            + f"coordinates=\"{task.task_details['end_location']}\" "
+            + 'connection="{connection}"'
+        )
+
+    if task.type == 'dsvc/workcell_docking':
+        return (
+            'SubTree ID="WORKCELLDocking" '
+            + f"task_id=\"{'urn:ngsi-ld:Task:' + task.id}\" "
+            + f"asset_name=\"{task.resource_id}_{task.task_details['mm_command_type']}\" "
+            + f"workcell_name=\"{task.task_details['workcell_id']}\" "
+            + f"workflow=\"{task.task_details['workflow_type']}\" "
+            + 'connection="{connection}"'
+        )
+
+    if task.type == 'dsvc/workcell_generic':
+        return (
+            'SubTree ID="WORKCELLGeneric" '
+            + f"task_id=\"{'urn:ngsi-ld:Task:' + task.id}\" "
+            + f"asset_name=\"{task.resource_id}_{task.task_details['mm_command_type']}\" "
+            + f"workcell_name=\"{task.task_details['workcell_id']}\" "
+            + f"workflow=\"{task.task_details['workflow_type']}\" "
+            + 'connection="{connection}"'
+        )
+
+    raise ValueError('Invalid task type found')
+
+
 def main():
     start_time = Time(datetime.now())
-    task_types = ["rmf2/go_to_place", "dsvc/workcell_docking", "dsvc/workcell_generic"]
 
-    stream = ScheduleStream.create_default("http://localhost:9090/ngsi-ld", task_types)
+    stream = ScheduleStream.create_default('http://localhost:9090/ngsi-ld')
 
     time_window = TimeWindow()
     time_window.start = Time(0)
     time_window.end = Time.max()
 
-    cache = generate_manufacturing_tasks(start_time, task_types)
+    cache = generate_manufacturing_tasks(start_time)
     if not cache:
         return
 
-    print("TASK")
-    for task in cache.get_all_task():
-        print(json_serializer.serialize(task))
+    print('TASK')
+    for task in cache.get_all_tasks():
+        print(task.json())
 
-    print("PROCESS")
-    for process in cache.get_all_process():
-        print(json_serializer.serialize(process))
+    print('PROCESS')
+    for process in cache.get_all_processes():
+        print(process.json())
 
     # Write the cache to stream
-    print("WRITING TO STREAM")
+    print('WRITING TO STREAM')
     result, error = stream.write_schedule(cache, time_window)
 
     if not result:
         print(error)
         return
 
-    print("Done")
+    # Convert to BT
+    print('SEND FOR EXECUTION')
+    bts = {}
+    for process in cache.get_all_processes():
+        bt_id = 'urn:' + process.id
+        bt_xml = TreeConversion().convert_to_tree(
+            'urn:' + process.id, process.graph, partial(to_bt_node, cache=cache)
+        )
+        print(bt_xml)
+        bts[bt_id] = bt_xml
+
+    queue_name = '@RECEIVE@-event_mgr'
+    exchange_name = '@RECEIVE@'
+    routing_key = ''
+
+    with amqp.Connection('localhost:5672') as c:
+        ch = c.channel()
+        ch.queue_bind(queue_name, exchange_name, routing_key)
+
+        for bt_id, bt_xml in bts.items():
+            obj = {}
+            obj['id'] = bt_id
+            obj['type'] = 'Schedule'
+            obj['scheduleType'] = 'xml'
+            obj['taskTime'] = ''
+            obj['payload'] = bt_xml
+
+            obj_str = json.dumps(obj)
+
+            message = amqp.Message(obj_str, content_type='application/json')
+
+            ch.basic_publish(message, exchange=exchange_name, routing_key=routing_key)
+
+    print('Done')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

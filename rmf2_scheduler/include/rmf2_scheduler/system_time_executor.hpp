@@ -71,7 +71,7 @@ private:
 
   using SystemTimeActionIterator = std::unordered_map<std::string, SystemTimeAction>::iterator;
 
-  std::vector<SystemTimeActionIterator> _lookup_earliest_actions();
+  std::vector<std::string> _lookup_earliest_actions() const;
 
   void _delete_time_lookup(const std::string & id, const data::Time & time);
 

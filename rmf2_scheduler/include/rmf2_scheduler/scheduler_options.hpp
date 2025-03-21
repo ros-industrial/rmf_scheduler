@@ -37,11 +37,16 @@ public:
 
   const data::Duration & static_cache_period() const;
 
+  SchedulerOptions::Ptr allow_past_tasks_duration(const data::Duration & duration);
+
+  const data::Duration & allow_past_tasks_duration() const;
+
 private:
   RS_DISABLE_COPY(SchedulerOptions)
 
   data::Duration runtime_tick_period_;
   data::Duration static_cache_period_;
+  data::Duration allow_past_tasks_duration_;
 };
 
 }  // namespace rmf2_scheduler

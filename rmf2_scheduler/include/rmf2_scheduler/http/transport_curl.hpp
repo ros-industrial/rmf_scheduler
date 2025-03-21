@@ -35,9 +35,17 @@ class Transport : public http::Transport
 public:
   explicit Transport(const std::shared_ptr<CURLInterface> & curl_interface);
 
-  virtual ~Transport();
+  /// Creates a transport object using a proxy.
+  /**
+   * |proxy| is of the form [protocol://][user:password@]host[:port].
+   * If not defined, protocol is assumed to be http://.
+   */
+  Transport(
+    const std::shared_ptr<CURLInterface> & curl_interface,
+    const std::string & proxy
+  );
 
-  // TODO(Briancbn): proxy
+  virtual ~Transport();
 
   std::shared_ptr<http::Connection> create_connection(
     const std::string & url,
@@ -52,6 +60,7 @@ private:
   RS_DISABLE_COPY(Transport)
 
   std::shared_ptr<CURLInterface> curl_interface_;
+  std::string proxy_;
 };
 
 }  // namespace curl

@@ -54,7 +54,11 @@ void init_schedule_cache_py(py::module & m)
   )
   .def(
     "lookup_events",
-    &ScheduleCache::lookup_events
+    &ScheduleCache::lookup_events,
+    py::arg("start_time"),
+    py::arg("end_time"),
+    py::arg("soft_lower_bound") = false,
+    py::arg("soft_upper_bound") = true
   )
   .def(
     "get_task",
@@ -70,7 +74,11 @@ void init_schedule_cache_py(py::module & m)
   )
   .def(
     "lookup_tasks",
-    &ScheduleCache::lookup_tasks
+    &ScheduleCache::lookup_tasks,
+    py::arg("start_time"),
+    py::arg("end_time"),
+    py::arg("soft_lower_bound") = false,
+    py::arg("soft_upper_bound") = true
   )
   .def(
     "get_process",

@@ -13,26 +13,69 @@
 # limitations under the License.
 
 from contextlib import asynccontextmanager
-from threading import Thread
+from typing import List
+import json
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import api_router
-from .scheduler import task_scheduler, system_time_executor
+from rmf2_scheduler import (
+    SchedulerOptions,
+    ExecutorData,
+    TaskExecutor,
+    ProcessExecutor,
+    TaskExecutorManager
+)
+from rmf2_scheduler.data import Task, Process
+from rmf2_scheduler.fastapi import scheduler_api_router
+from rmf2_scheduler.fastapi.scheduler import make_scheduler
+from rmf2_scheduler.storage import ScheduleStream
+from rmf2_scheduler.utils import TreeConversion
+from .task_orchestrator_process_executor import TOProcessExecutor
+from .ihi_task_executors import (
+    DummyTaskExecutor,
+    MAPFTaskExecutor,
+    GoToAMRTaskExecutor,
+    WaitAMRTaskExecutor,
+    WareHouseTaskExecutor,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Define startup and shutdown actions."""
-    # Create a background thread for the task scheduler
-    task_scheduler_thread = Thread(target=system_time_executor.spin)
-    task_scheduler_thread.start()
+    print("Starting Scheduler")
 
-    yield
+    tem = TaskExecutorManager()
+    task_executors = {
+        "ihi/go_to_amr": GoToAMRTaskExecutor(),
+        "ihi/wait_amr": WaitAMRTaskExecutor(),
+        "ihi/warehouse_task": WareHouseTaskExecutor(),
+        "rmf2/mapf": MAPFTaskExecutor(),
+        "ihi/dummy": DummyTaskExecutor(),
+    }
+    for task_type, task_executor in task_executors.items():
+        tem.load(task_type, task_executor);
 
-    # Safely shut down the task scheduler
-    system_time_executor.stop()
-    task_scheduler_thread.join()
+    tpe = TOProcessExecutor(
+        tem,
+        amqp_host="localhost",
+        amqp_port=5672,
+        amqp_exchange="@RECEIVE@",
+        to_queue="@RECEIVE@-event_mgr"
+    )
+
+    with make_scheduler(
+        SchedulerOptions(),
+        ScheduleStream.create_default(
+            "http://localhost:9090/ngsi-ld",
+        ),
+        tpe,
+        tem
+    ):
+        # Start AMQP listener
+        tpe.start_listener()
+        yield
+        tpe.stop_listener()
 
 
 app = FastAPI(
@@ -49,4 +92,4 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-app.include_router(api_router)
+app.include_router(scheduler_api_router)

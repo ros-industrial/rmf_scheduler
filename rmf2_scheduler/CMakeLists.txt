@@ -38,17 +38,23 @@ add_library(${PROJECT_NAME}
   src/data/schedule_change_record.cpp
   src/data/series.cpp
   src/default_log_handler.cpp
+  src/executor_data.cpp
   src/http/curl_api.cpp
+  src/http/common.cpp
   src/http/connection_curl.cpp
+  src/http/connection_fake.cpp
+  src/http/memory_stream.cpp
   src/http/request.cpp
   src/http/transport.cpp
   src/http/transport_curl.cpp
+  src/http/transport_fake.cpp
   src/log.cpp
   src/scheduler.cpp
   src/scheduler_options.cpp
   src/storage/schedule_stream.cpp
   src/storage/schedule_stream_ld_broker.cpp
   src/system_time_executor.cpp
+  src/task_executor_manager.cpp
   src/time_window_lookup.cpp
   src/utils/dag_helper.cpp
   src/utils/data_encoding.cpp
@@ -106,7 +112,6 @@ target_link_libraries(clear_ld_broker
   ${PROJECT_NAME}
 )
 
-
 add_executable(run_scheduler
   examples/run_scheduler.cpp
 )
@@ -133,7 +138,7 @@ install(TARGETS
 )
 
 install(TARGETS
-  # dag_to_bt
+  dag_to_bt
   rs_http_request
   ld_broker_crud
   clear_ld_broker

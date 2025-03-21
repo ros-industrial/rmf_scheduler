@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmf2_scheduler.data import Task, Time, json_serializer
-from rmf2_scheduler.cache import ScheduleCache, TaskAction, ActionPayload
-from rmf2_scheduler.data import action_type
+from rmf2_scheduler.cache import ActionPayload, ScheduleCache, TaskAction
+from rmf2_scheduler.data import action_type, Task, Time
 
 
 def test_empty_init():
@@ -31,10 +30,10 @@ def test_success():
         action_type.TASK_ADD,
         ActionPayload().task(
             Task(
-                id="4321e2c1-71f7-42ef-a10d-9a3b3f4241ff",
-                type="go_to_place",
-                start_time=Time.from_ISOtime("2024-06-03T23:02:30Z"),
-                status="ongoing",
+                id='4321e2c1-71f7-42ef-a10d-9a3b3f4241ff',
+                type='go_to_place',
+                start_time=Time.from_ISOtime('2024-06-03T23:02:30Z'),
+                status='ongoing',
             )
         ),
     )
@@ -45,4 +44,4 @@ def test_success():
     action.apply()
 
     for event in cache.get_all_events():
-        print(json_serializer.serialize(event))
+        print(event.json())

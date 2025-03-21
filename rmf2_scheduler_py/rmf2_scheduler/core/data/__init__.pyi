@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import datetime
 import typing
-from . import action_type
-from . import json_serializer
-from . import record_action_type
-from . import record_data_type
-__all__ = ['ChangeAction', 'Duration', 'Edge', 'Event', 'Graph', 'Node', 'Process', 'ScheduleAction', 'ScheduleChangeRecord', 'Task', 'Time', 'TimeWindow', 'action_type', 'json_serializer', 'record_action_type', 'record_data_type']
+
+from . import action_type, record_action_type, record_data_type
+
+__all__ = ['ChangeAction', 'Duration', 'Edge', 'Event', 'Graph', 'Node', 'Process', 'ScheduleAction', 'ScheduleChangeRecord', 'Task', 'Time', 'TimeWindow', 'action_type', 'record_action_type', 'record_data_type']
 class ChangeAction:
     """
     
@@ -26,6 +26,9 @@ class Duration:
         
     """
     __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> Duration:
+        ...
     @staticmethod
     def from_nanoseconds(nanoseconds: int) -> Duration:
         ...
@@ -71,6 +74,8 @@ class Duration:
         ...
     def __sub__(self, arg0: Duration) -> Duration:
         ...
+    def json(self) -> json:
+        ...
     def nanoseconds(self) -> int:
         ...
     def seconds(self) -> float:
@@ -109,6 +114,9 @@ class Event:
     series_id: str | None
     start_time: Time
     type: str
+    @staticmethod
+    def from_json(arg0: json) -> Event:
+        ...
     def __eq__(self, arg0: Event) -> bool:
         ...
     @typing.overload
@@ -122,6 +130,8 @@ class Event:
         ...
     def __ne__(self, arg0: Event) -> bool:
         ...
+    def json(self) -> json:
+        ...
 class Graph:
     """
     
@@ -129,6 +139,9 @@ class Graph:
         
     """
     __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> Graph:
+        ...
     def __eq__(self, arg0: Graph) -> bool:
         ...
     def __init__(self) -> None:
@@ -152,6 +165,8 @@ class Graph:
     def get_node(self, arg0: str) -> Node:
         ...
     def has_node(self, arg0: str) -> bool:
+        ...
+    def json(self) -> json:
         ...
     def prune(self) -> None:
         ...
@@ -185,11 +200,16 @@ class Process:
     __hash__: typing.ClassVar[None] = None
     graph: Graph
     id: str
+    @staticmethod
+    def from_json(arg0: json) -> Process:
+        ...
     def __eq__(self, arg0: Process) -> bool:
         ...
     def __init__(self) -> None:
         ...
     def __ne__(self, arg0: Process) -> bool:
+        ...
+    def json(self) -> json:
         ...
 class ScheduleAction:
     """
@@ -207,11 +227,16 @@ class ScheduleAction:
     source_id: str | None
     task: Task
     type: str
+    @staticmethod
+    def from_json(arg0: json) -> ScheduleAction:
+        ...
     def __eq__(self, arg0: ScheduleAction) -> bool:
         ...
     def __init__(self) -> None:
         ...
     def __ne__(self, arg0: ScheduleAction) -> bool:
+        ...
+    def json(self) -> json:
         ...
 class ScheduleChangeRecord:
     """
@@ -242,6 +267,9 @@ class Task(Event):
     resource_id: str | None
     status: str
     task_details: json
+    @staticmethod
+    def from_json(arg0: json) -> Task:
+        ...
     def __eq__(self, arg0: Task) -> bool:
         ...
     @typing.overload
@@ -261,6 +289,8 @@ class Task(Event):
         ...
     def __ne__(self, arg0: Task) -> bool:
         ...
+    def json(self) -> json:
+        ...
 class Time:
     """
     
@@ -272,7 +302,10 @@ class Time:
     def from_ISOtime(arg0: str) -> Time:
         ...
     @staticmethod
-    def from_localtime(localtime: str, fmt: str = '%b %d %H:%M:%S %Y') -> Time:
+    def from_json(arg0: json) -> Time:
+        ...
+    @staticmethod
+    def from_localtime(localtime: str, timezone: str = 'UTC', fmt: str = '%b %d %H:%M:%S %Y') -> Time:
         ...
     @staticmethod
     def max() -> Time:
@@ -313,6 +346,8 @@ class Time:
     @typing.overload
     def __sub__(self, arg0: Duration) -> Time:
         ...
+    def json(self) -> json:
+        ...
     def nanoseconds(self) -> int:
         ...
     def seconds(self) -> float:
@@ -321,7 +356,7 @@ class Time:
         ...
     def to_datetime(self) -> datetime.timedelta:
         ...
-    def to_localtime(self, fmt: str = '%b %d %H:%M:%S %Y') -> str:
+    def to_localtime(self, timezone: str = 'UTC', fmt: str = '%b %d %H:%M:%S %Y') -> str:
         ...
 class TimeWindow:
     """

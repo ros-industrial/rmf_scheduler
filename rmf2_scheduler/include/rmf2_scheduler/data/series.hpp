@@ -169,7 +169,7 @@ public:
 
   // Observer for consolidating with event / dag handling
   template<typename Observer, typename ... ArgsT>
-  std::shared_ptr<Observer> make_observer(ArgsT &&... args);
+  std::shared_ptr<Observer> make_observer(ArgsT && ... args);
 
   template<typename Observer>
   void remove_observer(std::shared_ptr<Observer> observer);

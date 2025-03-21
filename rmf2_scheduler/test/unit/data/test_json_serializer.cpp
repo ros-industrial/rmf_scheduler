@@ -18,17 +18,11 @@
 #include "rmf2_scheduler/data/duration.hpp"
 #include "rmf2_scheduler/data/event.hpp"
 #include "rmf2_scheduler/data/json_serializer.hpp"
-#include "rmf2_scheduler/utils/utils.hpp"
 #include "../../utils/gtest_macros.hpp"
 
 
 class TestJSONSerializer : public ::testing::Test
 {
-protected:
-  void SetUp() override
-  {
-    rmf2_scheduler::utils::set_timezone("UTC");
-  }
 };
 
 TEST_F(TestJSONSerializer, time) {
@@ -431,27 +425,6 @@ TEST_F(TestJSONSerializer, task) {
   }
 
   {
-    // Invalid actual_start_time
-    json task_json =
-      R"({
-      "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
-      "type": "task_type",
-      "start_time": "2023-01-02T10:15:00Z",
-      "status": "draft",
-      "actual_start_time": null,
-      "actual_end_time": "2023-01-02T11:18:40Z"
-    })"_json;
-
-    // Expect throw
-    EXPECT_THROW_EQ(
-      task_json.template get<Task>(),
-      std::underflow_error(
-        "from_json failed, task actual_end_time is defined but actual_start_time is null."
-      )
-    );
-  }
-
-  {
     // Invalid actual_end_time
     json task_json =
       R"({
@@ -557,6 +530,171 @@ TEST_F(TestJSONSerializer, occurrence) {
   EXPECT_EQ(occurrence, occurrence_json.template get<Occurrence>());
 }
 
+TEST_F(TestJSONSerializer, schedule_action)
+{
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+  using json = nlohmann::json;
+
+  {  // Minimal ScheduleAction
+    ScheduleAction schedule_action;
+    schedule_action.type = action_type::EVENT_ADD;
+
+    json schedule_action_json =
+      R"({
+      "type": "EVENT_ADD",
+      "id": null,
+      "event": null,
+      "task": null,
+      "process": null,
+      "node_id": null,
+      "source_id": null,
+      "destination_id": null,
+      "edge_type": null
+    })"_json;
+
+    json schedule_action_json_wo_null =
+      R"({
+      "type": "EVENT_ADD"
+    })"_json;
+
+    // Serialization
+    EXPECT_EQ(schedule_action_json, json(schedule_action));
+
+    // Deserialization
+    EXPECT_EQ(
+      schedule_action,
+      schedule_action_json.template get<ScheduleAction>()
+    );
+    EXPECT_EQ(
+      schedule_action,
+      schedule_action_json_wo_null.template get<ScheduleAction>()
+    );
+  }
+
+  {  // Full ScheduleAction
+    ScheduleAction schedule_action;
+    schedule_action.type = action_type::EVENT_ADD;
+    schedule_action.id = "event_1";
+    schedule_action.event = std::make_shared<Event>(
+      "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
+      "event_type",
+      Time(1672625700, 0)
+    );
+    schedule_action.task = std::make_shared<Task>(
+      "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
+      "task_type",
+      Time(1672625700, 0),
+      "draft"
+    );
+
+    schedule_action.process = std::make_shared<Process>();
+    schedule_action.process->id = "13aa1c62-64ca-495d-a4b7-84de6a00f56a";
+    schedule_action.process->graph.add_node("node_0");
+    schedule_action.process->graph.add_node("node_1");
+    schedule_action.process->graph.add_node("node_2");
+    schedule_action.process->graph.add_node("node_3");
+    schedule_action.process->graph.add_node("node_4");
+    schedule_action.process->graph.add_edge("node_0", "node_2", Edge("hard"));
+    schedule_action.process->graph.add_edge("node_1", "node_2", Edge("soft"));
+    schedule_action.process->graph.add_edge("node_2", "node_3", Edge("hard"));
+    schedule_action.process->graph.add_edge("node_2", "node_4", Edge("soft"));
+    schedule_action.node_id = "node_5";
+    schedule_action.source_id = "node_4";
+    schedule_action.destination_id = "node_5";
+    schedule_action.edge_type = "soft";
+
+    json schedule_action_json =
+      R"({
+      "type": "EVENT_ADD",
+      "event": {
+        "description": null,
+        "end_time": null,
+        "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
+        "process_id": null,
+        "series_id": null,
+        "start_time": "2023-01-02T02:15:00Z",
+        "type": "event_type"
+      },
+      "id": "event_1",
+      "task": {
+        "actual_end_time": null,
+        "actual_start_time": null,
+        "deadline": null,
+        "description": null,
+        "end_time": null,
+        "estimated_duration": null,
+        "id": "477425e8-a8a2-44bf-9a0d-a433ce4a5fe6",
+        "planned_end_time": null,
+        "planned_start_time": null,
+        "process_id": null,
+        "resource_id": null,
+        "series_id": null,
+        "start_time": "2023-01-02T02:15:00Z",
+        "status": "draft",
+        "task_details": null,
+        "type": "task_type"
+      },
+      "process": {
+        "graph": [
+          {
+            "id": "node_0",
+            "needs": []
+          },
+          {
+            "id": "node_1",
+            "needs": []
+          },
+          {
+            "id": "node_2",
+            "needs": [
+              {
+                "id": "node_0",
+                "type": "hard"
+              },
+              {
+                "id": "node_1",
+                "type": "soft"
+              }
+            ]
+          },
+          {
+            "id": "node_3",
+            "needs": [
+              {
+                "id": "node_2",
+                "type": "hard"
+              }
+            ]
+          },
+          {
+            "id": "node_4",
+            "needs": [
+              {
+                "id": "node_2",
+                "type": "soft"
+              }
+            ]
+          }
+        ],
+        "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
+      },
+      "node_id": "node_5",
+      "source_id": "node_4",
+      "destination_id": "node_5",
+      "edge_type": "soft"
+    })"_json;
+
+    // Serialization
+    EXPECT_EQ(schedule_action_json, json(schedule_action));
+
+    // Deserialization
+    EXPECT_EQ(
+      schedule_action,
+      schedule_action_json.template get<ScheduleAction>()
+    );
+  }
+}
+
 TEST_F(TestJSONSerializer, series) {
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
   using json = nlohmann::json;
@@ -581,11 +719,11 @@ TEST_F(TestJSONSerializer, series) {
       "id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "type": "task",
       "occurrences":[
-        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T10:15:00Z"},
-        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T10:15:00Z"},
-        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T10:15:00Z"},
-        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T10:15:00Z"},
-        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T10:15:00Z"}
+        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T02:15:00Z"},
+        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T02:15:00Z"},
+        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T02:15:00Z"},
+        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T02:15:00Z"},
+        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T02:15:00Z"}
       ],
       "cron": "0 15 10 ? * MON-FRI",
       "timezone": "Asia/Singapore"
@@ -620,15 +758,15 @@ TEST_F(TestJSONSerializer, series) {
       "id": "7c98b392-2131-4528-92d2-7e7f22d0a9a5",
       "type": "task",
       "occurrences":[
-        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T10:15:00Z"},
-        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T12:38:02Z"},
-        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T10:15:00Z"},
-        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T10:15:00Z"},
-        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T10:15:00Z"}
+        {"id": "24285fa4-496b-4721-9b16-536f8ff25378", "time": "2023-01-02T02:15:00Z"},
+        {"id": "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936", "time": "2023-01-03T04:38:02Z"},
+        {"id": "ccc7800a-af59-4eec-ac61-510ac9bd1d6f", "time": "2023-01-04T02:15:00Z"},
+        {"id": "01a882f5-32e8-4245-9b4d-128ef3c783d2", "time": "2023-01-05T02:15:00Z"},
+        {"id": "c66e12c9-5c8b-4e78-b562-8917d8e1c99e", "time": "2023-01-06T02:15:00Z"}
       ],
       "cron": "0 15 10 ? * MON-FRI",
       "timezone": "Asia/Singapore",
-      "until": "2023-10-03T10:15:00Z",
+      "until": "2023-10-03T02:15:00Z",
       "exception_ids": [
         "b10f0a98-ee4a-4efd-84a8-b5f4cb02a936"
       ]

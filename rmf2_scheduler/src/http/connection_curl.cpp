@@ -15,7 +15,7 @@
 #include <cstring>
 
 #include "rmf2_scheduler/http/connection_curl.hpp"
-#include "rmf2_scheduler/http/request.hpp"
+#include "rmf2_scheduler/http/memory_stream.hpp"
 #include "rmf2_scheduler/log.hpp"
 #include "rmf2_scheduler/utils/string_utils.hpp"
 
@@ -74,9 +74,7 @@ Connection::Connection(
 )
 : curl_handle_(curl_handle),
   method_(method),
-  curl_interface_(curl_interface),
-  request_buffer_(DEFAULT_CHUNK_SIZE),
-  response_buffer_(DEFAULT_CHUNK_SIZE)
+  curl_interface_(curl_interface)
 {
   // Store the connection pointer inside the CURL handle so we can easily
   // retrieve it when doing asynchronous I/O.
@@ -102,11 +100,17 @@ bool Connection::send_headers(
   return true;
 }
 bool Connection::set_request_data(
-  const std::string & data,
+  Stream::UPtr data,
   std::string & /*error*/
 )
 {
-  request_buffer_.write(data.c_str(), data.size());
+  request_buffer_ = std::move(data);
+  return true;
+}
+
+bool Connection::set_response_data(Stream::UPtr data)
+{
+  response_buffer_ = std::move(data);
   return true;
 }
 
@@ -119,36 +123,41 @@ void Connection::prepare_request()
   }
 
   if (method_ != request_type::kGet) {
-    size_t data_size = request_buffer_.str_size();
-    if (data_size) {
-      if (method_ == request_type::kPut) {
-        curl_interface_->easy_setopt_off_t(
-          curl_handle_,
-          CURLOPT_INFILESIZE_LARGE,
-          data_size
-        );
-      } else {
-        curl_interface_->easy_setopt_off_t(
-          curl_handle_,
-          CURLOPT_POSTFIELDSIZE_LARGE,
-          data_size
-        );
-      }
+    size_t data_size = 0;
+    if (request_buffer_) {
+      // Data size is known (either no data, or data size is available).
+      data_size = request_buffer_->remaining_size();
+    }
 
-      // TODO(Briancbn): handle data size unknown
-
-      // Setup request callback and data
-      curl_interface_->easy_setopt_callback(
+    if (method_ == request_type::kPut) {
+      curl_interface_->easy_setopt_off_t(
         curl_handle_,
-        CURLOPT_READFUNCTION,
-        &Connection::read_callback
+        CURLOPT_INFILESIZE_LARGE,
+        data_size
       );
-      curl_interface_->easy_setopt_ptr(
+    } else {
+      curl_interface_->easy_setopt_off_t(
         curl_handle_,
-        CURLOPT_READDATA,
-        this
+        CURLOPT_POSTFIELDSIZE_LARGE,
+        data_size
       );
     }
+
+    // TODO(Briancbn): Data size is unknown, so use chunked upload.
+  }
+
+  if (request_buffer_) {
+    // Setup request callback and data
+    curl_interface_->easy_setopt_callback(
+      curl_handle_,
+      CURLOPT_READFUNCTION,
+      &Connection::read_callback
+    );
+    curl_interface_->easy_setopt_ptr(
+      curl_handle_,
+      CURLOPT_READDATA,
+      this
+    );
   }
 
   // Setup headers
@@ -162,6 +171,9 @@ void Connection::prepare_request()
   }
 
   // Setup response callback and data
+  if (!response_buffer_) {
+    response_buffer_ = std::make_unique<MemoryStream>(DEFAULT_CHUNK_SIZE);
+  }
   if (method_ != request_type::kHead) {
     curl_interface_->easy_setopt_callback(
       curl_handle_,
@@ -195,7 +207,11 @@ bool Connection::perform_request(std::string & error_text)
   if (ret != CURLE_OK) {
     error_text = curl_interface_->easy_strerror(ret);
   } else {
-    // TODO(anyone): handle this properly
+    LOG_DEBUG(
+      "Response: %d (%s)",
+      get_response_status_code(),
+      get_response_status_text().c_str()
+    );
   }
 
   return ret == CURLE_OK;
@@ -230,9 +246,10 @@ std::string Connection::get_response_header(
   return p != response_headers_.end() ? p->second : "";
 }
 
-std::string Connection::extract_data_stream()
+Stream::UPtr Connection::extract_data_stream()
 {
-  return response_buffer_.str();
+  response_buffer_->set_position(0);
+  return std::move(response_buffer_);
 }
 
 size_t Connection::write_callback(
@@ -244,9 +261,12 @@ size_t Connection::write_callback(
 {
   Connection * me = reinterpret_cast<Connection *>(data);
   size_t data_len = size * num;
+  size_t write_size;
 
-  me->response_buffer_.write(ptr, data_len);
-  return data_len;
+  me->response_buffer_->write(ptr, data_len, &write_size);
+
+  LOG_DEBUG("Receiving data: %s", std::string{ptr, write_size}.c_str());
+  return write_size;
 }
 
 size_t Connection::read_callback(
@@ -259,7 +279,7 @@ size_t Connection::read_callback(
   Connection * me = reinterpret_cast<Connection *>(data);
   size_t data_len = size * num;
   size_t read_size = 0;
-  bool success = me->request_buffer_.read(ptr, data_len, read_size);
+  bool success = me->request_buffer_->read(ptr, data_len, &read_size);
   if (success) {
     LOG_DEBUG("Sending data: %s", std::string{ptr, read_size}.c_str());
   }

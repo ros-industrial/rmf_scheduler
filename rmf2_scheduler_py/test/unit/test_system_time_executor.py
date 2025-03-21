@@ -16,12 +16,12 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from rmf2_scheduler.data import Time, Duration
 from rmf2_scheduler import SystemTimeAction, SystemTimeExecutor
+from rmf2_scheduler.data import Duration, Time
 
 
 def dummy_action():
-    print("action done at %s" % Time(datetime.now()).to_ISOtime())
+    print('action done at %s' % Time(datetime.now()).to_ISOtime())
 
 
 def test_system_time_executor():
@@ -35,12 +35,12 @@ def test_system_time_executor():
     action = SystemTimeAction()
     action.time = Time(datetime.now()) + Duration.from_seconds(2)
     action.work = dummy_action
-    print("action scheduled at %s" % action.time.to_ISOtime())
+    print('action scheduled at %s' % action.time.to_ISOtime())
 
     ste.add_action(action)
 
     # sleep 3 seconds
-    print("Running...")
+    print('Running...')
     sleep(3)
 
     ste.stop()

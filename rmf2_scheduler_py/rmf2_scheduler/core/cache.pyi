@@ -1,6 +1,9 @@
 from __future__ import annotations
-import rmf2_scheduler.core.data
+
 import typing
+
+import rmf2_scheduler.core.data
+
 __all__ = ['Action', 'ActionPayload', 'EventAction', 'ProcessAction', 'ScheduleCache', 'TaskAction']
 class Action:
     """
@@ -106,9 +109,9 @@ class ScheduleCache:
         ...
     def has_task(self, arg0: str) -> bool:
         ...
-    def lookup_events(self, arg0: rmf2_scheduler.core.data.Time, arg1: rmf2_scheduler.core.data.Time, arg2: bool, arg3: bool) -> list[rmf2_scheduler.core.data.Event]:
+    def lookup_events(self, start_time: rmf2_scheduler.core.data.Time, end_time: rmf2_scheduler.core.data.Time, soft_lower_bound: bool = False, soft_upper_bound: bool = True) -> list[rmf2_scheduler.core.data.Event]:
         ...
-    def lookup_tasks(self, arg0: rmf2_scheduler.core.data.Time, arg1: rmf2_scheduler.core.data.Time, arg2: bool, arg3: bool) -> list[rmf2_scheduler.core.data.Task]:
+    def lookup_tasks(self, start_time: rmf2_scheduler.core.data.Time, end_time: rmf2_scheduler.core.data.Time, soft_lower_bound: bool = False, soft_upper_bound: bool = True) -> list[rmf2_scheduler.core.data.Task]:
         ...
 class TaskAction(Action):
     """

@@ -16,6 +16,7 @@
 #define RMF2_SCHEDULER__DATA__JSON_SERIALIZER_HPP_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <optional>
 #include <vector>
@@ -29,6 +30,7 @@
 #include "rmf2_scheduler/data/graph.hpp"
 #include "rmf2_scheduler/data/process.hpp"
 #include "rmf2_scheduler/data/occurrence.hpp"
+#include "rmf2_scheduler/data/schedule_action.hpp"
 #include "rmf2_scheduler/data/series.hpp"
 
 // Custom Serializer
@@ -51,6 +53,29 @@ struct adl_serializer<std::optional<T>>
   static void to_json(json & j, const std::optional<T> & opt)
   {
     if (opt.has_value()) {
+      j = *opt;
+    } else {
+      j = nullptr;
+    }
+  }
+};
+
+/// JSON serializer for std::shared_ptr
+template<typename T>
+struct adl_serializer<std::shared_ptr<T>>
+{
+  static void from_json(const json & j, std::shared_ptr<T> & opt)
+  {
+    if (!j.is_null()) {
+      opt = std::make_shared<T>(j.template get<T>());
+    } else {
+      opt = nullptr;
+    }
+  }
+
+  static void to_json(json & j, const std::shared_ptr<T> & opt)
+  {
+    if (opt) {
       j = *opt;
     } else {
       j = nullptr;
@@ -188,7 +213,7 @@ namespace data
 {
 
 /// Event serializer
-void to_json(
+inline void to_json(
   nlohmann::json & event_j,
   const Event & event_t
 )
@@ -209,7 +234,7 @@ void to_json(
 }
 
 /// Event deserializer
-void from_json(
+inline void from_json(
   const nlohmann::json & event_j,
   Event & event_t)
 {
@@ -238,7 +263,7 @@ void from_json(
 }
 
 /// Task serializer
-void to_json(
+inline void to_json(
   nlohmann::json & task_j,
   const Task & task_t
 )
@@ -270,7 +295,7 @@ void to_json(
 }
 
 /// Task deserializer
-void from_json(
+inline void from_json(
   const nlohmann::json & task_j,
   Task & task_t)
 {
@@ -320,10 +345,9 @@ void from_json(
   std::optional<Time> actual_end_time;
   actual_end_time = task_j.value("actual_end_time", actual_end_time);
   if (actual_end_time.has_value()) {
+    Time start_time = task_t.start_time;
     if (!task_t.actual_start_time.has_value()) {
-      throw std::underflow_error(
-              "from_json failed, task actual_end_time is defined but actual_start_time is null."
-      );
+      start_time = *task_t.actual_start_time;
     }
     if (*task_t.actual_start_time > actual_end_time) {
       throw std::underflow_error(
@@ -348,6 +372,37 @@ RS_JSON_DEFINE(
   time
 )
 
+/// ScheduleAction serializer
+RS_JSON_SERIALIZER_DEFINE_TYPE(
+  ScheduleAction,
+  type,
+  id,
+  event,
+  task,
+  process,
+  node_id,
+  source_id,
+  destination_id,
+  edge_type
+)
+
+RS_JSON_DESERIALIZER_DEFINE_TYPE(
+  ScheduleAction,
+  RS_JSON_DESERIALIZER_REQUIRED_MEMBERS(
+    type
+  ),
+  RS_JSON_DESERIALIZER_OPTIONAL_MEMBERS(
+    id,
+    event,
+    task,
+    process,
+    node_id,
+    source_id,
+    destination_id,
+    edge_type
+  )
+)
+
 }  // namespace data
 }  // namespace rmf2_scheduler
 
@@ -357,7 +412,7 @@ namespace nlohmann
 {
 
 // Series
-void adl_serializer<rmf2_scheduler::data::Series>::from_json(
+inline void adl_serializer<rmf2_scheduler::data::Series>::from_json(
   const json & j,
   rmf2_scheduler::data::Series & series
 )
@@ -393,7 +448,7 @@ void adl_serializer<rmf2_scheduler::data::Series>::from_json(
   );
 }
 
-rmf2_scheduler::data::Series
+inline rmf2_scheduler::data::Series
 adl_serializer<rmf2_scheduler::data::Series>::from_json(const json & j)
 {
   rmf2_scheduler::data::Series series;
@@ -401,7 +456,7 @@ adl_serializer<rmf2_scheduler::data::Series>::from_json(const json & j)
   return series;
 }
 
-void adl_serializer<rmf2_scheduler::data::Series>::to_json(
+inline void adl_serializer<rmf2_scheduler::data::Series>::to_json(
   json & j,
   const rmf2_scheduler::data::Series & series
 )

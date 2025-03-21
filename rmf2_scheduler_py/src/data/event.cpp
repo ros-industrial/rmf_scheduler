@@ -15,8 +15,10 @@
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
 
+#include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/event.hpp"
 #include "rmf2_scheduler/data/event.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -26,9 +28,11 @@ namespace data
 
 void init_event_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Event, rmf2_scheduler::data::Event::Ptr>(
+  py::class_<Event, Event::Ptr>(
     m_data,
     "Event",
     R"(
@@ -40,7 +44,7 @@ void init_event_py(py::module & m)
     py::init<
       const std::string &,
       const std::string &,
-      const rmf2_scheduler::data::Time &
+      const Time &
     >(),
     py::arg("id"),
     py::arg("type"),
@@ -51,8 +55,8 @@ void init_event_py(py::module & m)
       const std::string &,
       const std::string &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
+      const Time &,
+      const Duration &,
       const std::string &,
       const std::string &
     >(),
@@ -66,34 +70,54 @@ void init_event_py(py::module & m)
   )
   .def_readwrite(
     "id",
-    &rmf2_scheduler::data::Event::id
+    &Event::id
   )
   .def_readwrite(
     "type",
-    &rmf2_scheduler::data::Event::type
+    &Event::type
   )
   .def_readwrite(
     "description",
-    &rmf2_scheduler::data::Event::description
+    &Event::description
   )
   .def_readwrite(
     "start_time",
-    &rmf2_scheduler::data::Event::start_time
+    &Event::start_time
   )
   .def_readwrite(
     "duration",
-    &rmf2_scheduler::data::Event::duration
+    &Event::duration
   )
   .def_readwrite(
     "series_id",
-    &rmf2_scheduler::data::Event::series_id
+    &Event::series_id
   )
   .def_readwrite(
     "process_id",
-    &rmf2_scheduler::data::Event::process_id
+    &Event::process_id
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
+
+  // JSON Serialization
+  .def(
+    "json",
+    [](
+      Event & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Event>();
+    }
+  )
   ;
 }
 

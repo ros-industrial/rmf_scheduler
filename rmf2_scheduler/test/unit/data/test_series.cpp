@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "rmf2_scheduler/data/series.hpp"
-#include "rmf2_scheduler/utils/utils.hpp"
+#include "rmf2_scheduler/data/timezone.hpp"
 #include "../../utils/gtest_macros.hpp"
 #include "./test_series_observer.hpp"
 
@@ -46,8 +46,8 @@ class TestSeries : public ::testing::Test
 protected:
   void SetUp() override
   {
-    using namespace rmf2_scheduler;  // NOLINT(build/namespaces)
-    utils::set_timezone("Asia/Singapore");
+    using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+    set_system_timezone("Asia/Singapore");
   }
 
   void TearDown() override

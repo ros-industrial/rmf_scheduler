@@ -19,6 +19,11 @@ ament_add_gtest(test_data_duration
 )
 target_link_libraries(test_data_duration ${PROJECT_NAME})
 
+ament_add_gtest(test_data_timezone
+  data/test_timezone.cpp
+)
+target_link_libraries(test_data_timezone ${PROJECT_NAME})
+
 ament_add_gtest(test_data_time
   data/test_time.cpp
 )
@@ -96,6 +101,12 @@ ament_add_gtest(test_cache_process_action
 )
 target_link_libraries(test_cache_process_action ${PROJECT_NAME})
 
+# STORAGE
+ament_add_gtest(test_storage_schedule_stream_ld_broker
+  storage/test_schedule_stream_ld_broker.cpp
+)
+target_link_libraries(test_storage_schedule_stream_ld_broker ${PROJECT_NAME})
+
 # UTILS
 ament_add_gmock(test_utils_dag_helper
   utils/test_dag_helper.cpp
@@ -107,10 +118,26 @@ ament_add_gmock(test_utils_tree_converter
 )
 target_link_libraries(test_utils_tree_converter ${PROJECT_NAME})
 
-ament_add_gmock(test_http_connection
+# HTTP
+ament_add_gtest(test_http_memory_stream
+  http/test_memory_stream.cpp
+)
+target_link_libraries(test_http_memory_stream ${PROJECT_NAME})
+
+ament_add_gmock(test_http_connection_curl
   http/test_connection_curl.cpp
 )
-target_link_libraries(test_http_connection ${PROJECT_NAME})
+target_link_libraries(test_http_connection_curl ${PROJECT_NAME})
+
+ament_add_gmock(test_http_transport_curl
+  http/test_transport_curl.cpp
+)
+target_link_libraries(test_http_transport_curl ${PROJECT_NAME})
+
+ament_add_gmock(test_http_request
+  http/test_request.cpp
+)
+target_link_libraries(test_http_request ${PROJECT_NAME})
 
 # ROOT
 ament_add_gtest(test_system_time_executor

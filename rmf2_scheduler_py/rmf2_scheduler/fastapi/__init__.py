@@ -12,9 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from fastapi import APIRouter
 
-from .endpoints import events
+from .endpoints import events, processes, schedule, schedule_legacy, tasks
 
-api_router = APIRouter()
-api_router.include_router(events.router, prefix='/events', tags=['events'])
+scheduler_api_router = APIRouter()
+scheduler_api_router.include_router(
+    schedule.router, prefix='/schedule', tags=['Schedule']
+)
+scheduler_api_router.include_router(tasks.router, prefix='/tasks', tags=['Task'])
+scheduler_api_router.include_router(
+    processes.router, prefix='/processes', tags=['Process']
+)
+scheduler_api_router.include_router(
+    schedule_legacy.router, prefix='/schedule_legacy', tags=['[Legacy] Schedule']
+)
+scheduler_api_router.include_router(
+    events.router, prefix='/events', tags=['[Legacy] Event']
+)

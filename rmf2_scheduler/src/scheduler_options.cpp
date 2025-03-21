@@ -19,7 +19,8 @@ namespace rmf2_scheduler
 
 SchedulerOptions::SchedulerOptions()
 : runtime_tick_period_(std::chrono::minutes(5)),  // 5 min for the runtime ticking
-  static_cache_period_(std::chrono::minutes(60 * 24 * 7))  // 1 week of static cache
+  static_cache_period_(std::chrono::minutes(60 * 24 * 7)),  // 1 week of static cache
+  allow_past_tasks_duration_(std::chrono::minutes(1))  // 1 min for past tasks allowed
 {
 }
 
@@ -47,5 +48,16 @@ SchedulerOptions::Ptr SchedulerOptions::static_cache_period(const data::Duration
 const data::Duration & SchedulerOptions::static_cache_period() const
 {
   return static_cache_period_;
+}
+
+SchedulerOptions::Ptr SchedulerOptions::allow_past_tasks_duration(const data::Duration & duration)
+{
+  allow_past_tasks_duration_ = duration;
+  return shared_from_this();
+}
+
+const data::Duration & SchedulerOptions::allow_past_tasks_duration() const
+{
+  return allow_past_tasks_duration_;
 }
 }  // namespace rmf2_scheduler

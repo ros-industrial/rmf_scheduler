@@ -34,7 +34,6 @@ pybind11_add_module(core
   src/data/edge.cpp
   src/data/event.cpp
   src/data/graph.cpp
-  src/data/json_serializer.cpp
   src/data/node.cpp
   src/data/process.cpp
   src/data/task.cpp
@@ -42,11 +41,16 @@ pybind11_add_module(core
   src/data/time_window.cpp
   src/data/schedule_action.cpp
   src/data/schedule_change_record.cpp
+  src/executor_data.cpp
+  src/process_executor.cpp
   src/py_utils.cpp
   src/scheduler.cpp
   src/scheduler_options.cpp
   src/storage/schedule_stream.cpp
   src/system_time_executor.cpp
+  src/task_executor.cpp
+  src/task_executor_manager.cpp
+  src/utils/tree_converter.cpp
 )
 
 target_link_libraries(core

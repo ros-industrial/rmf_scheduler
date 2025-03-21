@@ -21,6 +21,8 @@
 #include <utility>
 #include <vector>
 
+#include "rmf2_scheduler/http/common.hpp"
+#include "rmf2_scheduler/http/stream.hpp"
 #include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
@@ -32,8 +34,6 @@ namespace http
 class Connection
 {
 public:
-  using HeaderList = std::vector<std::pair<std::string, std::string>>;
-
   Connection() = default;
   virtual ~Connection() = default;
 
@@ -48,9 +48,11 @@ public:
   ) = 0;
 
   virtual bool set_request_data(
-    const std::string & data,
+    Stream::UPtr data,
     std::string & error
   ) = 0;
+
+  virtual bool set_response_data(Stream::UPtr data) = 0;
 
   virtual bool perform_request(std::string & error_text) = 0;
 
@@ -74,7 +76,7 @@ public:
   // calls will fail with "Stream closed" error.
   // Returns empty stream on failure and fills in the error information in
   // |error| object.
-  virtual std::string extract_data_stream() = 0;
+  virtual Stream::UPtr extract_data_stream() = 0;
 
 private:
   RS_DISABLE_COPY(Connection)

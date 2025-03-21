@@ -17,57 +17,50 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Json, Extra
+from pydantic import BaseModel, Extra, JsonValue, UUID4
 
 
 class EventBase(BaseModel):
-    type: str
+    type: str  # noqa: A003
     description: Optional[str] = None
     start_time: datetime
     end_time: Optional[datetime] = None
 
 
 class EventCreate(EventBase):
-
     class Config:
         extra = Extra.forbid
 
 
 class EventUpdate(EventBase):
-
     class Config:
         extra = Extra.forbid
 
 
 class Event(EventBase):
-
-    id: str
+    id: str  # noqa: A003
     series_id: Optional[str] = None
     process_id: Optional[str] = None
 
 
 class TaskBase(EventBase):
-
     resource_id: Optional[str] = None
     deadline: Optional[datetime] = None
-    task_details: Optional[Json] = None
+    task_details: Optional[JsonValue] = None
 
 
 class TaskCreate(TaskBase):
-
     class Config:
         extra = Extra.forbid
 
 
 class TaskUpdate(TaskBase):
-
     class Config:
         extra = Extra.forbid
 
 
 class Task(TaskBase):
-
-    id: str
+    id: str  # noqa: A003
     series_id: Optional[str]
     process_id: Optional[str]
     status: str
@@ -78,9 +71,80 @@ class Task(TaskBase):
     actual_end_time: Optional[datetime] = None
 
 
+class Edge(BaseModel):
+    id: str  # noqa: A003
+    type: str = 'hard'  # noqa: A003
+
+
+class Dependency(BaseModel):
+    id: str  # noqa: A003
+    needs: List[Edge]
+
+
+class ProcessBase(BaseModel):
+    graph: List[Dependency]
+
+
+class ProcessCreate(ProcessBase):
+    class Config:
+        extra = Extra.forbid
+
+
+class ProcessUpdate(ProcessBase):
+    class Config:
+        extra = Extra.forbid
+
+
+class Process(ProcessBase):
+    id: str  # noqa: A003
+
+
+class Schedule(BaseModel):
+    class Config:
+        extra = Extra.forbid
+
+    tasks: List[Task]
+    processes: List[Process]
+
+
+class EventPayload(EventBase):
+    class Config:
+        extra = Extra.forbid
+
+    id: UUID4  # noqa: A003
+
+
+class TaskPayload(TaskBase):
+    class Config:
+        extra = Extra.forbid
+
+    id: UUID4  # noqa: A003
+
+
+class ProcessPayload(ProcessBase):
+    class Config:
+        extra = Extra.forbid
+
+    id: UUID4  # noqa: A003
+
+
 class ScheduleAction(BaseModel):
     class Config:
         extra = Extra.forbid
 
-    type: int
-    payload: Any
+    type: str  # noqa: A003
+    # Payload
+    id: Optional[str] = None  # noqa: A003
+    event: Optional[EventPayload] = None
+    task: Optional[TaskPayload] = None
+    process: Optional[ProcessPayload] = None
+    node_id: Optional[str] = None
+    source_id: Optional[str] = None
+    destination_id: Optional[str] = None
+    edge_type: Optional[str] = None
+
+
+class Message(BaseModel):
+    """Schema for Message."""
+
+    message: str

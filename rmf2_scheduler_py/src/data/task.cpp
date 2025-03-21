@@ -18,6 +18,7 @@
 #include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/task.hpp"
 #include "rmf2_scheduler/data/task.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -27,10 +28,12 @@ namespace data
 
 void init_task_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Task, rmf2_scheduler::data::Task::Ptr,
-    rmf2_scheduler::data::Event>(
+  py::class_<Task, Task::Ptr,
+    Event>(
     m_data,
     "Task",
     R"(
@@ -42,7 +45,7 @@ void init_task_py(py::module & m)
     py::init<
       const std::string &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
+      const Time &,
       const std::string &
     >(),
     py::arg("id"),
@@ -52,7 +55,7 @@ void init_task_py(py::module & m)
   )
   .def(
     py::init<
-      const rmf2_scheduler::data::Event &,
+      const Event &,
       const std::string &
     >(),
     py::arg("event"),
@@ -63,18 +66,18 @@ void init_task_py(py::module & m)
       const std::string &,
       const std::string &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
+      const Time &,
+      const Duration &,
       const std::string &,
       const std::string &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
+      const Time &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
-      const rmf2_scheduler::data::Duration &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
+      const Time &,
+      const Duration &,
+      const Duration &,
+      const Time &,
+      const Duration &,
       const nlohmann::json &
     >(),
     py::arg("id"),
@@ -96,15 +99,15 @@ void init_task_py(py::module & m)
   )
   .def(
     py::init<
-      const rmf2_scheduler::data::Event &,
+      const Event &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
+      const Time &,
       const std::string &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
-      const rmf2_scheduler::data::Duration &,
-      const rmf2_scheduler::data::Time &,
-      const rmf2_scheduler::data::Duration &,
+      const Time &,
+      const Duration &,
+      const Duration &,
+      const Time &,
+      const Duration &,
       const nlohmann::json &
     >(),
     py::arg("event"),
@@ -120,42 +123,62 @@ void init_task_py(py::module & m)
   )
   .def_readwrite(
     "resource_id",
-    &rmf2_scheduler::data::Task::resource_id
+    &Task::resource_id
   )
   .def_readwrite(
     "deadline",
-    &rmf2_scheduler::data::Task::deadline
+    &Task::deadline
   )
   .def_readwrite(
     "status",
-    &rmf2_scheduler::data::Task::status
+    &Task::status
   )
   .def_readwrite(
     "planned_start_time",
-    &rmf2_scheduler::data::Task::planned_start_time
+    &Task::planned_start_time
   )
   .def_readwrite(
     "planned_duration",
-    &rmf2_scheduler::data::Task::planned_duration
+    &Task::planned_duration
   )
   .def_readwrite(
     "estimated_duration",
-    &rmf2_scheduler::data::Task::estimated_duration
+    &Task::estimated_duration
   )
   .def_readwrite(
     "actual_start_time",
-    &rmf2_scheduler::data::Task::actual_start_time
+    &Task::actual_start_time
   )
   .def_readwrite(
     "actual_duration",
-    &rmf2_scheduler::data::Task::actual_duration
+    &Task::actual_duration
   )
   .def_readwrite(
     "task_details",
-    &rmf2_scheduler::data::Task::task_details
+    &Task::task_details
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      Task & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Task>();
+    }
+  )
   ;
 }
 

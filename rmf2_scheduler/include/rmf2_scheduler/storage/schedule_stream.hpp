@@ -56,6 +56,12 @@ public:
     std::string & error
   ) = 0;
 
+  virtual bool refresh_tasks(
+    cache::ScheduleCache::Ptr cache,
+    const std::vector<std::string> & ids,
+    std::string & error
+  ) = 0;
+
   static ScheduleStream::Ptr create_default(
     const std::string & url
   );

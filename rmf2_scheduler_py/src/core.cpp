@@ -23,7 +23,6 @@
 #include "rmf2_scheduler_py/data/event.hpp"
 #include "rmf2_scheduler_py/data/duration.hpp"
 #include "rmf2_scheduler_py/data/graph.hpp"
-#include "rmf2_scheduler_py/data/json_serializer.hpp"
 #include "rmf2_scheduler_py/data/node.hpp"
 #include "rmf2_scheduler_py/data/process.hpp"
 #include "rmf2_scheduler_py/data/schedule_action.hpp"
@@ -31,10 +30,15 @@
 #include "rmf2_scheduler_py/data/task.hpp"
 #include "rmf2_scheduler_py/data/time.hpp"
 #include "rmf2_scheduler_py/data/time_window.hpp"
+#include "rmf2_scheduler_py/executor_data.hpp"
+#include "rmf2_scheduler_py/process_executor.hpp"
 #include "rmf2_scheduler_py/scheduler.hpp"
 #include "rmf2_scheduler_py/scheduler_options.hpp"
 #include "rmf2_scheduler_py/storage/schedule_stream.hpp"
 #include "rmf2_scheduler_py/system_time_executor.hpp"
+#include "rmf2_scheduler_py/task_executor.hpp"
+#include "rmf2_scheduler_py/task_executor_manager.hpp"
+#include "rmf2_scheduler_py/utils/tree_converter.hpp"
 
 PYBIND11_MODULE(core, m)
 {
@@ -50,7 +54,6 @@ PYBIND11_MODULE(core, m)
   rmf2_scheduler_py::data::init_process_py(m);
   rmf2_scheduler_py::data::init_schedule_action_py(m);
   rmf2_scheduler_py::data::init_schedule_change_record_py(m);
-  rmf2_scheduler_py::data::init_json_serializer_py(m);
 
   // CACHE
   rmf2_scheduler_py::cache::init_schedule_cache_py(m);
@@ -62,7 +65,14 @@ PYBIND11_MODULE(core, m)
   // STORAGE
   rmf2_scheduler_py::storage::init_schedule_stream_py(m);
 
+  // UTILS
+  rmf2_scheduler_py::utils::init_tree_converter_py(m);
+
   // ROOT
+  rmf2_scheduler_py::init_executor_data_py(m);
+  rmf2_scheduler_py::init_task_executor_py(m);
+  rmf2_scheduler_py::init_task_executor_manager_py(m);
+  rmf2_scheduler_py::init_process_executor_py(m);
   rmf2_scheduler_py::init_scheduler_options_py(m);
   rmf2_scheduler_py::init_system_time_executor_py(m);
   rmf2_scheduler_py::init_scheduler_py(m);

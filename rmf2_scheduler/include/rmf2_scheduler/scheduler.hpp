@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 
@@ -28,7 +29,7 @@
 #include "rmf2_scheduler/optimizer.hpp"
 #include "rmf2_scheduler/process_executor.hpp"
 #include "rmf2_scheduler/scheduler_options.hpp"
-#include "rmf2_scheduler/task_executor.hpp"
+#include "rmf2_scheduler/task_executor_manager.hpp"
 
 namespace rmf2_scheduler
 {
@@ -48,7 +49,7 @@ public:
     Optimizer::Ptr optimizer,
     Estimator::Ptr estimator,
     ProcessExecutor::Ptr process_executor,
-    TaskExecutor::Ptr task_executor
+    TaskExecutorManager::Ptr task_executor_manager
   );
 
   virtual ~Scheduler();
@@ -154,6 +155,8 @@ private:
 
   void _tick();
 
+  void _add_next_tick();
+
   bool _refresh_schedule(std::string & error);
 
   SchedulerOptions::Ptr options_;
@@ -168,9 +171,7 @@ private:
 
   ProcessExecutor::Ptr process_executor_;
 
-  TaskExecutor::Ptr task_executor_;
-
-  cache::ScheduleCache::Ptr runtime_cache_;
+  TaskExecutorManager::Ptr task_executor_manager_;
 
   cache::ScheduleCache::Ptr static_cache_;
 
@@ -179,6 +180,38 @@ private:
   mutable std::shared_mutex mtx_;
 
   data::Time next_tick_time_;
+
+  friend class LockedScheduleRO;
+  friend class LockedScheduleRW;
+};
+
+
+class LockedScheduleRO
+{
+public:
+  explicit LockedScheduleRO(const Scheduler::ConstPtr & scheduler);
+
+  virtual ~LockedScheduleRO();
+
+  cache::ScheduleCache::ConstPtr cache() const;
+
+private:
+  std::weak_ptr<const cache::ScheduleCache> cache_wp_;
+  Scheduler::ReadLock lk_;
+};
+
+class LockedScheduleRW
+{
+public:
+  explicit LockedScheduleRW(const Scheduler::Ptr & scheduler);
+
+  virtual ~LockedScheduleRW();
+
+  cache::ScheduleCache::Ptr cache();
+
+private:
+  std::weak_ptr<cache::ScheduleCache> cache_wp_;
+  Scheduler::WriteLock lk_;
 };
 
 }  // namespace rmf2_scheduler

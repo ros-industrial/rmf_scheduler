@@ -18,8 +18,10 @@
 
 #include <chrono>
 
+#include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/time.hpp"
 #include "rmf2_scheduler/data/time.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -29,9 +31,11 @@ namespace data
 
 void init_time_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Time>(
+  py::class_<Time>(
     m_data,
     "Time",
     R"(
@@ -58,45 +62,76 @@ void init_time_py(py::module & m)
   .def(py::self <= py::self)
   .def(py::self >= py::self)
   .def(py::self > py::self)
-  .def(py::self + rmf2_scheduler::data::Duration())
-  .def(py::self += rmf2_scheduler::data::Duration())
+  .def(py::self + Duration())
+  .def(py::self += Duration())
   .def(py::self - py::self)
-  .def(py::self - rmf2_scheduler::data::Duration())
-  .def(py::self -= rmf2_scheduler::data::Duration())
+  .def(py::self - Duration())
+  .def(py::self -= Duration())
   .def(
     "nanoseconds",
-    &rmf2_scheduler::data::Time::nanoseconds
+    &Time::nanoseconds
   )
   .def_static(
     "max",
-    &rmf2_scheduler::data::Time::max
+    &Time::max
   )
   .def(
     "seconds",
-    &rmf2_scheduler::data::Time::seconds
+    &Time::seconds
   )
   .def(
     "to_datetime",
-    &rmf2_scheduler::data::Time::to_chrono<std::chrono::system_clock::time_point>
+    &Time::to_chrono<std::chrono::system_clock::time_point>
   )
   .def(
     "to_localtime",
-    &rmf2_scheduler::data::Time::to_localtime,
+    py::overload_cast<const std::string &, const std::string &>(
+      &Time::to_localtime,
+      py::const_
+    ),
+    py::arg("timezone") = "UTC",
     py::arg("fmt") = "%b %d %H:%M:%S %Y"
   )
   .def(
     "to_ISOtime",
-    &rmf2_scheduler::data::Time::to_ISOtime
+    &Time::to_ISOtime
   )
   .def_static(
     "from_localtime",
-    &rmf2_scheduler::data::Time::from_localtime,
+    py::overload_cast<
+      const std::string &,
+      const std::string &,
+      const std::string &
+    >(
+      &Time::from_localtime
+    ),
     py::arg("localtime"),
+    py::arg("timezone") = "UTC",
     py::arg("fmt") = "%b %d %H:%M:%S %Y"
   )
   .def_static(
     "from_ISOtime",
-    &rmf2_scheduler::data::Time::from_ISOtime
+    &Time::from_ISOtime
+  )
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      Time & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Time>();
+    }
   )
   ;
 }

@@ -20,8 +20,7 @@ touch rts-venv/COLCON_IGNORE
 You might want to make sure that the venv is using up-to-date versions of the some foundational packages.
 
 ```bash
-pip install -U pip setuptools build
-pip install pyyaml typeguard jinja2
+pip install -U pip setuptools build pyyaml typeguard jinja2
 ```
 
 Install the package

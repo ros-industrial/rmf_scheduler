@@ -15,8 +15,10 @@
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
 
+#include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/process.hpp"
 #include "rmf2_scheduler/data/process.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -26,9 +28,11 @@ namespace data
 
 void init_process_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Process, rmf2_scheduler::data::Process::Ptr>(
+  py::class_<Process, Process::Ptr>(
     m_data,
     "Process",
     R"(
@@ -38,14 +42,34 @@ void init_process_py(py::module & m)
   .def(py::init<>())
   .def_readwrite(
     "id",
-    &rmf2_scheduler::data::Process::id
+    &Process::id
   )
   .def_readwrite(
     "graph",
-    &rmf2_scheduler::data::Process::graph
+    &Process::graph
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      Process & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Process>();
+    }
+  )
   ;
 }
 

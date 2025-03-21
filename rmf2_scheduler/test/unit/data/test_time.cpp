@@ -21,7 +21,6 @@
 #include "gtest/gtest.h"
 
 #include "rmf2_scheduler/data/time.hpp"
-#include "rmf2_scheduler/utils/utils.hpp"
 #include "../../utils/gtest_macros.hpp"
 
 class TestTime : public ::testing::Test
@@ -162,19 +161,24 @@ TEST_F(TestTime, localtime)
   using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
 
   Time test_time(0l);
-  rmf2_scheduler::utils::set_timezone("UTC");
   EXPECT_EQ(std::string(test_time.to_localtime()), "Jan 01 00:00:00 1970");
   EXPECT_TRUE(test_time == Time::from_localtime("Jan 01 00:00:00 1970"));
 
   test_time += Duration::from_seconds(31 * 24 * 60 * 60);
   EXPECT_EQ(
-    std::string(test_time.to_localtime("%H:%M:%S %d/%m/%Y")),
+    std::string(
+      test_time.to_localtime(
+        "UTC",
+        "%H:%M:%S %d/%m/%Y"
+      )),
     "00:00:00 01/02/1970"
   );
   EXPECT_EQ(
     test_time.nanoseconds(),
     Time::from_localtime(
-      "00:00:00 01/02/1970", "%H:%M:%S %d/%m/%Y"
+      "00:00:00 01/02/1970",
+      "UTC",
+      "%H:%M:%S %d/%m/%Y"
     ).nanoseconds()
   );
 }

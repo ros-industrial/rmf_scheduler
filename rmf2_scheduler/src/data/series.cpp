@@ -19,6 +19,7 @@
 
 #include "rmf2_scheduler/data/series.hpp"
 #include "rmf2_scheduler/data/uuid.hpp"
+#include "rmf2_scheduler/data/timezone.hpp"
 #include "rmf2_scheduler/utils/utils.hpp"
 
 namespace rmf2_scheduler
@@ -243,7 +244,7 @@ std::vector<Occurrence> Series::expand_until(const Time & time)
   }
 
   auto last_itr = occurrence_lookup_.rbegin();
-  utils::set_timezone(tz_.c_str());
+  ScopedTimezone scoped_tz(tz_.c_str());
 
   time_t last_time_s = Time(last_itr->first).seconds();
   time_t until_time_s = until_time_c.seconds();
@@ -395,7 +396,7 @@ void Series::update_cron_from(
 
 
   // Create new occurrences based on old
-  utils::set_timezone(tz_.c_str());
+  ScopedTimezone scoped_tz(tz_.c_str());
   while (itr != occurrence_lookup_.end()) {
     cron_time_s = cron::cron_next(*cron_, cron_time_s);
     if (exception_ids_.find(itr->second) == exception_ids_.end()) {
@@ -478,7 +479,7 @@ bool Series::_validate_time(
   const Time & time,
   const std::unique_ptr<cron::cronexpr> & cron) const
 {
-  utils::set_timezone(tz_.c_str());
+  ScopedTimezone scoped_tz(tz_.c_str());
   int time_s_to_validate = static_cast<int>(time.seconds());
 
   // Roll back 1s
@@ -499,7 +500,7 @@ void Series::_safe_delete(rs_time_point_value_t time_ns)
   // if the occurrence is the last element
   // insert one additional time at the end
   if (time_ns == last_occurrence.time.nanoseconds()) {
-    utils::set_timezone(tz_.c_str());
+    ScopedTimezone scoped_tz(tz_.c_str());
     time_t current_time_s = time_ns / 1e9;
     time_t next_time_s = cron::cron_next(*cron_, current_time_s);
     Time next_time_c(next_time_s, 0);

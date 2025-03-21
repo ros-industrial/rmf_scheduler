@@ -34,16 +34,6 @@ void init_scheduler_py(py::module & m)
     "Estimator"
   );
 
-  py::class_<ProcessExecutor, ProcessExecutor::Ptr>(
-    m,
-    "ProcessExecutor"
-  );
-
-  py::class_<TaskExecutor, TaskExecutor::Ptr>(
-    m,
-    "TaskExecutor"
-  );
-
   py::class_<Scheduler, Scheduler::Ptr>(
     m,
     "Scheduler",
@@ -59,7 +49,7 @@ void init_scheduler_py(py::module & m)
       Optimizer::Ptr,
       Estimator::Ptr,
       ProcessExecutor::Ptr,
-      TaskExecutor::Ptr
+      TaskExecutorManager::Ptr
     >(),
     py::arg("options"),
     py::arg("stream"),
@@ -67,7 +57,7 @@ void init_scheduler_py(py::module & m)
     py::arg("optimizer") = Optimizer::Ptr(),
     py::arg("estimator") = Estimator::Ptr(),
     py::arg("process_executor") = ProcessExecutor::Ptr(),
-    py::arg("task_executor") = TaskExecutor::Ptr()
+    py::arg("task_executor_manager") = TaskExecutorManager::Ptr()
   )
   .def(
     "get_schedule",
@@ -188,6 +178,41 @@ void init_scheduler_py(py::module & m)
       bool result = self.perform_batch(actions, error);
       return py::make_tuple(result, error);
     }
+  )
+  ;
+
+
+  py::class_<LockedScheduleRO>(
+    m,
+    "LockedScheduleRO",
+    R"(
+    Acquire read-only schedule cache from the scheduler
+    )"
+  )
+  .def(
+    py::init<const Scheduler::ConstPtr &>(),
+    py::arg("scheduler")
+  )
+  .def(
+    "cache",
+    &LockedScheduleRO::cache
+  )
+  ;
+
+  py::class_<LockedScheduleRW>(
+    m,
+    "LockedScheduleRW",
+    R"(
+    Acquire read-write schedule from the scheduler
+    )"
+  )
+  .def(
+    py::init<const Scheduler::Ptr &>(),
+    py::arg("scheduler")
+  )
+  .def(
+    "cache",
+    &LockedScheduleRW::cache
   )
   ;
 }

@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <chrono>
 #include <mutex>
 
@@ -81,18 +80,18 @@ void SystemTimeExecutor::stop()
   cv_.notify_all();
 }
 
-std::vector<SystemTimeExecutor::SystemTimeActionIterator>
-SystemTimeExecutor::_lookup_earliest_actions()
+std::vector<std::string>
+SystemTimeExecutor::_lookup_earliest_actions() const
 {
-  std::vector<SystemTimeActionIterator> actions;
+  std::vector<std::string> action_ids;
   auto itr = time_lookup_.cbegin();
   auto range = time_lookup_.equal_range(itr->first);
   for (auto i = range.first; i != range.second; ++i) {
     auto action_itr = actions_.find(i->second);
     assert(action_itr != actions_.end());
-    actions.push_back(action_itr);
+    action_ids.push_back(action_itr->first);
   }
-  return actions;
+  return action_ids;
 }
 
 void SystemTimeExecutor::_delete_time_lookup(
@@ -117,19 +116,23 @@ void SystemTimeExecutor::_tick()
     // wait forever if there are no tasks.
     auto next_time = std::chrono::system_clock::time_point::max();
 
-    auto next_actions = _lookup_earliest_actions();
-    if (!next_actions.empty()) {
-      next_time = next_actions[0]->second.time.to_chrono<std::chrono::system_clock>();
+    auto next_action_ids = _lookup_earliest_actions();
+    if (!next_action_ids.empty()) {
+      auto next_action = actions_.at(next_action_ids[0]);
+      next_time = next_action.time.to_chrono<std::chrono::system_clock>();
     }
 
     // don't need to check for spurious wakes since the loop will exit immediately
     // if it is not yet time to run a task.
     if (cv_.wait_until(lk, next_time) == std::cv_status::timeout) {
-      for (auto & action_itr : next_actions) {
+      for (auto & action_id : next_action_ids) {
         // Check if action is deleted
-        pending_actions_.push_back(action_itr->second);
-        _delete_time_lookup(action_itr->first, action_itr->second.time);
-        actions_.erase(action_itr);
+        auto action_itr = actions_.find(action_id);
+        if (action_itr != actions_.end()) {
+          pending_actions_.push_back(action_itr->second);
+          _delete_time_lookup(action_itr->first, action_itr->second.time);
+          actions_.erase(action_itr);
+        }
       }
     }
   }

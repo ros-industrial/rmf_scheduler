@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "rmf2_scheduler/http/memory_stream.hpp"
 #include "rmf2_scheduler/http/request.hpp"
+#include "rmf2_scheduler/utils/string_utils.hpp"
 #include "rmf2_scheduler/log.hpp"
 
 namespace rmf2_scheduler
@@ -20,92 +22,6 @@ namespace rmf2_scheduler
 
 namespace http
 {
-
-// request_type
-const char request_type::kOptions[] = "OPTIONS";
-const char request_type::kGet[] = "GET";
-const char request_type::kHead[] = "HEAD";
-const char request_type::kPost[] = "POST";
-const char request_type::kPut[] = "PUT";
-const char request_type::kPatch[] = "PATCH";
-const char request_type::kDelete[] = "DELETE";
-const char request_type::kTrace[] = "TRACE";
-const char request_type::kConnect[] = "CONNECT";
-const char request_type::kCopy[] = "COPY";
-const char request_type::kMove[] = "MOVE";
-
-// request_header
-const char request_header::kAccept[] = "Accept";
-const char request_header::kAcceptCharset[] = "Accept-Charset";
-const char request_header::kAcceptEncoding[] = "Accept-Encoding";
-const char request_header::kAcceptLanguage[] = "Accept-Language";
-const char request_header::kAllow[] = "Allow";
-const char request_header::kAuthorization[] = "Authorization";
-const char request_header::kCacheControl[] = "Cache-Control";
-const char request_header::kConnection[] = "Connection";
-const char request_header::kContentEncoding[] = "Content-Encoding";
-const char request_header::kContentLanguage[] = "Content-Language";
-const char request_header::kContentLength[] = "Content-Length";
-const char request_header::kContentLocation[] = "Content-Location";
-const char request_header::kContentMd5[] = "Content-MD5";
-const char request_header::kContentRange[] = "Content-Range";
-const char request_header::kContentType[] = "Content-Type";
-const char request_header::kCookie[] = "Cookie";
-const char request_header::kDate[] = "Date";
-const char request_header::kExpect[] = "Expect";
-const char request_header::kExpires[] = "Expires";
-const char request_header::kFrom[] = "From";
-const char request_header::kHost[] = "Host";
-const char request_header::kIfMatch[] = "If-Match";
-const char request_header::kIfModifiedSince[] = "If-Modified-Since";
-const char request_header::kIfNoneMatch[] = "If-None-Match";
-const char request_header::kIfRange[] = "If-Range";
-const char request_header::kIfUnmodifiedSince[] = "If-Unmodified-Since";
-const char request_header::kLastModified[] = "Last-Modified";
-const char request_header::kMaxForwards[] = "Max-Forwards";
-const char request_header::kPragma[] = "Pragma";
-const char request_header::kProxyAuthorization[] = "Proxy-Authorization";
-const char request_header::kRange[] = "Range";
-const char request_header::kReferer[] = "Referer";
-const char request_header::kTE[] = "TE";
-const char request_header::kTrailer[] = "Trailer";
-const char request_header::kTransferEncoding[] = "Transfer-Encoding";
-const char request_header::kUpgrade[] = "Upgrade";
-const char request_header::kUserAgent[] = "User-Agent";
-const char request_header::kVia[] = "Via";
-const char request_header::kWarning[] = "Warning";
-
-// response_header
-const char response_header::kAcceptRanges[] = "Accept-Ranges";
-const char response_header::kAge[] = "Age";
-const char response_header::kAllow[] = "Allow";
-const char response_header::kCacheControl[] = "Cache-Control";
-const char response_header::kConnection[] = "Connection";
-const char response_header::kContentEncoding[] = "Content-Encoding";
-const char response_header::kContentLanguage[] = "Content-Language";
-const char response_header::kContentLength[] = "Content-Length";
-const char response_header::kContentLocation[] = "Content-Location";
-const char response_header::kContentMd5[] = "Content-MD5";
-const char response_header::kContentRange[] = "Content-Range";
-const char response_header::kContentType[] = "Content-Type";
-const char response_header::kDate[] = "Date";
-const char response_header::kETag[] = "ETag";
-const char response_header::kExpires[] = "Expires";
-const char response_header::kLastModified[] = "Last-Modified";
-const char response_header::kLocation[] = "Location";
-const char response_header::kPragma[] = "Pragma";
-const char response_header::kProxyAuthenticate[] = "Proxy-Authenticate";
-const char response_header::kRetryAfter[] = "Retry-After";
-const char response_header::kServer[] = "Server";
-const char response_header::kSetCookie[] = "Set-Cookie";
-const char response_header::kTrailer[] = "Trailer";
-const char response_header::kTransferEncoding[] = "Transfer-Encoding";
-const char response_header::kUpgrade[] = "Upgrade";
-const char response_header::kVary[] = "Vary";
-const char response_header::kVia[] = "Via";
-const char response_header::kWarning[] = "Warning";
-const char response_header::kWwwAuthenticate[] = "WWW-Authenticate";
-
 
 // REQUEST
 Request::Request(
@@ -172,12 +88,36 @@ void Request::add_headers(const HeaderList & headers)
   headers_.insert(headers.begin(), headers.end());
 }
 
-bool Request::add_request_body(const std::string & stream, std::string & error)
+bool Request::add_request_body(const void * data, size_t size, std::string & error)
 {
   if (!_send_request_if_needed(error)) {
     return false;
   }
-  return connection_->set_request_data(stream, error);
+
+  // Create memory stream
+  Stream::UPtr stream = MemoryStream::open_copy_of(data, size);
+  return connection_->set_request_data(std::move(stream), error);
+}
+
+bool Request::add_request_body(const nlohmann::json & json, std::string & error)
+{
+  auto body_data = json.dump(4);
+  return add_request_body(body_data.c_str(), body_data.size(), error);
+}
+
+bool Request::add_request_body(Stream::UPtr stream, std::string & error)
+{
+  return _send_request_if_needed(error) &&
+         connection_->set_request_data(std::move(stream), error);
+}
+
+bool Request::add_response_stream(Stream::UPtr stream, std::string & error)
+{
+  if (!_send_request_if_needed(error)) {
+    return false;
+  }
+  connection_->set_response_data(std::move(stream));
+  return true;
 }
 
 const std::string & Request::get_request_url() const
@@ -218,6 +158,27 @@ const std::string & Request::get_user_agent() const
   return user_agent_;
 }
 
+void Request::add_range(int64_t bytes)
+{
+  if (!transport_) {
+    LOG_ERROR("Request already sent");
+    return;
+  }
+  if (bytes < 0) {
+    ranges_.emplace_back(Request::range_value_omitted, -bytes);
+  } else {
+    ranges_.emplace_back(bytes, Request::range_value_omitted);
+  }
+}
+void Request::add_range(uint64_t from_byte, uint64_t to_byte)
+{
+  if (!transport_) {
+    LOG_ERROR("Request already sent");
+    return;
+  }
+  ranges_.emplace_back(from_byte, to_byte);
+}
+
 std::unique_ptr<Response> Request::get_response_and_block(
   std::string & error)
 {
@@ -244,32 +205,34 @@ bool Request::_send_request_if_needed(std::string & error)
 
   HeaderList headers;
   headers.reserve(headers_.size());
-  for (auto & itr : headers) {
+  for (auto & itr : headers_) {
     headers.emplace_back(itr.first, itr.second);
   }
-  // std::vector<std::string> ranges;
-  // if (method_ != request_type::kHead) {
-  //   ranges.reserve(ranges_.size());
-  //   for (auto p : ranges_) {
-  //     if (p.first != range_value_omitted ||
-  //         p.second != range_value_omitted) {
-  //       std::string range;
-  //       if (p.first != range_value_omitted) {
-  //         range = brillo::string_utils::ToString(p.first);
-  //       }
-  //       range += '-';
-  //       if (p.second != range_value_omitted) {
-  //         range += brillo::string_utils::ToString(p.second);
-  //       }
-  //       ranges.push_back(range);
-  //     }
-  //   }
-  // }
-  // if (!ranges.empty()) {
-  //   headers.emplace_back(
-  //       request_header::kRange,
-  //       "bytes=" + brillo::string_utils::Join(",", ranges));
-  // }
+
+  std::vector<std::string> ranges;
+  if (method_ != request_type::kHead) {
+    ranges.reserve(ranges_.size());
+    for (auto p : ranges_) {
+      if (p.first != range_value_omitted ||
+        p.second != range_value_omitted)
+      {
+        std::string range;
+        if (p.first != range_value_omitted) {
+          range = std::to_string(p.first);
+        }
+        range += '-';
+        if (p.second != range_value_omitted) {
+          range += std::to_string(p.second);
+        }
+        ranges.push_back(range);
+      }
+    }
+  }
+  if (!ranges.empty()) {
+    headers.emplace_back(
+      request_header::kRange,
+      "bytes=" + string_utils::join(",", ranges));
+  }
   headers.emplace_back(request_header::kAccept, get_accept());
   if (method_ != request_type::kGet && method_ != request_type::kHead) {
     if (!content_type_.empty()) {
@@ -327,9 +290,26 @@ std::string Response::get_content_type() const
   return get_header(response_header::kContentType);
 }
 
-std::string Response::extract_data_stream()
+Stream::UPtr Response::extract_data_stream()
 {
   return connection_->extract_data_stream();
+}
+
+std::vector<uint8_t> Response::extract_data()
+{
+  std::vector<uint8_t> data;
+  Stream::UPtr stream = connection_->extract_data_stream();
+  if (stream) {
+    data.resize(stream->remaining_size());
+    stream->read(data.data(), data.size(), nullptr);
+  }
+  return data;
+}
+
+std::string Response::extract_data_as_string()
+{
+  std::vector<uint8_t> data = extract_data();
+  return std::string{data.begin(), data.end()};
 }
 
 std::string Response::get_header(const std::string & header_name) const

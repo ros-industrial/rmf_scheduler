@@ -24,6 +24,7 @@
 #include <stdexcept>
 
 #include "rmf2_scheduler/data/time.hpp"
+#include "rmf2_scheduler/data/timezone.hpp"
 #include "rmf2_scheduler/utils/utils.hpp"
 
 
@@ -209,10 +210,19 @@ Time::max()
   return Time(std::numeric_limits<int32_t>::max(), 999999999);
 }
 
+char * Time::to_localtime() const
+{
+  return to_localtime(get_timezone());
+}
+
 char * Time::to_localtime(
+  const std::string & timezone,
   const std::string & fmt
 ) const
 {
+  // Set timezone
+  ScopedTimezone tz(timezone.c_str());
+
   time_t t = seconds();
   std::tm ltime;
   localtime_r(&t, &ltime);
@@ -224,7 +234,7 @@ char * Time::to_localtime(
 char * Time::to_ISOtime() const
 {
   // to format [yyyy-mm-ddThh:mm:ss[.mmm]]
-  char * iso_time_base = to_localtime("%FT%T");
+  char * iso_time_base = to_localtime("UTC", "%FT%T");
 
   int truncated_seconds = std::chrono::duration_cast<std::chrono::seconds>(
     std::chrono::nanoseconds(time_value_)
@@ -246,9 +256,21 @@ char * Time::to_ISOtime() const
 }
 
 data::Time Time::from_localtime(
-  const std::string & localtime,
-  const std::string & fmt)
+  const std::string & localtime
+)
 {
+  return from_localtime(localtime, get_timezone());
+}
+
+data::Time Time::from_localtime(
+  const std::string & localtime,
+  const std::string & timezone,
+  const std::string & fmt
+)
+{
+  // Set timezone
+  ScopedTimezone tz(timezone.c_str());
+
   std::tm t = {};
   std::istringstream ss(localtime);
   ss >> std::get_time(&t, fmt.c_str());
@@ -266,7 +288,7 @@ data::Time Time::from_ISOtime(
   const std::string & localtime
 )
 {
-  data::Time base_time = from_localtime(localtime, "%Y-%m-%dT%H:%M:%S");
+  data::Time base_time = from_localtime(localtime, "UTC", "%Y-%m-%dT%H:%M:%S");
   if (localtime.size() <= 20) {
     return base_time;
   }

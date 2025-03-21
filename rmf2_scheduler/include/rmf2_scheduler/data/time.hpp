@@ -179,16 +179,31 @@ public:
 
   /// Convert Time into a localtime string
   /**
+   */
+  char * to_localtime() const;
+
+  /// Convert Time into a localtime string
+  /**
+   * \param timezone timezone for the localtime.
    * \param fmt localtime format.
    */
-  char * to_localtime(const std::string & fmt = "%b %d %H:%M:%S %Y") const;
+  char * to_localtime(
+    const std::string & timezone,
+    const std::string & fmt = "%b %d %H:%M:%S %Y"
+  ) const;
 
   /// Convert Time into a localtime string in ISO format
   char * to_ISOtime() const;
 
   /// Create a Time object from a string representing localtime
   static Time from_localtime(
+    const std::string & localtime
+  );
+
+  /// Create a Time object from a string representing localtime
+  static Time from_localtime(
     const std::string & localtime,
+    const std::string & timezone,
     const std::string & fmt = "%b %d %H:%M:%S %Y"
   );
 

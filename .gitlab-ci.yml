@@ -25,7 +25,7 @@ humble-gcc-coverage:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
     # Upload coverage report
@@ -54,7 +54,7 @@ humble-clang:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
 
@@ -74,7 +74,7 @@ jazzy-gcc:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
 
@@ -95,7 +95,7 @@ jazzy-gcc-asan:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
 
@@ -116,7 +116,7 @@ jazzy-gcc-tsan:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
 
@@ -140,7 +140,7 @@ jazzy-clang:
     UPSTREAM_WORKSPACE: "deps.repos"
 
   script:
-    - apt-get update && apt-get install -y git
+    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
 

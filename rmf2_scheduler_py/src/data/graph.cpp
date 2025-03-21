@@ -18,8 +18,10 @@
 #include <sstream>
 #include <ostream>
 
+#include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/graph.hpp"
 #include "rmf2_scheduler/data/graph.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -29,9 +31,11 @@ namespace data
 
 void init_graph_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Graph, rmf2_scheduler::data::Graph::Ptr>(
+  py::class_<Graph, Graph::Ptr>(
     m_data,
     "Graph",
     R"(
@@ -41,52 +45,52 @@ void init_graph_py(py::module & m)
   .def(py::init<>())
   .def(
     "add_node",
-    &rmf2_scheduler::data::Graph::add_node
+    &Graph::add_node
   )
   .def(
     "add_edge",
-    &rmf2_scheduler::data::Graph::add_edge,
+    &Graph::add_edge,
     py::arg("source"),
     py::arg("destination"),
-    py::arg("edge") = rmf2_scheduler::data::Edge("hard")
+    py::arg("edge") = Edge("hard")
   )
   .def(
     "update_node",
-    &rmf2_scheduler::data::Graph::update_node
+    &Graph::update_node
   )
   .def(
     "delete_edge",
-    &rmf2_scheduler::data::Graph::delete_edge,
+    &Graph::delete_edge,
     py::arg("source"),
     py::arg("destination")
   )
   .def(
     "delete_node",
-    &rmf2_scheduler::data::Graph::delete_node
+    &Graph::delete_node
   )
   .def(
     "prune",
-    &rmf2_scheduler::data::Graph::prune
+    &Graph::prune
   )
   .def(
     "has_node",
-    &rmf2_scheduler::data::Graph::has_node
+    &Graph::has_node
   )
   .def(
     "get_node",
-    &rmf2_scheduler::data::Graph::get_node
+    &Graph::get_node
   )
   .def(
     "get_all_nodes",
-    &rmf2_scheduler::data::Graph::get_all_nodes
+    &Graph::get_all_nodes
   )
   .def(
     "empty",
-    &rmf2_scheduler::data::Graph::empty
+    &Graph::empty
   )
   .def(
     "dump",
-    [](const rmf2_scheduler::data::Graph & self) {
+    [](const Graph & self) {
       std::ostringstream oss;
       self.dump(oss);
       return oss.str();
@@ -94,6 +98,26 @@ void init_graph_py(py::module & m)
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      Graph & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Graph>();
+    }
+  )
   ;
 }
 

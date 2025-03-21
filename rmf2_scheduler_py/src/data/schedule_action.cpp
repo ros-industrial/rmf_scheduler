@@ -18,6 +18,8 @@
 #include "rmf2_scheduler_py/py_utils.hpp"
 #include "rmf2_scheduler_py/data/schedule_action.hpp"
 #include "rmf2_scheduler/data/schedule_action.hpp"
+#include "pybind11_json/pybind11_json.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -27,6 +29,8 @@ namespace data
 
 void init_schedule_action_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
   // action type
@@ -35,78 +39,83 @@ void init_schedule_action_py(py::module & m)
   py_utils::def_str_const(
     m_action_type,
     "EVENT_ADD",
-    rmf2_scheduler::data::action_type::EVENT_ADD
+    action_type::EVENT_ADD
   );
   py_utils::def_str_const(
     m_action_type,
     "EVENT_UPDATE",
-    rmf2_scheduler::data::action_type::EVENT_UPDATE
+    action_type::EVENT_UPDATE
   );
   py_utils::def_str_const(
     m_action_type,
     "EVENT_DELETE",
-    rmf2_scheduler::data::action_type::EVENT_DELETE
+    action_type::EVENT_DELETE
   );
 
   py_utils::def_str_const(
     m_action_type,
     "TASK_ADD",
-    rmf2_scheduler::data::action_type::TASK_ADD
+    action_type::TASK_ADD
   );
   py_utils::def_str_const(
     m_action_type,
     "TASK_UPDATE",
-    rmf2_scheduler::data::action_type::TASK_UPDATE
+    action_type::TASK_UPDATE
   );
   py_utils::def_str_const(
     m_action_type,
     "TASK_DELETE",
-    rmf2_scheduler::data::action_type::TASK_DELETE
+    action_type::TASK_DELETE
   );
 
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_ADD",
-    rmf2_scheduler::data::action_type::PROCESS_ADD
+    action_type::PROCESS_ADD
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_ATTACH_NODE",
-    rmf2_scheduler::data::action_type::PROCESS_ATTACH_NODE
+    action_type::PROCESS_ATTACH_NODE
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_ADD_DEPENDENCY",
-    rmf2_scheduler::data::action_type::PROCESS_ADD_DEPENDENCY
+    action_type::PROCESS_ADD_DEPENDENCY
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_UPDATE",
-    rmf2_scheduler::data::action_type::PROCESS_UPDATE
+    action_type::PROCESS_UPDATE
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_UPDATE_START_TIME",
-    rmf2_scheduler::data::action_type::PROCESS_UPDATE_START_TIME
+    action_type::PROCESS_UPDATE_START_TIME
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_DETACH_NODE",
-    rmf2_scheduler::data::action_type::PROCESS_DETACH_NODE
+    action_type::PROCESS_DETACH_NODE
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_DELETE",
-    rmf2_scheduler::data::action_type::PROCESS_DELETE
+    action_type::PROCESS_DELETE
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "PROCESS_DELETE_DEPENDENCY",
+    action_type::PROCESS_DELETE_DEPENDENCY
   );
   py_utils::def_str_const(
     m_action_type,
     "PROCESS_DELETE_ALL",
-    rmf2_scheduler::data::action_type::PROCESS_DELETE_ALL
+    action_type::PROCESS_DELETE_ALL
   );
 
   // ScheduleAction
-  py::class_<rmf2_scheduler::data::ScheduleAction>(
+  py::class_<ScheduleAction>(
     m_data,
     "ScheduleAction",
     R"(
@@ -116,42 +125,62 @@ void init_schedule_action_py(py::module & m)
   .def(py::init<>())
   .def_readwrite(
     "type",
-    &rmf2_scheduler::data::ScheduleAction::type
+    &ScheduleAction::type
   )
   .def_readwrite(
     "id",
-    &rmf2_scheduler::data::ScheduleAction::id
+    &ScheduleAction::id
   )
   .def_readwrite(
     "event",
-    &rmf2_scheduler::data::ScheduleAction::event
+    &ScheduleAction::event
   )
   .def_readwrite(
     "task",
-    &rmf2_scheduler::data::ScheduleAction::task
+    &ScheduleAction::task
   )
   .def_readwrite(
     "process",
-    &rmf2_scheduler::data::ScheduleAction::process
+    &ScheduleAction::process
   )
   .def_readwrite(
     "node_id",
-    &rmf2_scheduler::data::ScheduleAction::node_id
+    &ScheduleAction::node_id
   )
   .def_readwrite(
     "source_id",
-    &rmf2_scheduler::data::ScheduleAction::source_id
+    &ScheduleAction::source_id
   )
   .def_readwrite(
     "destination_id",
-    &rmf2_scheduler::data::ScheduleAction::destination_id
+    &ScheduleAction::destination_id
   )
   .def_readwrite(
     "edge_type",
-    &rmf2_scheduler::data::ScheduleAction::edge_type
+    &ScheduleAction::edge_type
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      ScheduleAction & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<ScheduleAction>();
+    }
+  )
   ;
 }
 

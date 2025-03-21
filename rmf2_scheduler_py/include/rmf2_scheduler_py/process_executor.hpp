@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMF2_SCHEDULER_PY__DATA__JSON_SERIALIZER_HPP_
-#define RMF2_SCHEDULER_PY__DATA__JSON_SERIALIZER_HPP_
+#ifndef RMF2_SCHEDULER_PY__PROCESS_EXECUTOR_HPP_
+#define RMF2_SCHEDULER_PY__PROCESS_EXECUTOR_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -22,13 +22,8 @@ namespace py = pybind11;
 namespace rmf2_scheduler_py
 {
 
-namespace data
-{
-
-void init_json_serializer_py(py::module & m);
-
-}  // namespace data
+void init_process_executor_py(py::module & m);
 
 }  // namespace rmf2_scheduler_py
 
-#endif  // RMF2_SCHEDULER_PY__DATA__JSON_SERIALIZER_HPP_
+#endif  // RMF2_SCHEDULER_PY__PROCESS_EXECUTOR_HPP_

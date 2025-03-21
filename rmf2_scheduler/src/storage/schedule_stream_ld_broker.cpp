@@ -33,6 +33,37 @@ namespace storage
 namespace ld_broker
 {
 
+namespace
+{
+
+static const size_t PAGINATION_LIMIT = 1000;
+
+bool validate_http_response(
+  const std::unique_ptr<http::Response> & response,
+  const std::shared_ptr<http::Request> & request,
+  std::string & error
+)
+{
+  if (!response) {
+    return false;
+  }
+
+  if (!response->is_successful()) {
+    if (request) {
+      error += "Invalid response from " + request->get_request_method() + " " +
+        request->get_request_url() + "\n";
+    }
+
+    error += std::to_string(response->get_status_code()) + " " +
+      response->get_status_text() + "\n" +
+      response->extract_data_as_string();
+    return false;
+  }
+
+  return true;
+}
+}  // namespace
+
 ScheduleStream::ScheduleStream(
   const std::string & ld_broker_url,
   std::shared_ptr<http::Transport> transport
@@ -57,17 +88,225 @@ bool ScheduleStream::read_schedule(
 )
 {
   // Retrieve Events
+  size_t offset = 0;
+  const size_t limit = PAGINATION_LIMIT;
+  std::unordered_set<std::string> query_process_ids;
+
+  // Manual pagination
+  do {
+    auto event_query_request = std::make_shared<http::Request>(
+      url::append_query_params(
+        read_url_,
+          {
+            {"type", "urn:rmf2:event"},
+            {"limit", std::to_string(limit)},
+            {"offset", std::to_string(offset)},
+            {
+              "q",
+              "startTime>=" + std::string(time_window.start.to_ISOtime()) + ";" +
+              "startTime<" + std::string(time_window.end.to_ISOtime())
+            }
+          }
+      ),
+      http::request_type::kGet,
+      transport_
+    );
+
+    auto event_query_response = event_query_request->get_response_and_block(error);
+    if (!validate_http_response(event_query_response, event_query_request, error)) {
+      return false;
+    }
+
+    // Convert response to JSON and actions
+    std::vector<data::Task::Ptr> tasks;
+    if (
+      !_read_response_to_tasks(
+        event_query_response->extract_data_as_string(),
+        tasks,
+        error
+    ))
+    {
+      return false;
+    }
+
+    // Add tasks to cache
+    for (const auto & task : tasks) {
+      auto task_action = std::make_shared<cache::TaskAction>(
+        data::action_type::TASK_ADD,
+        cache::ActionPayload().task(task)
+      );
+
+      if (task_action->validate(schedule_cache, error)) {
+        task_action->apply();
+      } else {
+        return false;
+      }
+    }
+
+    // Retrieve relevant process to read
+    query_process_ids.reserve(tasks.size());
+    for (const auto & task : tasks) {
+      if (task->process_id.has_value()) {
+        query_process_ids.emplace("urn:process:" + *task->process_id);
+      }
+    }
+
+    if (tasks.empty()) {
+      break;
+    }
+
+    offset += limit;
+  } while(true);
+
+  if (query_process_ids.empty()) {
+    return true;
+  }
+
+  // Retrieve Process
+  offset = 0;
+  std::vector<data::Process::Ptr> processes_to_add;
+  std::unordered_set<std::string> query_extra_event_ids;
+
+  // Manual pagination
+  do {
+    auto process_query_request = std::make_shared<http::Request>(
+      url::append_query_params(
+        read_url_,
+          {
+            {"type", "urn:rmf2:process"},
+            {"limit", std::to_string(limit)},
+            {"offset", std::to_string(offset)},
+            {"id", string_utils::join(",", query_process_ids)}
+          }
+      ),
+      http::request_type::kGet,
+      transport_
+    );
+
+    auto process_query_response = process_query_request->get_response_and_block(error);
+    if (!validate_http_response(process_query_response, process_query_request, error)) {
+      return false;
+    }
+
+    // Convert response to JSON and process actions
+    std::vector<data::Process::Ptr> processes;
+    if (!_read_response_to_processes(
+        process_query_response->extract_data_as_string(), processes, error))
+    {
+      return false;
+    }
+
+    // Check if there are additional events that should be retrieved
+    for (const auto & process : processes) {
+      process->graph.for_each_node(
+        [&query_extra_event_ids, schedule_cache](const data::Node::Ptr & node) {
+          if (!schedule_cache->has_event(node->id())) {
+            query_extra_event_ids.emplace("urn:event:" + node->id());
+          }
+        }
+      );
+    }
+
+    if (processes.empty()) {
+      break;
+    }
+
+    processes_to_add.reserve(processes_to_add.size() + processes.size());
+    processes_to_add.insert(processes_to_add.end(), processes.begin(), processes.end());
+
+    offset += limit;
+  } while (true);
+
+  if (!query_extra_event_ids.empty()) {
+    // Retrieve extra Events
+    // Manual pagination
+    offset = 0;
+    do {
+      auto extra_event_query_request = std::make_shared<http::Request>(
+        url::append_query_params(
+          read_url_,
+            {
+              {"type", "urn:rmf2:event"},
+              {"limit", std::to_string(limit)},
+              {"offset", std::to_string(offset)},
+              {"id", string_utils::join(";", query_extra_event_ids)}
+            }
+        ),
+        http::request_type::kGet,
+        transport_
+      );
+
+      auto extra_event_query_response = extra_event_query_request->get_response_and_block(error);
+      if (!validate_http_response(extra_event_query_response, extra_event_query_request, error)) {
+        return false;
+      }
+
+      // Convert response to JSON and actions
+      std::vector<data::Task::Ptr> extra_tasks;
+      if (
+        !_read_response_to_tasks(
+          extra_event_query_response->extract_data_as_string(),
+          extra_tasks,
+          error
+      ))
+      {
+        return false;
+      }
+
+      // Add extra tasks to cache
+      for (const auto & task : extra_tasks) {
+        auto task_action = std::make_shared<cache::TaskAction>(
+          data::action_type::TASK_ADD,
+          cache::ActionPayload().task(task)
+        );
+
+        if (task_action->validate(schedule_cache, error)) {
+          task_action->apply();
+        } else {
+          return false;
+        }
+      }
+
+      if (extra_tasks.empty()) {
+        break;
+      }
+
+      offset += limit;
+    }while (true);
+  }
+
+  // Add process to cache
+  for (const auto & process : processes_to_add) {
+    auto process_action = std::make_shared<cache::ProcessAction>(
+      data::action_type::PROCESS_ADD,
+      cache::ActionPayload().process(process)
+    );
+
+    if (process_action->validate(schedule_cache, error)) {
+      process_action->apply();
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+bool ScheduleStream::refresh_tasks(
+  cache::ScheduleCache::Ptr schedule_cache,
+  const std::vector<std::string> & task_ids,
+  std::string & error
+)
+{
+  // Retrieve Events
   auto event_query_request = std::make_shared<http::Request>(
     url::append_query_params(
       read_url_,
         {
           {"type", "urn:rmf2:event"},
           {"limit", "1000"},
-          {
-            "q",
-            "startTime>=" + std::string(time_window.start.to_ISOtime()) + ";" +
-            "startTime<" + std::string(time_window.end.to_ISOtime())
-          }
+          {"id", string_utils::join(",", task_ids)},
         }
     ),
     http::request_type::kGet,
@@ -75,16 +314,7 @@ bool ScheduleStream::read_schedule(
   );
 
   auto event_query_response = event_query_request->get_response_and_block(error);
-  if (!event_query_response) {
-    return false;
-  }
-
-  if (!event_query_response->is_successful()) {
-    return false;
-  }
-
-  if (event_query_response->get_status_code() != http::status_code::Ok) {
-    error = event_query_response->extract_data_stream();
+  if (!validate_http_response(event_query_response, event_query_request, error)) {
     return false;
   }
 
@@ -92,7 +322,7 @@ bool ScheduleStream::read_schedule(
   std::vector<data::Task::Ptr> tasks;
   if (
     !_read_response_to_tasks(
-      event_query_response->extract_data_stream(),
+      event_query_response->extract_data_as_string(),
       tasks,
       error
   ))
@@ -109,129 +339,6 @@ bool ScheduleStream::read_schedule(
 
     if (task_action->validate(schedule_cache, error)) {
       task_action->apply();
-    } else {
-      return false;
-    }
-  }
-
-  // Retrieve relevant process to read
-  std::unordered_set<std::string> query_process_ids;
-  query_process_ids.reserve(tasks.size());
-  for (const auto & task : tasks) {
-    if (task->process_id.has_value()) {
-      query_process_ids.emplace("urn:process:" + *task->process_id);
-    }
-  }
-
-  if (query_process_ids.empty()) {
-    return true;
-  }
-
-  // Retrieve Process
-  auto process_query_request = std::make_shared<http::Request>(
-    url::append_query_params(
-      read_url_,
-        {
-          {"type", "urn:rmf2:process"},
-          {"limit", "1000"},
-          {"id", string_utils::join(",", query_process_ids)}
-        }
-    ),
-    http::request_type::kGet,
-    transport_
-  );
-
-  auto process_query_response = process_query_request->get_response_and_block(error);
-  if (!process_query_response->is_successful()) {
-    return false;
-  }
-
-  if (process_query_response->get_status_code() != http::status_code::Ok) {
-    error = process_query_response->extract_data_stream();
-    return false;
-  }
-
-  // Convert response to JSON and process actions
-  std::vector<data::Process::Ptr> processes;
-  if (!_read_response_to_processes(
-      process_query_response->extract_data_stream(), processes, error))
-  {
-    return false;
-  }
-
-  // Check if there are additional events that should be retrieved
-  std::unordered_set<std::string> query_extra_event_ids;
-  for (const auto & process : processes) {
-    process->graph.for_each_node(
-      [&query_extra_event_ids, schedule_cache](const data::Node::Ptr & node) {
-        if (!schedule_cache->has_event(node->id())) {
-          query_extra_event_ids.emplace("urn:event:" + node->id());
-        }
-      }
-    );
-  }
-
-  if (!query_extra_event_ids.empty()) {
-    // Retrieve extra Events
-    auto extra_event_query_request = std::make_shared<http::Request>(
-      url::append_query_params(
-        read_url_,
-          {
-            {"type", "urn:rmf2:event"},
-            {"limit", "1000"},
-            {"id", string_utils::join(";", query_extra_event_ids)}
-          }
-      ),
-      http::request_type::kGet,
-      transport_
-    );
-
-    auto extra_event_query_response = extra_event_query_request->get_response_and_block(error);
-    if (!extra_event_query_response->is_successful()) {
-      return false;
-    }
-
-    if (extra_event_query_response->get_status_code() != http::status_code::Ok) {
-      error = extra_event_query_response->extract_data_stream();
-      return false;
-    }
-
-    // Convert response to JSON and actions
-    std::vector<data::Task::Ptr> extra_tasks;
-    if (
-      !_read_response_to_tasks(
-        extra_event_query_response->extract_data_stream(),
-        extra_tasks,
-        error
-    ))
-    {
-      return false;
-    }
-
-    // Add extra tasks to cache
-    for (const auto & task : extra_tasks) {
-      auto task_action = std::make_shared<cache::TaskAction>(
-        data::action_type::TASK_ADD,
-        cache::ActionPayload().task(task)
-      );
-
-      if (task_action->validate(schedule_cache, error)) {
-        task_action->apply();
-      } else {
-        return false;
-      }
-    }
-  }
-
-  // Add process to cache
-  for (const auto & process : processes) {
-    auto process_action = std::make_shared<cache::ProcessAction>(
-      data::action_type::PROCESS_ADD,
-      cache::ActionPayload().process(process)
-    );
-
-    if (process_action->validate(schedule_cache, error)) {
-      process_action->apply();
     } else {
       return false;
     }
@@ -339,23 +446,17 @@ bool ScheduleStream::write_schedule(
       transport_
     );
     upsert_task_request->set_content_type("application/ld+json");
-    upsert_task_request->add_request_body(nlohmann::json(task_v).dump(), error);
+    upsert_task_request->add_request_body(
+      nlohmann::json(task_v),
+      error
+    );
 
     auto upsert_task_response = upsert_task_request->get_response_and_block(error);
 
-    if (!upsert_task_response) {
+    if (!validate_http_response(upsert_task_response, upsert_task_request, error)) {
       return false;
     }
-
-    if (!upsert_task_response->is_successful()) {
-      error = upsert_task_response->extract_data_stream();
-      return false;
-    }
-
-    if (upsert_task_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
 
   // Upsert processes to the LD broker
@@ -372,22 +473,17 @@ bool ScheduleStream::write_schedule(
       transport_
     );
     upsert_process_request->set_content_type("application/ld+json");
-    upsert_process_request->add_request_body(nlohmann::json(process_v).dump(), error);
+    upsert_process_request->add_request_body(
+      nlohmann::json(process_v),
+      error
+    );
 
     auto upsert_process_response = upsert_process_request->get_response_and_block(error);
 
-    if (!upsert_process_response) {
+    if (!validate_http_response(upsert_process_response, upsert_process_request, error)) {
       return false;
     }
-
-    if (!upsert_process_response->is_successful()) {
-      return false;
-    }
-
-    if (upsert_process_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
   return true;
 }
@@ -443,23 +539,14 @@ bool ScheduleStream::write_schedule(
       transport_
     );
     upsert_task_request->set_content_type("application/ld+json");
-    upsert_task_request->add_request_body(nlohmann::json(task_v).dump(), error);
+    upsert_task_request->add_request_body(nlohmann::json(task_v), error);
 
     auto upsert_task_response = upsert_task_request->get_response_and_block(error);
 
-    if (!upsert_task_response) {
+    if (!validate_http_response(upsert_task_response, upsert_task_request, error)) {
       return false;
     }
-
-    if (!upsert_task_response->is_successful()) {
-      error = upsert_task_response->extract_data_stream();
-      return false;
-    }
-
-    if (upsert_task_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
 
   // Delete events from the broker
@@ -473,19 +560,10 @@ bool ScheduleStream::write_schedule(
 
     auto delete_event_response = delete_event_request->get_response_and_block(error);
 
-    if (!delete_event_response) {
+    if (!validate_http_response(delete_event_response, delete_event_request, error)) {
       return false;
     }
-
-    if (!delete_event_response->is_successful()) {
-      error = delete_event_response->extract_data_stream();
-      return false;
-    }
-
-    if (delete_event_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
 
   // Upsert processes to the LD broker
@@ -502,22 +580,14 @@ bool ScheduleStream::write_schedule(
       transport_
     );
     upsert_process_request->set_content_type("application/ld+json");
-    upsert_process_request->add_request_body(nlohmann::json(process_v).dump(), error);
+    upsert_process_request->add_request_body(nlohmann::json(process_v), error);
 
     auto upsert_process_response = upsert_process_request->get_response_and_block(error);
 
-    if (!upsert_process_response) {
+    if (!validate_http_response(upsert_process_response, upsert_process_request, error)) {
       return false;
     }
-
-    if (!upsert_process_response->is_successful()) {
-      return false;
-    }
-
-    if (upsert_process_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
 
   // Delete processes from the broker
@@ -531,19 +601,10 @@ bool ScheduleStream::write_schedule(
 
     auto delete_process_response = delete_process_request->get_response_and_block(error);
 
-    if (!delete_process_response) {
+    if (!validate_http_response(delete_process_response, delete_process_request, error)) {
       return false;
     }
-
-    if (!delete_process_response->is_successful()) {
-      error = delete_process_response->extract_data_stream();
-      return false;
-    }
-
-    if (delete_process_response->get_status_code() == 207) {
-      // TODO(Briancbn): handle retry
-      return false;
-    }
+    // TODO(Briancbn): handle retry
   }
 
   return true;
@@ -565,7 +626,7 @@ bool ScheduleStream::_read_response_to_tasks(
       tasks.push_back(task);
     }
   } catch (const std::exception & e) {
-    error = e.what();
+    error = std::string(e.what()) + ":\n" + response_stream;
     return false;
   }
 

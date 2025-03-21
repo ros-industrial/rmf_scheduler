@@ -108,10 +108,11 @@ int main()
   );
 
   auto query_response = query_request->get_response_and_block(error);
+  std::string query_response_body = query_response->extract_data_as_string();
   std::cout << (query_response->is_successful() ? "Success" : "Failed") << std::endl;
   std::cout << "Status code: " << query_response->get_status_code() << std::endl;
   std::cout << "Status text: " << query_response->get_status_text() << std::endl;
   std::cout << "Content type: " << query_response->get_content_type() << std::endl;
-  std::cout << "Data Received: " << query_response->extract_data_stream() << std::endl;
+  std::cout << "Data Received: " << query_response_body << std::endl;
   std::cout << "Header - Link: " << query_response->get_header("Link") << std::endl;
 }

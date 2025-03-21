@@ -1,7 +1,10 @@
 from __future__ import annotations
+
+import typing
+
 import rmf2_scheduler.core.cache
 import rmf2_scheduler.core.data
-import typing
+
 __all__ = ['ScheduleStream']
 class ScheduleStream:
     """

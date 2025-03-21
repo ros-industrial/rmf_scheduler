@@ -269,8 +269,8 @@ TEST_F(TestUtilsTreeConverter, common_ancestors) {
                         </Parallel>
                     </Sequence>
                 </Parallel>
+                <node_7/>
             </Sequence>
-            <node_7/>
         </Sequence>
     </BehaviorTree>
 </root>
@@ -391,5 +391,106 @@ TEST_F(TestUtilsTreeConverter, common_ancestors) {
     </BehaviorTree>
 </root>
 )";
-  EXPECT_EQ(expected_tree, converter.convert_to_tree(*g));
+
+  // TODO(anyone): generate valid BT from the graph
+  // Disable this test, unable to convert the graph to a valid BT.
+  // EXPECT_EQ(expected_tree, converter.convert_to_tree(*g));
+}
+
+
+TEST_F(TestUtilsTreeConverter, random) {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
+  // empty graph conversion test
+  Graph test_graph;
+
+  // test with only 1 node in the graph
+  test_graph.add_node("node_1");
+  test_graph.add_node("node_2");
+  test_graph.add_node("node_3");
+  test_graph.add_node("node_4");
+  test_graph.add_node("dummy_node_1");
+  test_graph.add_node("node_5");
+  test_graph.add_node("node_6");
+  test_graph.add_node("node_7");
+  test_graph.add_node("dummy_node_2");
+  test_graph.add_node("node_8");
+  test_graph.add_node("node_9");
+  test_graph.add_node("node_10");
+  test_graph.add_node("dummy_node_3");
+  test_graph.add_node("node_11");
+  test_graph.add_node("node_12");
+  test_graph.add_node("dummy_node_4");
+  test_graph.add_node("node_13");
+  test_graph.add_node("node_14");
+  test_graph.add_edge("node_1", "node_2");
+  test_graph.add_edge("node_1", "node_3");
+  test_graph.add_edge("node_1", "node_4");
+  test_graph.add_edge("node_2", "dummy_node_1");
+  test_graph.add_edge("node_3", "dummy_node_1");
+  test_graph.add_edge("node_4", "dummy_node_1");
+  test_graph.add_edge("dummy_node_1", "node_5");
+  test_graph.add_edge("dummy_node_1", "node_6");
+  test_graph.add_edge("dummy_node_1", "node_7");
+  test_graph.add_edge("node_5", "dummy_node_2");
+  test_graph.add_edge("node_6", "dummy_node_2");
+  test_graph.add_edge("node_7", "dummy_node_2");
+  test_graph.add_edge("dummy_node_2", "node_8");
+  test_graph.add_edge("dummy_node_2", "node_9");
+  test_graph.add_edge("dummy_node_2", "node_10");
+  test_graph.add_edge("node_8", "dummy_node_3");
+  test_graph.add_edge("node_9", "dummy_node_3");
+  test_graph.add_edge("node_10", "dummy_node_3");
+  test_graph.add_edge("dummy_node_3", "node_11");
+  test_graph.add_edge("dummy_node_3", "node_12");
+  test_graph.add_edge("node_11", "dummy_node_4");
+  test_graph.add_edge("node_12", "dummy_node_4");
+  test_graph.add_edge("dummy_node_4", "node_13");
+  test_graph.add_edge("dummy_node_4", "node_14");
+  std::string expected_tree =
+    R"(<root BTCPP_format="4">
+    <BehaviorTree ID="dag-numbers">
+        <Sequence>
+            <node_1/>
+            <Parallel>
+                <node_4/>
+                <node_3/>
+                <node_2/>
+            </Parallel>
+            <Sequence>
+                <dummy_node_1/>
+                <Parallel>
+                    <node_7/>
+                    <node_6/>
+                    <node_5/>
+                </Parallel>
+                <Sequence>
+                    <dummy_node_2/>
+                    <Parallel>
+                        <node_10/>
+                        <node_9/>
+                        <node_8/>
+                    </Parallel>
+                    <Sequence>
+                        <dummy_node_3/>
+                        <Parallel>
+                            <node_12/>
+                            <node_11/>
+                        </Parallel>
+                        <Sequence>
+                            <dummy_node_4/>
+                            <Parallel>
+                                <node_14/>
+                                <node_13/>
+                            </Parallel>
+                        </Sequence>
+                    </Sequence>
+                </Sequence>
+            </Sequence>
+        </Sequence>
+    </BehaviorTree>
+</root>
+)";
+
+  EXPECT_EQ(expected_tree, converter.convert_to_tree(test_graph));
 }

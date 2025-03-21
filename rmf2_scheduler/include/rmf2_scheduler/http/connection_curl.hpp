@@ -34,76 +34,6 @@ namespace http
 namespace curl
 {
 
-class StreamBuffer
-{
-public:
-  explicit StreamBuffer(size_t size)
-  {
-    buffer_ = reinterpret_cast<char *>(malloc(size + 1));
-    buffer_length_ = size + 1;
-    buffer_[0] = '\0';
-  }
-
-  std::string str()
-  {
-    return std::string(buffer_);
-  }
-
-  void write(const char * data_ptr, size_t data_len)
-  {
-    char * buffer_ptr;
-    size_t old_size = str_size();
-    size_t new_size = buffer_length_;
-    if (old_size + data_len + 1 > buffer_length_) {
-      buffer_ptr = reinterpret_cast<char *>(
-        realloc(buffer_, old_size + data_len + 1)
-      );
-      new_size = old_size + data_len + 1;
-    } else {
-      buffer_ptr = buffer_;
-    }
-
-    // TODO(anyone): handle out of memory
-
-    // Copy the string and null terminate
-    buffer_ = buffer_ptr;
-    memcpy(&(buffer_[old_size]), data_ptr, data_len);
-    buffer_[old_size + data_len] = '\0';
-    buffer_length_ = new_size;
-  }
-
-  bool read(
-    char * data_ptr,
-    size_t data_len,
-    size_t & read_size
-  )
-  {
-    if (seek + data_len >= str_size()) {
-      read_size = str_size() - seek;
-    } else {
-      read_size = data_len;
-    }
-    memcpy(data_ptr, buffer_ + seek, read_size);
-    seek += read_size;
-    return read_size <= data_len;
-  }
-
-  size_t str_size()
-  {
-    return strlen(buffer_);
-  }
-
-  ~StreamBuffer()
-  {
-    free(buffer_);
-  }
-
-private:
-  size_t seek = 0;
-  char * buffer_ = nullptr;
-  size_t buffer_length_ = 0;
-};
-
 class Connection : public http::Connection
 {
 public:
@@ -121,9 +51,11 @@ public:
   ) override;
 
   bool set_request_data(
-    const std::string & data,
+    Stream::UPtr data,
     std::string & error
   ) override;
+
+  bool set_response_data(Stream::UPtr data) override;
 
   bool perform_request(std::string & error_text) override;
 
@@ -137,7 +69,7 @@ public:
     const std::string & header_name
   ) const override;
 
-  std::string extract_data_stream() override;
+  Stream::UPtr extract_data_stream() override;
 
 protected:
   // Write data callback. Used by CURL when receiving response data.
@@ -172,8 +104,8 @@ protected:
   std::string method_;
   std::shared_ptr<CURLInterface> curl_interface_;
 
-  StreamBuffer request_buffer_;
-  StreamBuffer response_buffer_;
+  Stream::UPtr request_buffer_;
+  Stream::UPtr response_buffer_;
 
   // List of optional request headers provided by the caller.
   std::multimap<std::string, std::string> request_headers_;

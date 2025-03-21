@@ -53,13 +53,28 @@ public:
     const MakeTreeCallback & callback = [] (const std::string & id) {return id;}
   );
 
+  /// convert_to_tree
+  /**
+   * main function that converts a DAG to BT
+   * \throws std::logic error if graph contains unconnected nodes
+   * \throws std::logic_error if cycles are detected in graph during conversion
+   * \return std::string containing a behaviour tree in XML format
+   */
+  [[nodiscard]] std::string convert_to_tree(
+    const std::string & id,
+    const data::Graph & graph,
+    const MakeTreeCallback & callback = [] (const std::string & id) {return id;}
+  );
+
 private:
   /// make_tree
   /**
    * main point of entry for the recursive function to generate trees
    */
   void make_tree(
-    const data::Graph & graph, std::ostream & oss,
+    const std::string & id,
+    const data::Graph & graph,
+    std::ostream & oss,
     const MakeTreeCallback & callback
   );
 

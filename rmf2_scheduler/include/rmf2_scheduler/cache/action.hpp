@@ -42,19 +42,19 @@ public:
     return *this;
   }
 
-  ActionPayload & event(const data::Event::Ptr & event)
+  ActionPayload & event(const data::Event::ConstPtr & event)
   {
     data_.event = data::Event::make_shared(*event);
     return *this;
   }
 
-  ActionPayload & task(const data::Task::Ptr & task)
+  ActionPayload & task(const data::Task::ConstPtr & task)
   {
     data_.task = data::Task::make_shared(*task);
     return *this;
   }
 
-  ActionPayload & process(const data::Process::Ptr & process)
+  ActionPayload & process(const data::Process::ConstPtr & process)
   {
     data_.process = data::Process::make_shared(*process);
     return *this;

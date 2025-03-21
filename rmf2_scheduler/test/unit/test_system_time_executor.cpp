@@ -294,7 +294,7 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
   bool completed = false;
   std::mutex mtx;
   SystemTimeAction burden_action;
-  burden_action.time = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  burden_action.time = std::chrono::system_clock::now() + std::chrono::seconds(1);
   burden_action.work = [&completed, &mtx, burden_action]() {
       std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -329,4 +329,34 @@ TEST_F(TestSystemTimeExecutor, BurdenEvent)
     std::lock_guard<std::mutex> lk(mtx);
     EXPECT_TRUE(completed);
   }  // Unlock
+}
+
+
+// delete action
+TEST_F(TestSystemTimeExecutor, delete_action)
+{
+  using namespace rmf2_scheduler;  // NOLINT(build/namespaces)
+
+  // Start spinning
+  spin_and_detach(ste);
+
+  // Create an action 1s from now
+  SystemTimeAction action;
+  std::atomic_bool action_completed = false;
+  action.time = std::chrono::system_clock::now() + std::chrono::seconds(1);
+  action.work = [&action_completed]() {
+      action_completed = true;
+    };
+
+  // Add this event to the system time executor
+  std::string id = ste->add_action(action);
+
+  // Wait for 0.5s, cancel the action
+  std::this_thread::sleep_for(std::chrono::milliseconds(990));
+
+  ste->delete_action(id);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  EXPECT_FALSE(action_completed);
 }

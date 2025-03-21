@@ -15,6 +15,11 @@
 #ifndef RMF2_SCHEDULER__PROCESS_EXECUTOR_HPP_
 #define RMF2_SCHEDULER__PROCESS_EXECUTOR_HPP_
 
+#include <string>
+#include <vector>
+
+#include "rmf2_scheduler/data/task.hpp"
+#include "rmf2_scheduler/data/process.hpp"
 #include "rmf2_scheduler/macros.hpp"
 
 namespace rmf2_scheduler
@@ -27,6 +32,12 @@ public:
 
   ProcessExecutor() = default;
   virtual ~ProcessExecutor() {}
+
+  virtual bool run_async(
+    const data::Process::ConstPtr &,
+    const std::vector<data::Task::ConstPtr> &,
+    std::string & error
+  ) = 0;
 
 private:
   RS_DISABLE_COPY(ProcessExecutor)

@@ -61,6 +61,12 @@ public:
     std::string & error
   ) override;
 
+  bool refresh_tasks(
+    cache::ScheduleCache::Ptr cache,
+    const std::vector<std::string> & ids,
+    std::string & error
+  ) override;
+
 private:
   bool _read_response_to_tasks(
     const std::string & response_stream,

@@ -35,30 +35,31 @@ class TreeConversion::Implementation
 public:
   /// Recursive Depth First Search to get all ancestor nodes
   void DFS(
-    const std::string & id, std::set<std::string> & ancestors,
+    const std::string & id, std::unordered_map<std::string, size_t> & ancestors,
     std::unordered_map<std::string, bool> visited,
-    const std::unordered_map<std::string, data::Node::ConstPtr> & node_map)
+    const std::unordered_map<std::string, data::Node::ConstPtr> & node_map,
+    int distance)
   {
     visited[id] = true;
     for (const auto & [inbound_node_id, edge] : node_map.at(id)->inbound_edges()) {
       if (!visited.at(inbound_node_id)) {
-        ancestors.insert(inbound_node_id);
-        DFS(inbound_node_id, ancestors, visited, node_map);
+        ancestors[inbound_node_id] = distance + 1;
+        DFS(inbound_node_id, ancestors, visited, node_map, distance + 1);
       }
     }
   }
 
   /// helper function to get all ancestors of a node
-  std::set<std::string> get_parent_nodes(
+  std::unordered_map<std::string, size_t> get_parent_nodes(
     const std::string & node_id, const std::unordered_map<std::string,
     data::Node::ConstPtr> & node_map)
   {
-    std::set<std::string> ancestors;
+    std::unordered_map<std::string, size_t> ancestors;
     std::unordered_map<std::string, bool> visited;
     for (const auto & [node_id, node] : node_map) {
       visited[node_id] = false;
     }
-    DFS(node_map.at(node_id)->id(), ancestors, visited, node_map);
+    DFS(node_map.at(node_id)->id(), ancestors, visited, node_map, 0);
     return ancestors;
   }
 
@@ -68,45 +69,36 @@ public:
     std::vector<std::string> & inbound_nodes,
     const std::unordered_map<std::string, data::Node::ConstPtr> & node_map)
   {
-    std::map<std::string, size_t> common_ancestor_map;
-    std::vector<std::string> common_ancestors;
-    std::vector<std::set<std::string>> inbound_nodes_ancestors;
+    std::unordered_map<std::string, size_t> common_ancestor_map;
+    std::unordered_map<std::string, size_t> common_ancestor_distance_map;
+    std::multimap<size_t, std::string> common_ancestors;
+    std::vector<std::unordered_map<std::string, size_t>> inbound_nodes_ancestors;
     // finding ancestors of all inbound nodes
     for (const auto & node : inbound_nodes) {
       inbound_nodes_ancestors.push_back(get_parent_nodes(node, node_map));
     }
     auto count = inbound_nodes.size();
     for (const auto & inbound_node_ancestors : inbound_nodes_ancestors) {
-      for (const auto & ancestor : inbound_node_ancestors) {
+      for (const auto & [ancestor, distance] : inbound_node_ancestors) {
         common_ancestor_map[ancestor] += 1;
+        auto itr = common_ancestor_distance_map.find(ancestor);
+        if (itr == common_ancestor_distance_map.end()) {
+          common_ancestor_distance_map[ancestor] = distance;
+        } else if (itr->second > distance) {
+          itr->second = distance;
+        }
       }
     }
     // if the count of the ancestor equals to the number of inbound nodes,
     // it is a common ancestor
     for (const auto & [node_id, common_count] : common_ancestor_map) {
       if (common_count == count) {
-        common_ancestors.push_back(node_id);
+        common_ancestors.emplace(common_ancestor_distance_map[node_id], node_id);
       }
     }
 
     if (!common_ancestors.empty()) {
-      // Using Highest Common Ancestor algo. This checks for multiple
-      // entry nodes and finds first non entry_node if there are multiple
-      // Multiple entry nodes can cause the selection of the wrong common ancestor
-      int entry_node_count = std::count_if(
-        common_ancestors.begin(), common_ancestors.end(), [&node_map](const std::string & node) {
-          return node_map.at(node)->inbound_edges().size() == 0;
-        });
-      if (entry_node_count > 1) {
-        auto it = std::find_if(
-          common_ancestors.begin(), common_ancestors.end(), [&node_map](const std::string & node) {
-            return node_map.at(node)->inbound_edges().size() != 0;
-          });
-        return *it;
-      }
-      // the front of the vector would contain the highest common ancestor
-      // while the back contains the lowest common ancestor
-      return common_ancestors.front();
+      return common_ancestors.begin()->second;
     } else {
       return "";
     }
@@ -234,6 +226,15 @@ std::string TreeConversion::convert_to_tree(
   const MakeTreeCallback & callback
 )
 {
+  return convert_to_tree("dag-numbers", graph, callback);
+}
+
+std::string TreeConversion::convert_to_tree(
+  const std::string & id,
+  const data::Graph & graph,
+  const MakeTreeCallback & callback
+)
+{
   if (graph.empty()) {
     return "";
   }
@@ -252,11 +253,12 @@ std::string TreeConversion::convert_to_tree(
     throw std::logic_error("Cycle(s) detected in graph! Cannot convert graph to tree!");
   }
   std::ostringstream oss;
-  make_tree(graph, oss, callback);
+  make_tree(id, graph, oss, callback);
   return oss.str();
 }
 
 void TreeConversion::make_tree(
+  const std::string & id,
   const data::Graph & graph,
   std::ostream & oss,
   const MakeTreeCallback & callback
@@ -270,7 +272,7 @@ void TreeConversion::make_tree(
   root->SetAttribute("BTCPP_format", "4");
   doc.InsertEndChild(root);
   tinyxml2::XMLElement * bt_id = doc.NewElement("BehaviorTree");
-  bt_id->SetAttribute("ID", "dag-numbers");
+  bt_id->SetAttribute("ID", id.c_str());
   root->InsertEndChild(bt_id);
   tinyxml2::XMLNode * main_seq = doc.NewElement("Sequence");
   bt_id->InsertEndChild(main_seq);

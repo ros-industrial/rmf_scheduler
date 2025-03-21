@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmf2_scheduler import Scheduler, SchedulerOptions, SystemTimeExecutor
-from rmf2_scheduler.storage import ScheduleStream
+from fastapi import APIRouter
 
-system_time_executor = SystemTimeExecutor()
-
-task_scheduler = Scheduler(
-    SchedulerOptions(),
-    ScheduleStream.create_default(
-        "http://localhost:9090/ngsi-ld",
-        ["rmf2/go_to_place", "ihi/palletization"]
-    ),
-    system_time_executor,
-)
+router = APIRouter()

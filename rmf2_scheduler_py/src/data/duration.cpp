@@ -18,8 +18,10 @@
 
 #include <chrono>
 
+#include "pybind11_json/pybind11_json.hpp"
 #include "rmf2_scheduler_py/data/duration.hpp"
 #include "rmf2_scheduler/data/duration.hpp"
+#include "rmf2_scheduler/data/json_serializer.hpp"
 
 namespace rmf2_scheduler_py
 {
@@ -29,9 +31,11 @@ namespace data
 
 void init_duration_py(py::module & m)
 {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+
   py::module m_data = m.def_submodule("data");
 
-  py::class_<rmf2_scheduler::data::Duration>(
+  py::class_<Duration>(
     m_data,
     "Duration",
     R"(
@@ -66,29 +70,49 @@ void init_duration_py(py::module & m)
   .def(py::self *= double())
   .def_static(
     "max",
-    &rmf2_scheduler::data::Duration::max
+    &Duration::max
   )
   .def(
     "nanoseconds",
-    &rmf2_scheduler::data::Duration::nanoseconds
+    &Duration::nanoseconds
   )
   .def(
     "seconds",
-    &rmf2_scheduler::data::Duration::seconds
+    &Duration::seconds
   )
   .def(
     "to_timedelta",
-    &rmf2_scheduler::data::Duration::to_chrono<std::chrono::system_clock::duration>
+    &Duration::to_chrono<std::chrono::system_clock::duration>
   )
   .def_static(
     "from_seconds",
-    &rmf2_scheduler::data::Duration::from_seconds,
+    &Duration::from_seconds,
     py::arg("seconds")
   )
   .def_static(
     "from_nanoseconds",
-    &rmf2_scheduler::data::Duration::from_nanoseconds,
+    &Duration::from_nanoseconds,
     py::arg("nanoseconds")
+  )
+
+  // Serialization
+  .def(
+    "json",
+    [](
+      Duration & self
+    )
+    {
+      return nlohmann::json(self);
+    }
+  )
+  .def_static(
+    "from_json",
+    [](
+      const nlohmann::json & j
+    )
+    {
+      return j.template get<Duration>();
+    }
   )
   ;
 }

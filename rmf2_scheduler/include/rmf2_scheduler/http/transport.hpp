@@ -28,11 +28,9 @@ namespace rmf2_scheduler
 namespace http
 {
 
-class Transport
+class Transport : public std::enable_shared_from_this<Transport>
 {
 public:
-  using HeaderList = std::vector<std::pair<std::string, std::string>>;
-
   Transport() = default;
 
   virtual ~Transport() {}

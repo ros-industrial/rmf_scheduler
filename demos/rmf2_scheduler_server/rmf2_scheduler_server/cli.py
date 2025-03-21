@@ -16,7 +16,7 @@ import argparse
 
 import uvicorn
 
-from .app import app
+from rmf2_scheduler_server.app import app
 
 def main():
     """Execute the main logic of the command."""
@@ -43,3 +43,6 @@ def main():
         host=args.host,
         port=args.port,
     )
+
+if __name__ == "__main__":
+    main()

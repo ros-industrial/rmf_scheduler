@@ -15,7 +15,6 @@
 #ifndef RMF2_SCHEDULER__UTILS__UTILS_HPP_
 #define RMF2_SCHEDULER__UTILS__UTILS_HPP_
 
-#include <ctime>
 #include <iterator>
 #include <iomanip>
 #include <limits>
@@ -93,20 +92,6 @@ sub_will_underflow(const T x, const T y)
 {
   return (y > 0) && (x < (std::numeric_limits<T>::min() + y));
 }
-
-inline const char * get_timezone()
-{
-  return tzname[0];
-}
-
-inline void set_timezone(const char * tz)
-{
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-  setenv("TZ", tz, 1);
-  tzset();
-#endif
-}
-
 
 template<class Container, class InputConstItr>
 auto remove_iterator_const(
