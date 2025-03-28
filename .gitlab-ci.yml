@@ -33,6 +33,7 @@ humble-gcc-coverage:
     - curl -Os https://uploader.codecov.io/latest/linux/codecov
     - chmod +x codecov
     - ./codecov -f ./coverage.info
+  coverage: '/Total:\|(\d+\.?\d+\%)/'
 
 humble-clang:
   image:
