@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_HPP_
-#define RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_HPP_
+#ifndef RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_SIMPLE_HPP_
+#define RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_SIMPLE_HPP_
 
+#include <memory>
 #include <string>
 #include <vector>
+#include <deque>
 
-#include "rmf2_scheduler/cache/schedule_cache.hpp"
-#include "rmf2_scheduler/data/schedule_change_record.hpp"
-#include "rmf2_scheduler/data/time_window.hpp"
-#include "rmf2_scheduler/time_window_lookup.hpp"
-#include "rmf2_scheduler/macros.hpp"
+#include "rmf2_scheduler/storage/schedule_stream.hpp"
+#include "rmf2_scheduler/http/transport.hpp"
 
 namespace rmf2_scheduler
 {
@@ -30,49 +29,63 @@ namespace rmf2_scheduler
 namespace storage
 {
 
-class ScheduleStream
+namespace simple
+{
+
+class ScheduleStream : public storage::ScheduleStream
 {
 public:
   RS_SMART_PTR_ALIASES_ONLY(ScheduleStream)
 
-  ScheduleStream() = default;
-  virtual ~ScheduleStream() = default;
-
-  virtual bool read_schedule(
-    cache::ScheduleCache::Ptr cache,
-    const data::TimeWindow & time_window,
-    std::string & error
-  ) = 0;
-
-  virtual bool write_schedule(
-    cache::ScheduleCache::ConstPtr cache,
-    const data::TimeWindow & time_window,
-    std::string & error
-  ) = 0;
-
-  virtual bool write_schedule(
-    cache::ScheduleCache::ConstPtr cache,
-    const std::vector<data::ScheduleChangeRecord> & records,
-    std::string & error
-  ) = 0;
-
-  virtual bool refresh_tasks(
-    cache::ScheduleCache::Ptr cache,
-    const std::vector<std::string> & ids,
-    std::string & error
-  ) = 0;
-
-  static ScheduleStream::Ptr create_default(
-    const std::string & url
-  );
-
-  static ScheduleStream::Ptr create_simple(
+  ScheduleStream(
     size_t keep_last,
     const std::string & backup_folder_path
   );
+
+  virtual ~ScheduleStream();
+
+  bool read_schedule(
+    cache::ScheduleCache::Ptr cache,
+    const data::TimeWindow & time_window,
+    std::string & error
+  ) override;
+
+  bool write_schedule(
+    cache::ScheduleCache::ConstPtr cache,
+    const data::TimeWindow & time_window,
+    std::string & error
+  ) override;
+
+  bool write_schedule(
+    cache::ScheduleCache::ConstPtr cache,
+    const std::vector<data::ScheduleChangeRecord> & change_actions,
+    std::string & error
+  ) override;
+
+  bool refresh_tasks(
+    cache::ScheduleCache::Ptr cache,
+    const std::vector<std::string> & ids,
+    std::string & error
+  ) override;
+
+private:
+  void _remove_backup(const std::string & uuid);
+  bool _load_backup(
+    const std::string & uuid,
+    cache::ScheduleCache::Ptr schedule,
+    std::string & error
+  );
+
+  void _write_schedule_to_backup(cache::ScheduleCache::ConstPtr schedule);
+
+  size_t keep_last_;
+  std::string backup_folder_path_;
+
+  std::deque<std::string> backup_ids_;
 };
 
+}  // namespace simple
 }  // namespace storage
 }  // namespace rmf2_scheduler
 
-#endif  // RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_HPP_
+#endif  // RMF2_SCHEDULER__STORAGE__SCHEDULE_STREAM_SIMPLE_HPP_

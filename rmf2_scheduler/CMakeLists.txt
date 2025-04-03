@@ -53,6 +53,7 @@ add_library(${PROJECT_NAME}
   src/scheduler_options.cpp
   src/storage/schedule_stream.cpp
   src/storage/schedule_stream_ld_broker.cpp
+  src/storage/schedule_stream_simple.cpp
   src/system_time_executor.cpp
   src/task_executor_manager.cpp
   src/time_window_lookup.cpp
@@ -104,6 +105,14 @@ target_link_libraries(ld_broker_crud
   ${PROJECT_NAME}
 )
 
+add_executable(create_sample_backups
+  examples/create_sample_backups.cpp
+)
+
+target_link_libraries(create_sample_backups
+  ${PROJECT_NAME}
+)
+
 add_executable(clear_ld_broker
   examples/clear_ld_broker.cpp
 )
@@ -143,6 +152,7 @@ install(TARGETS
   ld_broker_crud
   clear_ld_broker
   run_scheduler
+  create_sample_backups
   LIBRARY DESTINATION lib
 )
 

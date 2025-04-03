@@ -14,6 +14,7 @@
 
 #include "rmf2_scheduler/storage/schedule_stream.hpp"
 #include "rmf2_scheduler/storage/schedule_stream_ld_broker.hpp"
+#include "rmf2_scheduler/storage/schedule_stream_simple.hpp"
 
 namespace rmf2_scheduler
 {
@@ -28,6 +29,17 @@ ScheduleStream::Ptr ScheduleStream::create_default(
   return std::make_shared<ld_broker::ScheduleStream>(
     url,
     http::Transport::create_default()
+  );
+}
+
+ScheduleStream::Ptr ScheduleStream::create_simple(
+  size_t keep_last,
+  const std::string & backup_folder_path
+)
+{
+  return std::make_shared<storage::simple::ScheduleStream>(
+    keep_last,
+    backup_folder_path
   );
 }
 

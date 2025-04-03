@@ -15,6 +15,9 @@ class ScheduleStream:
     @staticmethod
     def create_default(arg0: str) -> ScheduleStream:
         ...
+    @staticmethod
+    def create_simple(arg0: int, arg1: str) -> ScheduleStream:
+        ...
     def read_schedule(self, arg0: rmf2_scheduler.core.cache.ScheduleCache, arg1: rmf2_scheduler.core.data.TimeWindow) -> tuple:
         ...
     @typing.overload

@@ -107,6 +107,11 @@ ament_add_gtest(test_storage_schedule_stream_ld_broker
 )
 target_link_libraries(test_storage_schedule_stream_ld_broker ${PROJECT_NAME})
 
+ament_add_gtest(test_storage_schedule_stream_simple
+  storage/test_schedule_stream_simple.cpp
+)
+target_link_libraries(test_storage_schedule_stream_simple ${PROJECT_NAME})
+
 # UTILS
 ament_add_gmock(test_utils_dag_helper
   utils/test_dag_helper.cpp

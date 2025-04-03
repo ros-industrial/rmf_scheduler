@@ -80,6 +80,10 @@ void init_schedule_stream_py(py::module & m)
     "create_default",
     &ScheduleStream::create_default
   )
+  .def_static(
+    "create_simple",
+    &ScheduleStream::create_simple
+  )
   ;
 }
 
