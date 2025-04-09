@@ -89,6 +89,8 @@ public:
   /// Number of tasks in the cache
   size_t task_size() const;
 
+  data::TimeWindow get_time_window(bool soft_upper_bound = true) const;
+
   // PROCESS
   /// Get process
   data::Process::ConstPtr get_process(const std::string & process_id) const;

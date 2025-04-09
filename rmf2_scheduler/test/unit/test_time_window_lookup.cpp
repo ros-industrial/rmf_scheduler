@@ -308,3 +308,52 @@ TEST_F(TestTimeWindowLookup, lookup) {
     EXPECT_TRUE(result[8] == preset_entries[7]);
   }
 }
+
+TEST_F(TestTimeWindowLookup, get_time_window) {
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+  using TimeWindowLookup = rmf2_scheduler::TimeWindowLookup;  // NOLINT(build/namespaces)
+
+  {
+    // Empty lookup
+    TimeWindowLookup time_window_lookup;
+
+    EXPECT_THROW_EQ(
+      auto time_window = time_window_lookup.get_time_window(),
+      std::out_of_range("No entries in TimeWindowLookup, cannot retrieve time_window!")
+    );
+  }
+
+  auto preset_entries = create_preset_entries();
+  TimeWindowLookup time_window_lookup;
+  for (auto & entry : preset_entries) {
+    time_window_lookup.add_entry(entry);
+  }
+
+  {
+    // time window based on start time
+    auto time_window = time_window_lookup.get_time_window();
+
+    EXPECT_EQ(
+      time_window.start,
+      Time::from_localtime("Jan 01 00:00:00 2023")
+    );
+    EXPECT_EQ(
+      time_window.end,
+      Time::from_localtime("Jan 01 00:05:00 2023")
+    );
+  }
+
+  {
+    // time window based on start time
+    auto time_window = time_window_lookup.get_time_window(false);
+
+    EXPECT_EQ(
+      time_window.start,
+      Time::from_localtime("Jan 01 00:00:00 2023")
+    );
+    EXPECT_EQ(
+      time_window.end,
+      Time::from_localtime("Jan 01 00:06:00 2023")
+    );
+  }
+}

@@ -148,6 +148,10 @@ size_t ScheduleCache::task_size() const
   return task_map.size();
 }
 
+data::TimeWindow ScheduleCache::get_time_window(bool soft_upper_bound) const
+{
+  return time_window_lookup.get_time_window(soft_upper_bound);
+}
 
 // PROCESS
 data::Process::ConstPtr ScheduleCache::get_process(const std::string & id) const

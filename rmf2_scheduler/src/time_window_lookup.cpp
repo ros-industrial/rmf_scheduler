@@ -146,4 +146,29 @@ std::vector<TimeWindowLookup::Entry> TimeWindowLookup::lookup(
   return result;
 }
 
+bool TimeWindowLookup::empty() const
+{
+  return id_lookup_.empty();
+}
+
+data::TimeWindow TimeWindowLookup::get_time_window(
+  bool soft_upper_bound
+) const
+{
+  if (empty()) {
+    throw std::out_of_range("No entries in TimeWindowLookup, cannot retrieve time_window!");
+  }
+
+  data::TimeWindow time_window;
+  time_window.start = data::Time(start_lookup_.begin()->first);
+
+  if (soft_upper_bound) {
+    time_window.end = data::Time(start_lookup_.rbegin()->first);
+  } else {
+    time_window.end = data::Time(end_lookup_.rbegin()->first);
+  }
+
+  return time_window;
+}
+
 }  // namespace rmf2_scheduler

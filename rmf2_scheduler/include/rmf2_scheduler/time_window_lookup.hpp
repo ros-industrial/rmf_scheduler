@@ -71,6 +71,12 @@ public:
     bool soft_upper_bound = false
   ) const;
 
+  bool empty() const;
+
+  data::TimeWindow get_time_window(
+    bool soft_upper_bound = true
+  ) const;
+
 private:
   std::multimap<rs_time_point_value_t, Entry> start_lookup_;
   std::multimap<rs_time_point_value_t, Entry> end_lookup_;
