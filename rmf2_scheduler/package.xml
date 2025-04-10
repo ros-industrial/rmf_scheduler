@@ -13,6 +13,7 @@
   <build_depend>croncpp_vendor</build_depend>
   <build_depend>taskflow_vendor</build_depend>
   <build_depend>libcurl-dev</build_depend>
+  <build_depend>libboost-dev</build_depend>
   <depend>curl</depend>
   <depend>nlohmann-json-dev</depend>
   <depend>simpleamqpclient_vendor</depend>

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(rmf2_scheduler)
 
 find_package(ament_cmake REQUIRED)
+find_package(Boost REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(croncpp_vendor REQUIRED)
 find_package(taskflow_vendor REQUIRED)
@@ -75,6 +76,10 @@ target_link_libraries(${PROJECT_NAME}
   # nlohmann_json_schema_validator
   # ortools::ortools
   tinyxml2
+)
+target_compile_definitions(${PROJECT_NAME}
+  PUBLIC
+  BOOST_DLL_USE_STD_FS
 )
 
 add_executable(dag_to_bt

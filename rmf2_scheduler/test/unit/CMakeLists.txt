@@ -144,6 +144,30 @@ ament_add_gmock(test_http_request
 )
 target_link_libraries(test_http_request ${PROJECT_NAME})
 
+# PLUGIN
+add_library(sample_plugin_multiply SHARED
+  plugin/sample_plugin_multiply.cpp
+)
+target_link_libraries(sample_plugin_multiply ${PROJECT_NAME})
+
+ament_add_gtest(test_plugin_class_loader
+  plugin/test_class_loader.cpp
+)
+target_link_libraries(test_plugin_class_loader ${PROJECT_NAME})
+target_compile_definitions(test_plugin_class_loader
+  PRIVATE
+  TEST_PLUGIN_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+ament_add_gtest(test_plugin_plugin_loader
+  plugin/test_plugin_loader.cpp
+)
+target_link_libraries(test_plugin_plugin_loader ${PROJECT_NAME})
+target_compile_definitions(test_plugin_plugin_loader
+  PRIVATE
+  TEST_PLUGIN_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
+
 # ROOT
 ament_add_gtest(test_system_time_executor
   test_system_time_executor.cpp
