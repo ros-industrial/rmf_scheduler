@@ -5,6 +5,11 @@
 
 Manages task schedules for RMF.
 
+> This version (`0.2.x`) serves as a proof-of-concept.
+> A future stable version (`1.0.0`) is under development within the RMF2 project,
+> the progress can be found under [**develop/v1**](https://github.com/ros-industrial/rmf_scheduler/tree/develop/v1).
+> For more info, please checkout <https://github.com/ros-industrial/rmf_scheduler/issues/1>.
+
 ## Requirements
 
 * ROS 2 Humble
@@ -12,7 +17,7 @@ Manages task schedules for RMF.
 
 ## Quick Setup
 
-Full setup instructions can be found in the Sphinx documentation.  
+Full setup instructions can be found in the Sphinx documentation.
 Create a colcon workspace and download the source code:
 
 ```bash
