@@ -63,7 +63,7 @@ repositories:
   # ROS-I Modified RMF Repos
   rmf/rmf_ros2:
     type: git
-    url: https://github.com:lkw303/rmf_ros2.git
+    url: https://github.com/lkw303/rmf_ros2.git
     version: develop-cag-p3
   rmf/rmf_api_msgs:
     type: git
