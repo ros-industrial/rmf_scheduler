@@ -28,28 +28,21 @@ It can be installed with:
 Download the source code
 ````````````````````````
 
-Setup a new ROS 2 workspace and pull in the demo repositories using ``vcs``,
-
-.. note::
-
-   You will need a `personal access token`__ to download the ``.repos`` file.
-   Otherwise, download the ``.repos`` file manually `here`__.
-
-__ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token
-__ https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/cag_p3/-/blob/main/.docker/rmf-sim.repos
+Setup a new ROS 2 workspace and pull in the repositories using ``vcs``,
 
 .. code-block:: bash
 
-   mkdir -p ~/rmf_ws/src
-   cd ~/rmf_ws
-   curl --header "PRIVATE-TOKEN: <your-access-token>" "https://gitlab.com/api/v4/projects/45233178/repository/files/rmf.repos/raw?ref=0.2.0" | tee rmf.repos
+   DIR=<workspace_dir>
+   mkdir -p $DIR/src
+   cd $DIR
+   wget https://raw.githubusercontent.com/ros-industrial/rmf_scheduler/refs/heads/main/rmf.repos
    vcs import src < rmf.repos
 
 Ensure all ROS 2 prerequisites are fulfilled,
 
 .. code-block:: bash
 
-   cd ~/rmf_ws
+   cd $DIR
    source /opt/ros/humble/setup.bash
    rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" -yr
    sudo apt install clang lldb lld
@@ -77,7 +70,7 @@ On ``Ubuntu 22.04``:
 
 .. code-block:: bash
 
-   cd ~/rmf_ws
+   cd $DIR
    source /opt/ros/humble/setup.bash
    export CXX=clang++
    export CC=clang

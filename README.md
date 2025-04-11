@@ -5,42 +5,53 @@
 
 Manages task schedules for RMF.
 
-# Requirements
+## Requirements
 
-* ROS Humble
+* ROS 2 Humble
+* RMF (More information [here](https://github.com/open-rmf/rmf))
 
-## RMF
+## Quick Setup
 
-More about RMF, including build instructions, can be found [here](https://github.com/open-rmf/rmf).
+Full setup instructions can be found in the Sphinx documentation.  
+Create a workspace and pull required repositories.
+
+```bash
+DIR=<workspace_dir>
+mkdir -p $DIR/src
+cd $DIR
+wget https://raw.githubusercontent.com/ros-industrial/rmf_scheduler/refs/heads/main/rmf.repos
+vcs import src < rmf.repos
+```
+
+Install dependencies and build.
+
+```bash
+source /opt/ros/humble/setup.bash
+rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
+colcon build
+```
+
 
 ## Documentation
 
-- [![sphinx-doc](https://shields.io/badge/General%20Doc-sphinx-blue)](https://gitlab.com/ROSI-AP/rosi-ap_commercial/cag/cag_p3/-/jobs/artifacts/main/file/docs/sphinx/build/html/index.html?job=sphinx-docs)
-
-## Build Documentation
-
 ### Sphinx Documentation
 
-Install python3 pip
+Install dependencies.
 
 ```bash
 sudo apt install python3-pip python3-dev
-```
-
-Install Sphinx
-
-```bash
 pip3 install --user --upgrade setuptools
 pip3 install --user --upgrade sphinx sphinx-rtd-theme myst_parser recommonmark sphinxcontrib-jquery
 ```
 
-Generate sphinx documentation
+Generate the documentation.
 
 ```bash
+cd $DIR/src/rmf_scheduler/
 make -C docs/sphinx html
 ```
 
-Open the documentation with your favourite web browser
+Open the documentation with your favourite web browser.
 
 ```bash
 firefox docs/sphinx/build/html/index.html
