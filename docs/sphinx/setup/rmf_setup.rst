@@ -13,7 +13,7 @@ Install RMF from Source
 
       sudo apt purge ros-humble-rmf*
 
-Install ROSDEP
+Install rosdep
 ``````````````
 
 ``rosdep`` helps install dependencies for ROS packages across various distributions.
@@ -28,21 +28,19 @@ It can be installed with:
 Download the source code
 ````````````````````````
 
-Setup a new ROS 2 workspace and pull in the repositories using ``vcs``,
+In the workspace set up from the instructions in README.md, pull in additional repositories using ``vcs``:
 
 .. code-block:: bash
 
-   DIR=<workspace_dir>
-   mkdir -p $DIR/src
-   cd $DIR
+   cd $COLCON_WS
    wget https://raw.githubusercontent.com/ros-industrial/rmf_scheduler/refs/heads/main/rmf.repos
    vcs import src < rmf.repos
 
-Ensure all ROS 2 prerequisites are fulfilled,
+Ensure all ROS 2 prerequisites are fulfilled:
 
 .. code-block:: bash
 
-   cd $DIR
+   cd $COLCON_WS
    source /opt/ros/humble/setup.bash
    rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" -yr
    sudo apt install clang lldb lld
@@ -54,7 +52,7 @@ Ensure all ROS 2 prerequisites are fulfilled,
       flask-socketio \
       uvicorn
 
-Setup colcon mixin
+Setup colcon mixin:
 
 .. code-block:: bash
 
@@ -70,7 +68,7 @@ On ``Ubuntu 22.04``:
 
 .. code-block:: bash
 
-   cd $DIR
+   cd $COLCON_WS
    source /opt/ros/humble/setup.bash
    export CXX=clang++
    export CC=clang

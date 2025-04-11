@@ -13,24 +13,26 @@ Manages task schedules for RMF.
 ## Quick Setup
 
 Full setup instructions can be found in the Sphinx documentation.  
-Create a workspace and pull required repositories.
+Create a colcon workspace and download the source code:
 
 ```bash
-DIR=<workspace_dir>
-mkdir -p $DIR/src
-cd $DIR
-wget https://raw.githubusercontent.com/ros-industrial/rmf_scheduler/refs/heads/main/rmf.repos
-vcs import src < rmf.repos
+export COLCON_WS=~/colcon_ws
+mkdir -p $COLCON_WS/src
+cd $COLCON_WS/src
+git clone git@github.com:ros-industrial/rmf_scheduler.git
 ```
 
-Install dependencies and build.
-
+Install dependencies.
 ```bash
 source /opt/ros/humble/setup.bash
-rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
-colcon build
+rosdep install --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
 ```
 
+Build.
+```bash
+cd $COLCON_WS
+colcon build
+```
 
 ## Documentation
 
@@ -47,7 +49,7 @@ pip3 install --user --upgrade sphinx sphinx-rtd-theme myst_parser recommonmark s
 Generate the documentation.
 
 ```bash
-cd $DIR/src/rmf_scheduler/
+cd $COLCON_WS/src/rmf_scheduler/
 make -C docs/sphinx html
 ```
 

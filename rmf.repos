@@ -63,14 +63,9 @@ repositories:
   # ROS-I Modified RMF Repos
   rmf/rmf_ros2:
     type: git
-    url: git@github.com:lkw303/rmf_ros2.git
+    url: https://github.com:lkw303/rmf_ros2.git
     version: develop-cag-p3
   rmf/rmf_api_msgs:
     type: git
-    url: git@github.com:lkw303/rmf_api_msgs.git
+    url: https://github.com/lkw303/rmf_api_msgs.git
     version: develop-cag-p3
-  
-  rmf_scheduler:
-    type: git
-    url: git@github.com:ros-industrial/rmf_scheduler.git
-    version: main
