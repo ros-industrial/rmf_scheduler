@@ -35,7 +35,7 @@ jobs:
             TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
     env:
       ISOLATION: "shell"
-      CCACHE_DIR: ~/.ccache
+      CCACHE_DIR: /github/home/.ccache
     runs-on: ubuntu-latest
     container:
       image: ros:humble-ros-core
