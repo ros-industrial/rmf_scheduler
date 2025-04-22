@@ -143,6 +143,7 @@ bool TaskExecutorManager::run_async(
     duplicated_task->status = "ongoing";
     duplicated_task->planned_start_time = duplicated_task->start_time;
     duplicated_task->planned_duration = duplicated_task->duration;
+    duplicated_task->start_time = current_time;
     duplicated_task->actual_start_time = current_time;
     update_callback_(duplicated_task, false);
   }

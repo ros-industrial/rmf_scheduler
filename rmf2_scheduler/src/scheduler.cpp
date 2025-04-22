@@ -480,12 +480,21 @@ void Scheduler::_tick()
     }
 
     // Run the task using task executor
+    if (!task_executor_manager_) {
+      LOG_WARN(
+        "Unable to run task [%s], TaskExecutorManager not defined",
+        task->id.c_str()
+      );
+      continue;
+    }
+
     if (!task_executor_manager_->is_runnable(task->type)) {
       LOG_DEBUG(
         "Skipping task [%s] of type [%s], no task executor configured for this type.",
         task->id.c_str(),
         task->type.c_str()
       );
+      continue;
     }
 
     // Add task to the system time executor

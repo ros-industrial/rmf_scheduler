@@ -14,7 +14,7 @@
 
 #include <iostream>
 
-#include "SimpleAmqpClient/SimpleAmqpClient.h"
+// #include "SimpleAmqpClient/SimpleAmqpClient.h"
 
 #include "rmf2_scheduler/data/process.hpp"
 #include "rmf2_scheduler/data/task.hpp"
@@ -270,27 +270,27 @@ int main()
   );
   std::cout << result << std::endl;
 
-  // Sent through AMQP
-  nlohmann::json obj;
-  obj["id"] = "urn:" + rmf2_scheduler::data::gen_uuid();
-  obj["type"] = "Schedule";
-  obj["scheduleType"] = "xml";
-  obj["taskTime"] = "";
-  obj["payload"] = result;
+  // // Sent through AMQP
+  // nlohmann::json obj;
+  // obj["id"] = "urn:" + rmf2_scheduler::data::gen_uuid();
+  // obj["type"] = "Schedule";
+  // obj["scheduleType"] = "xml";
+  // obj["taskTime"] = "";
+  // obj["payload"] = result;
 
-  std::string obj_str = obj.dump();
-  std::string queue_name = "@RECEIVE@-event_mgr";
-  std::string exchange_name = "@RECEIVE@";
-  std::string routing_key = "";
-  AmqpClient::Channel::ptr_t connection = AmqpClient::Channel::Create("localhost", 5672);
-  connection->BindQueue(queue_name, exchange_name, routing_key);
+  // std::string obj_str = obj.dump();
+  // std::string queue_name = "@RECEIVE@-event_mgr";
+  // std::string exchange_name = "@RECEIVE@";
+  // std::string routing_key = "";
+  // AmqpClient::Channel::ptr_t connection = AmqpClient::Channel::Create("localhost", 5672);
+  // connection->BindQueue(queue_name, exchange_name, routing_key);
 
-  auto message = AmqpClient::BasicMessage::Create(obj_str);
-  message->ContentType("application/json");
+  // auto message = AmqpClient::BasicMessage::Create(obj_str);
+  // message->ContentType("application/json");
 
-  try {
-    connection->BasicPublish(exchange_name, routing_key, message, false);
-  } catch (const std::exception & e) {
-    std::cerr << "Failed to publish message: " << e.what() << std::endl;
-  }
+  // try {
+  //   connection->BasicPublish(exchange_name, routing_key, message, false);
+  // } catch (const std::exception & e) {
+  //   std::cerr << "Failed to publish message: " << e.what() << std::endl;
+  // }
 }

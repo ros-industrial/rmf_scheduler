@@ -28,11 +28,9 @@ EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
 EXTRACT_PACKAGE        = NO
 EXTRACT_STATIC         = YES
-INPUT                  = ./doxygen.md \
-                         ../rmf_scheduler/include \ 
-                         ../rmf_scheduler_plugins/include \ 
-                         ../rmf_scheduler_ros2/include \ 
-USE_MDFILE_AS_MAINPAGE = ./doxygen.md
+INPUT                  = ../README.md \
+                         ../rmf2_scheduler/include 
+USE_MDFILE_AS_MAINPAGE = ../README.md
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO

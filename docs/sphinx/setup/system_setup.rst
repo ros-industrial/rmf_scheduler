@@ -1,18 +1,20 @@
 System Setup
 ============
 
-System Requirement
-------------------
+Prerequisite
+------------
 
-* Ubuntu 22.04
+* Compiler: GCC 11+, Clang 14+
+* OS: Ubuntu 22.04+
+* Supported ROS2 distros
 
-* ROS2 Humble
+  * Humble
 
-* Cyclone DDS
+  * Jazzy
 
 
-Install ROS2 Humble
--------------------
+Install ROS2
+------------
 
 Follow the `official documentation`__ to install the latest binary release of ROS2.
 
@@ -45,19 +47,3 @@ __ https://docs.ros.org/en/humble/Tutorials/Intermediate/Rosdep.html#how-do-i-us
 
       source /opt/ros/humble/setup.bash
 
-Install Cyclone DDS
--------------------
-
-.. code-block:: bash
-
-   sudo apt install ros-humble-rmw-cyclonedds-cpp
-
-Add the following line to your ``~/.bashrc`` to always select Cyclone DDS by default.
-
-.. code-block:: bash
-
-   export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-
-Alternatively, follow the `official documentation`__ to build from source.
-
-__ https://docs.ros.org/en/humble/Installation/DDS-Implementations/Working-with-Eclipse-CycloneDDS.html

@@ -15,9 +15,27 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Extra, JsonValue, UUID4
+from fastapi._compat import PYDANTIC_V2
+from pydantic import BaseModel, Extra, UUID4
+
+if PYDANTIC_V2:
+    from pydantic import JsonValue
+else:
+    import json
+
+    def _model_dump(
+        model: BaseModel, mode: Literal['json', 'python'] = 'python', **kwargs: Any
+    ) -> Any:
+        if mode == 'python':
+            return model.dict(**kwargs)
+        else:
+            return json.loads(model.json())
+
+    BaseModel.model_dump = _model_dump
+
+    JsonValue = Dict[str, Any]
 
 
 class EventBase(BaseModel):

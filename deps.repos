@@ -1,9 +1,0 @@
-repositories:
-  rabbitmq-c_vendor:
-    type: git
-    url: https://github.com/DillonChew98/rabbitmq-c_vendor.git
-    version: main
-  simpleamqpclient_vendor:
-    type: git
-    url: https://github.com/DillonChew98/simpleamqpclient_vendor.git
-    version: main

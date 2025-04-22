@@ -1,12 +1,30 @@
-RMF Setup
-=========
+OpenRMF Setup
+=============
 
-Install RMF from Source
------------------------
+Install Cyclone DDS
+-------------------
+
+.. code-block:: bash
+
+   sudo apt install ros-humble-rmw-cyclonedds-cpp
+
+Add the following line to your ``~/.bashrc`` to always select Cyclone DDS by default.
+
+.. code-block:: bash
+
+   export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+Alternatively, follow the `official documentation`__ to build from source.
+
+__ https://docs.ros.org/en/humble/Installation/DDS-Implementations/Working-with-Eclipse-CycloneDDS.html
+
+
+Install OpenRMF from Source
+---------------------------
 
 .. warning::
 
-   If you have any prior RMF installation using Debian binaries (``sudo apt install``),
+   If you have any prior OpenRMF installation using Debian binaries (``sudo apt install``),
    please use the following command to remove them.
 
    .. code-block:: bash
@@ -78,3 +96,5 @@ On ``Ubuntu 22.04``:
 
    The first time the build occurs, many simulation models will be downloaded from Ignition Fuel to populate the scene when the simulation is run.
    As a result, the first build can take a very long time depending on the server load and your Internet connection.
+
+

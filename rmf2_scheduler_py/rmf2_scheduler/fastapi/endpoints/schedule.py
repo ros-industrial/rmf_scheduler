@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -37,13 +37,20 @@ router = APIRouter()
 )
 def read_schedule(
     task_scheduler: SchedulerDep,
-    start_time: datetime = datetime.now(),
-    end_time: datetime = datetime.now() + timedelta(days=1),
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
     offset: int = 0,
     limit: int = 100,
 ) -> ScheduleSchema:
+
+    query_start_time = Time(start_time) if start_time else Time(datetime.now() - timedelta(days=1))
+    query_end_time = Time(end_time) if end_time else Time(datetime.now() + timedelta(days=1))
+
     result, error, tasks, processes, _ = task_scheduler.get_schedule(
-        Time(start_time), Time(end_time), offset, limit
+        query_start_time,
+        query_end_time,
+        offset,
+        limit
     )
 
     if not result:

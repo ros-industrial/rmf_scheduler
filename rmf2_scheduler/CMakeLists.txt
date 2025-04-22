@@ -8,7 +8,6 @@ find_package(nlohmann_json REQUIRED)
 find_package(croncpp_vendor REQUIRED)
 find_package(taskflow_vendor REQUIRED)
 find_package(tinyxml2_vendor REQUIRED)
-find_package(simpleamqpclient_vendor REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -90,10 +89,6 @@ target_link_libraries(dag_to_bt
   ${PROJECT_NAME}
 )
 
-ament_target_dependencies(dag_to_bt
-  simpleamqpclient_vendor
-)
-
 add_executable(rs_http_request
   examples/rs_http_request.cpp
 )
@@ -158,7 +153,7 @@ install(TARGETS
   clear_ld_broker
   run_scheduler
   create_sample_backups
-  LIBRARY DESTINATION lib
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(

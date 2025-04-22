@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rmf2_scheduler_server_py</name>
+  <version>0.1.0</version>
+  <description>
+    Python API Server Demo for the RMF2 Scheduler
+  </description>
+  <maintainer email="chenbn@artc.a-star.edu.sg">Chen Bainian</maintainer>
+  <license>Apache License 2.0</license>
+
+  <exec_depend>rmf2_scheduler_py</exec_depend>
+  <exec_depend>python3-fastapi</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
+  <exec_depend>python3-pydantic</exec_depend>
+  
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>ament_xmllint</test_depend>
+  <test_depend>python3-pytest</test_depend>
+</package>

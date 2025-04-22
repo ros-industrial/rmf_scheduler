@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'RMF Scheduler Documentation'
+project = 'RMF2 Scheduler'
 copyright = '2025, ROS-Industrial Consortium Asia Pacific'
-author = 'Chen Bainian, Lum Kai Wen'
+author = 'The RMF2 Team'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.0'
