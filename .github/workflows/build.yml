@@ -51,6 +51,7 @@ jobs:
         env: ${{matrix.env}}
       # Upload Coverage report if configured
       - name: Install dependency for Codecov
+        if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
         run: sudo apt install curl -y
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
