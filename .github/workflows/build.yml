@@ -35,7 +35,7 @@ jobs:
             TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
     env:
       ISOLATION: "shell"
-      CCACHE_DIR: ~/.ccache
+      CCACHE_DIR: /github/home/.ccache
     runs-on: ubuntu-latest
     container:
       image: ros:humble-ros-core
@@ -51,6 +51,7 @@ jobs:
         env: ${{matrix.env}}
       # Upload Coverage report if configured
       - name: Install dependency for Codecov
+        if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
         run: sudo apt install curl -y
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.env.CODE_COVERAGE == 'codecov.io' }}
