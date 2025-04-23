@@ -18,7 +18,7 @@ if [ "$2" = "--branch" ]; then
   branch_html_command=(--branch-coverage)
 fi
 
-package_name=${CI_PROJECT_NAME:-"rmf2_scheduler"}
+package_name=${TARGET_REPO_NAME:-"rmf2_scheduler"}
 
 ignored_files=("*/test/*" "*/examples/*")
 
