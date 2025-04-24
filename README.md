@@ -17,7 +17,7 @@ Manages task schedules for RMF.
 
 ## Quick Setup
 
-Full setup instructions can be found in the Sphinx documentation.
+Full setup instructions can be found in the Sphinx documentation.  
 Create a colcon workspace and download the source code:
 
 ```bash
