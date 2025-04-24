@@ -8,7 +8,7 @@ Manages task schedules for RMF.
 > This version (`0.2.x`) serves as a proof-of-concept.
 > A future stable version (`1.0.0`) is under development within the RMF2 project,
 > the progress can be found under [**develop/v1**](https://github.com/ros-industrial/rmf_scheduler/tree/develop/v1).
-> For more info, please checkout <https://github.com/ros-industrial/rmf_scheduler/issues/1>.
+> For more info, please checkout <https://github.com/ros-industrial/rmf_scheduler/issues/9>.
 
 ## Requirements
 
