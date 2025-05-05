@@ -79,8 +79,8 @@ class TaskUpdate(TaskBase):
 
 class Task(TaskBase):
     id: str  # noqa: A003
-    series_id: Optional[str]
-    process_id: Optional[str]
+    series_id: Optional[str] = None
+    process_id: Optional[str] = None
     status: str
     planned_start_time: Optional[datetime] = None
     planned_end_time: Optional[datetime] = None
