@@ -2,12 +2,12 @@
 
 [![support level: consortium / vendor](https://img.shields.io/badge/support%20level-consortium-brightgreen.svg)](http://rosindustrial.org/news/2016/10/7/better-supporting-a-growing-ros-industrial-software-platform)
 
-Manages task schedules for OpenRMF.
+Manages task schedules for Open-RMF.
 
 ## Requirements
 
 * ROS 2 Humble
-* OpenRMF (More information [here](https://github.com/open-rmf/rmf))
+* Open-RMF (More information [here](https://github.com/open-rmf/rmf))
 
 ## Documentation
 
@@ -15,7 +15,7 @@ Refer to the [documentation](https://rmf-scheduler.readthedocs.io/) for usage in
 
 ## Quick Setup
 
-Full setup instructions with OpenRMF can be found in the documentation above.  
+Full setup instructions with Open-RMF can be found in the documentation above.
 Create a colcon workspace.
 
 ```bash
