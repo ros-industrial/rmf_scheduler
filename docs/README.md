@@ -25,22 +25,22 @@ firefox docs/sphinx/build/html/index.html
 
 ### API Documentation
 
-Install Doxygen
+Install Doxygen.
 
 ```bash
 sudo apt install doxygen graphviz
 ```
 
-Generate API documentation
+Generate API documentation.
 
 ```bash
 cd $COLCON_WS/src/rmf_scheduler/
-mdkir -p docs/doxygen/build
+mkdir -p docs/doxygen/build
 cd .doxygen
 doxygen
 ```
 
-Open the documentation with your favourite web browser
+Open the documentation with your favourite web browser.
 
 ```
 cd ..

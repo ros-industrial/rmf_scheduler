@@ -1,20 +1,20 @@
 System Setup
 ============
 
-System Requirement
-------------------
+System Requirements
+-------------------
 
 * Ubuntu 22.04
 
-* ROS2 Humble
+* ROS 2 Humble
 
 * Cyclone DDS
 
 
-Install ROS2 Humble
--------------------
+Install ROS 2 Humble
+--------------------
 
-Follow the `official documentation`__ to install the latest binary release of ROS2.
+Follow the `official documentation`__ to install the latest binary release of ROS 2.
 
 Install all necessary additional dependencies:
 

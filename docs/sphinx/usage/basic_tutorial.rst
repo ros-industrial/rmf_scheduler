@@ -6,8 +6,8 @@ Create an event using ROS Topic
 
 .. note::
 
-   Please make sure a RMF Scheduler ROS2 Node is running.
-   For more, checkout :ref:`Quick Start`.
+   Before starting this tutorial, ensure a RMF Scheduler ROS 2 Node is running first.
+   For more information, check out :ref:`Quick Start`.
 
 
 Let's create an **Event** in the scheduler using the ``/rmf_scheduler_api_request`` topic
@@ -33,7 +33,7 @@ from the ``/rmf_scheduler_api_response`` topic.
 
 **Terminal 2 - Add Event**
 
-Let's create an **Event** like the following.
+In a separate terminal, create an **Event** like the following.
 
 .. code-block:: javascript
 
@@ -44,8 +44,7 @@ Let's create an **Event** like the following.
      "event_details": {}
    }
 
-Run the following command to add the Event.
-This command changes the schedule stored.
+Run the following command to add the Event to the schedule.
 
 .. code-block:: bash
 
@@ -69,7 +68,7 @@ This command changes the schedule stored.
        }"
      }'
 
-Upon success, you should receive the following response from **Terminal 1**.
+Upon success, you should receive the following response in **Terminal 1**.
 
 ::
 
@@ -78,7 +77,7 @@ Upon success, you should receive the following response from **Terminal 1**.
     request_id: 2c3a5018-ae1a-4789-a568-bfbef24d1b78
     ---
 
-In this response, ``"value": 0`` means ``SUCCESS``.
+Here, ``"value": 0`` indicates ``SUCCESS``.
 
 **Terminal 2 - Verification**
 
@@ -100,7 +99,7 @@ Simply run the following command.
        }"
      }'
 
-You should receive a response similar to the following in **Terminal 1**.
+You should receive a response in **Terminal 1** similar to the following:
 
 ::
 

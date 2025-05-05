@@ -28,7 +28,7 @@ It can be installed with:
 Download the source code
 ````````````````````````
 
-Create a colcon workspace:
+Create a colcon workspace.
 
 .. code-block:: bash
 
@@ -36,7 +36,7 @@ Create a colcon workspace:
    mkdir -p $COLCON_WS/src
    cd $COLCON_WS
 
-Download the source code:
+Download the source code.
 
 .. code-block:: bash
 
@@ -49,7 +49,7 @@ In the workspace pull in additional RMF repositories using ``vcs``:
 
    vcs import . < rmf_scheduler/rmf.repos
 
-Ensure all ROS 2 prerequisites are fulfilled:
+Ensure all ROS 2 prerequisites are fulfilled.
 
 .. code-block:: bash
 
@@ -64,7 +64,7 @@ Ensure all ROS 2 prerequisites are fulfilled:
       flask-socketio \
       uvicorn
 
-Setup colcon mixin:
+Setup colcon mixin.
 
 .. code-block:: bash
 
@@ -73,8 +73,8 @@ Setup colcon mixin:
    colcon mixin update default
 
 
-Compiling Instructions
-``````````````````````
+Build Instructions
+``````````````````
 
 On ``Ubuntu 22.04``:
 

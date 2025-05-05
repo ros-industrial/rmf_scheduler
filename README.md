@@ -11,12 +11,12 @@ Manages task schedules for OpenRMF.
 
 ## Documentation
 
-See the [documentation](https://rmf-scheduler.readthedocs.io) on how to use it
+Refer to the [documentation](https://rmf-scheduler.readthedocs.io/) for usage instructions.
 
 ## Quick Setup
 
-Full setup instructions with OpenRMF can be found in the Sphinx documentation.
-Create a colcon workspace and download the source code:
+Full setup instructions with OpenRMF can be found in the documentation above.  
+Create a colcon workspace.
 
 ```bash
 export COLCON_WS=~/colcon_ws
