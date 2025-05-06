@@ -6,8 +6,7 @@
 
 [![support level: consortium / vendor](https://img.shields.io/badge/support%20level-consortium-brightgreen.svg)](http://rosindustrial.org/news/2016/10/7/better-supporting-a-growing-ros-industrial-software-platform)
 
-
-Manages task schedules for RMF.
+Manages task schedules for Open-RMF.
 
 > This version (`0.2.x`) serves as a proof-of-concept.
 > A future stable version (`1.0.0`) is under development within the RMF2 project,
@@ -17,18 +16,28 @@ Manages task schedules for RMF.
 ## Requirements
 
 * ROS 2 Humble
-* RMF (More information [here](https://github.com/open-rmf/rmf))
+* Open-RMF (More information [here](https://github.com/open-rmf/rmf))
+
+## Documentation
+
+Refer to the [documentation](https://rmf-scheduler.readthedocs.io/) for usage instructions.
 
 ## Quick Setup
 
-Full setup instructions can be found in the Sphinx documentation.  
-Create a colcon workspace and download the source code:
+Full setup instructions with Open-RMF can be found in the documentation above.
+Create a colcon workspace.
 
 ```bash
 export COLCON_WS=~/colcon_ws
 mkdir -p $COLCON_WS/src
-cd $COLCON_WS/src
-git clone git@github.com:ros-industrial/rmf_scheduler.git
+cd $COLCON_WS
+```
+
+Download the source code.
+
+```bash
+cd src
+git clone https://github.com/ros-industrial/rmf_scheduler.git
 ```
 
 Install dependencies.
@@ -39,33 +48,8 @@ rosdep install --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
 
 Build.
 ```bash
-cd $COLCON_WS
+cd ..
 colcon build
-```
-
-## Documentation
-
-### Sphinx Documentation
-
-Install dependencies.
-
-```bash
-sudo apt install python3-pip python3-dev
-pip3 install --user --upgrade setuptools
-pip3 install --user --upgrade sphinx sphinx-rtd-theme myst_parser recommonmark sphinxcontrib-jquery
-```
-
-Generate the documentation.
-
-```bash
-cd $COLCON_WS/src/rmf_scheduler/
-make -C docs/sphinx html
-```
-
-Open the documentation with your favourite web browser.
-
-```bash
-firefox docs/sphinx/build/html/index.html
 ```
 
 ## Support

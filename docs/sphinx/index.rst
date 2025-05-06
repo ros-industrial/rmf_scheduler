@@ -7,7 +7,7 @@ Welcome to RMF Scheduler's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Setup Instructions:
+   :caption: Setup Instructions
 
    setup/system_setup
    setup/rmf_setup
@@ -17,4 +17,5 @@ Welcome to RMF Scheduler's documentation!
    :maxdepth: 3
    :caption: Usage & Configuration
 
-   usage/rmf_scheduler
+   usage/quick_start.rst
+   usage/basic_tutorial.rst

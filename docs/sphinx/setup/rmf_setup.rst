@@ -28,21 +28,33 @@ It can be installed with:
 Download the source code
 ````````````````````````
 
-In the workspace set up from the instructions in README.md, pull in additional repositories using ``vcs``:
+Create a colcon workspace.
 
 .. code-block:: bash
 
+   export COLCON_WS=~/colcon_ws
+   mkdir -p $COLCON_WS/src
    cd $COLCON_WS
-   wget https://raw.githubusercontent.com/ros-industrial/rmf_scheduler/refs/heads/main/rmf.repos
-   vcs import src < rmf.repos
 
-Ensure all ROS 2 prerequisites are fulfilled:
+Download the source code.
 
 .. code-block:: bash
 
-   cd $COLCON_WS
+   cd src
+   git clone https://github.com/ros-industrial/rmf_scheduler.git
+
+In the workspace pull in additional RMF repositories using ``vcs``:
+
+.. code-block:: bash
+
+   vcs import . < rmf_scheduler/rmf.repos
+
+Ensure all ROS 2 prerequisites are fulfilled.
+
+.. code-block:: bash
+
    source /opt/ros/humble/setup.bash
-   rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" -yr
+   rosdep install --from-paths . --ignore-src --rosdistro "$ROS_DISTRO" -yr
    sudo apt install clang lldb lld
    sudo apt install python3-pip python3-setuptools python3-dev
    python3 -m pip install -U \
@@ -52,7 +64,7 @@ Ensure all ROS 2 prerequisites are fulfilled:
       flask-socketio \
       uvicorn
 
-Setup colcon mixin:
+Setup colcon mixin.
 
 .. code-block:: bash
 
@@ -61,8 +73,8 @@ Setup colcon mixin:
    colcon mixin update default
 
 
-Compiling Instructions
-``````````````````````
+Build Instructions
+``````````````````
 
 On ``Ubuntu 22.04``:
 
