@@ -2,6 +2,15 @@
 Changelog for package rmf_scheduler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update install and setup documentation and add in quick demo (`#10 <https://github.com/ros-industrial/rmf_scheduler/issues/10>`_)
+  * Update install and setup documentation and add in quick demo
+  * Remove documentation build instructions from root README
+  * Docs cleanup.
+  * Change OpenRMF to Open-RMF
+* Contributors: Chen Bainian, Tan Chian Fern
+
 0.2.3
 -----
 
