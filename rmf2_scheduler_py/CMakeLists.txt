@@ -67,6 +67,16 @@ target_include_directories(core
     ${rmf2_scheduler_INCLUDE_DIRS}
 )
 
+# Generate API client
+include(cmake/generate_openapi_python_client.cmake)
+
+generate_openapi_python_client(
+  OPENAPI_PYTHON_CLIENT_VERSION 0.24.3
+  OPENAPI_JSON openapi.json
+  MODULE_NAME client
+  DESTINATION "${PYTHON_INSTALL_DIR}/rmf2_scheduler/"
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
 

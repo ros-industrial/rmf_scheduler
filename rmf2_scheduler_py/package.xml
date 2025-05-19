@@ -9,6 +9,10 @@
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <buildtool_depend>python3</buildtool_depend>
+  <buildtool_depend>python3-venv</buildtool_depend>
+
   <build_depend>pybind11_vendor</build_depend>
   <build_depend>pybind11_json_vendor</build_depend>
   <depend>rmf2_scheduler</depend>
