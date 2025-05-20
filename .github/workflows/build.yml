@@ -17,6 +17,7 @@ jobs:
             ROS_DISTRO: humble
             TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
             AFTER_SCRIPT: "./coverage.sh ci"
+            UPSTREAM_WORKSPACE: "./deps.repos"
             CODE_COVERAGE: "codecov.io"
           # Clang Build
           - ICI_JOB_NAME: clang
@@ -24,14 +25,17 @@ jobs:
             ADDITIONAL_DEBS: clang lld
             CC: "clang"
             CXX: "clang++"
+            UPSTREAM_WORKSPACE: "./deps.repos"
             TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
           # Adress Sanitizer
           - ICI_JOB_NAME: gcc-asan
             ROS_DISTRO: humble
+            UPSTREAM_WORKSPACE: "./deps.repos"
             TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
           # Thread Sanitizer
           - ICI_JOB_NAME: gcc-tsan
             ROS_DISTRO: humble
+            UPSTREAM_WORKSPACE: "./deps.repos"
             TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
     env:
       ISOLATION: "shell"
