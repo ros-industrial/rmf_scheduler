@@ -96,7 +96,7 @@ RobotTaskEstimateClient::async_estimate(
     estimate_request["initial_state"] = state;
   }
 
-  estimate_request["type"] = "estimate_task_request";
+  estimate_request["type"] = "estimate_robot_task_request";
 
   // change them to slugs
   // all spaces(" ") and dash ("-") to underline ("_")
