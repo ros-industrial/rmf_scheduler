@@ -59,13 +59,11 @@ repositories:
     type: git
     url: https://github.com/open-rmf/menge_vendor.git
     version: 1.0.1
-
-  # ROS-I Modified RMF Repos
   rmf/rmf_ros2:
     type: git
-    url: https://github.com/lkw303/rmf_ros2.git
-    version: develop-cag-p3
+    url: https://github.com/open-rmf/rmf_ros2.git
+    version: 2.10.0
   rmf/rmf_api_msgs:
     type: git
-    url: https://github.com/lkw303/rmf_api_msgs.git
-    version: develop-cag-p3
+    url: https://github.com/open-rmf/rmf_api_msgs.git
+    version: 0.5.0

@@ -36,6 +36,7 @@ jobs:
     env:
       ISOLATION: "shell"
       CCACHE_DIR: /github/home/.ccache
+      UPSTREAM_WORKSPACE: "./deps.repos"
     runs-on: ubuntu-latest
     container:
       image: ros:humble-ros-core
