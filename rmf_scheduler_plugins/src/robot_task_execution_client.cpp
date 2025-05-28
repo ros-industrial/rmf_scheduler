@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "std_msgs/msg/string.hpp"
 #include "rmf_api_msgs/schemas/task_request.hpp"
 #include "rmf_api_msgs/schemas/simple_response.hpp"
 #include "rmf_api_msgs/schemas/cancel_task_request.hpp"
@@ -35,6 +36,7 @@ namespace rmf_scheduler_plugins
 static constexpr char RMF_TASK_API_REQUEST_TOPIC[] = "/task_api_requests";
 static constexpr char RMF_TASK_API_RESPONSE_TOPIC[] = "/task_api_responses";
 static constexpr char PAUSE_RESUME_API_REQUEST_TOPIC[] = "/custom_api_requests";
+static constexpr char RMF_TASK_STATE_UPDATE_TOPIC[] = "/task_state_update";
 
 RobotTaskExecutionClient::RobotTaskExecutionClient()
 : schema_validator_({
@@ -84,8 +86,8 @@ void RobotTaskExecutionClient::init(
     transient_local_qos);
 
   task_states_sub_ =
-    node_->create_subscription<rmf_task_msgs::msg::ApiResponse>(
-    "/task_states",
+    node_->create_subscription<std_msgs::msg::String>(
+    RMF_TASK_STATE_UPDATE_TOPIC,
     default_qos,
     std::bind(
       &RobotTaskExecutionClient::handle_response, this,
@@ -194,12 +196,12 @@ void RobotTaskExecutionClient::cancel(const std::string & id)
 }
 
 void RobotTaskExecutionClient::handle_response(
-  const rmf_task_msgs::msg::ApiResponse & response)
+  const std_msgs::msg::String & update_msg)
 {
   nlohmann::json task_state_json;
   std::string task_id, status;
   try {
-    task_state_json = nlohmann::json::parse(response.json_msg);
+    task_state_json = nlohmann::json::parse(update_msg.data);
     task_id = task_state_json["data"]["booking"]["id"].get<std::string>();
     status = task_state_json["data"]["status"].get<std::string>();
   } catch (const std::exception & e) {
