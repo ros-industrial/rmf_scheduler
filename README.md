@@ -24,7 +24,8 @@ Refer to the [documentation](https://rmf-scheduler.readthedocs.io/) for usage in
 
 ## Quick Setup
 
-Full setup instructions with Open-RMF can be found in the documentation above.
+Full setup instructions with Open-RMF can be found in the above documentation [Setup Instructions - RMF Setup](https://rmf-scheduler.readthedocs.io/en/latest/setup/rmf_setup.html).
+
 Create a colcon workspace.
 
 ```bash
@@ -38,6 +39,11 @@ Download the source code.
 ```bash
 cd src
 git clone https://github.com/ros-industrial/rmf_scheduler.git
+```
+
+Clone some necessary Open-RMF packages. This upgrades `rmf_api_msgs` to `0.5.0`.
+```bash
+vcs import .  < rmf_scheduler/deps.repos
 ```
 
 Install dependencies.
