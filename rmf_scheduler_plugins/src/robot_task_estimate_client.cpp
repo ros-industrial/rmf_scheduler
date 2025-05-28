@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "rmf_api_msgs/schemas/task_request.hpp"
-// #include "rmf_api_msgs/schemas/task_estimate_request.hpp"
-// #include "rmf_api_msgs/schemas/task_estimate_response.hpp"
+#include "rmf_api_msgs/schemas/task_estimate_result.hpp"
+#include "rmf_api_msgs/schemas/estimate_robot_task_request.hpp"
+#include "rmf_api_msgs/schemas/estimate_robot_task_response.hpp"
 #include "rmf_api_msgs/schemas/robot_task_request.hpp"
 #include "rmf_api_msgs/schemas/robot_task_response.hpp"
 #include "rmf_api_msgs/schemas/dispatch_task_request.hpp"
@@ -39,8 +40,9 @@ RobotTaskEstimateClient::RobotTaskEstimateClient()
     rmf_api_msgs::schemas::dispatch_task_response,
     rmf_api_msgs::schemas::robot_task_request,
     rmf_api_msgs::schemas::robot_task_response,
-    // rmf_api_msgs::schemas::task_estimate_request,
-    // rmf_api_msgs::schemas::task_estimate_response,
+    rmf_api_msgs::schemas::task_estimate_result,
+    rmf_api_msgs::schemas::estimate_robot_task_request,
+    rmf_api_msgs::schemas::estimate_robot_task_response,
   })
 {
 }
@@ -82,8 +84,8 @@ RobotTaskEstimateClient::async_estimate(
   std::lock_guard<std::mutex> lk(mutex_);
   // Get validation error if any
   // TODO(Briancbn): exception handling
-  nlohmann::json task_request;
-  task_request["task_request"] = request.details["request"];
+  nlohmann::json estimate_request;
+  estimate_request["request"] = request.details["request"];
 
   if (request.state != nullptr) {
     nlohmann::json state;
@@ -91,12 +93,10 @@ RobotTaskEstimateClient::async_estimate(
     state["orientation"] = request.state->orientation;
     state["battery_soc"] = request.state->consumables["battery_soc"];
     state["time"] = static_cast<uint64_t>(request.start_time / 1e6);
-    task_request["state"] = state;
+    estimate_request["initial_state"] = state;
   }
 
-  nlohmann::json estimate_request;
-  estimate_request["request"] = task_request;
-  estimate_request["type"] = "estimate_task_request";
+  estimate_request["type"] = "estimate_robot_task_request";
 
   // change them to slugs
   // all spaces(" ") and dash ("-") to underline ("_")
@@ -104,11 +104,10 @@ RobotTaskEstimateClient::async_estimate(
   estimate_request["fleet"] = request.details["fleet"].get<std::string>();
   std::string error;
 
-  // Commented till task_estimate_request schema is available.
-  // auto json_uri = nlohmann::json_uri{
-  //   rmf_api_msgs::schemas::task_estimate_request["$id"]
-  // };
-  // schema_validator_.validate(json_uri, estimate_request);
+  auto json_uri = nlohmann::json_uri{
+    rmf_api_msgs::schemas::estimate_robot_task_request["$id"]
+  };
+  schema_validator_.validate(json_uri, estimate_request);
 
   response_map_[id] = std::promise<rmf_scheduler::task::EstimateResponse>();
 
@@ -134,11 +133,10 @@ void RobotTaskEstimateClient::handle_response(
   nlohmann::json raw_response;
   try {
     raw_response = nlohmann::json::parse(msg.json_msg);
-    // Commented till task_estimate_request schema is available.
-    // auto json_uri = nlohmann::json_uri{
-    //   rmf_api_msgs::schemas::task_estimate_response["$id"]
-    // };
-    // schema_validator_.validate(json_uri, raw_response);
+    auto json_uri = nlohmann::json_uri{
+      rmf_api_msgs::schemas::estimate_robot_task_request["$id"]
+    };
+    schema_validator_.validate(json_uri, raw_response);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       node_->get_logger(),
@@ -154,18 +152,27 @@ void RobotTaskEstimateClient::handle_response(
     msg.request_id.c_str(),
     msg.json_msg.c_str());
 
-  rmf_scheduler::task::EstimateResponse response;
-  response.deployment_time =
-    static_cast<uint64_t>(raw_response["deployment_time"].get<int>()) * 1e6;
-  response.finish_time =
-    static_cast<uint64_t>(raw_response["finish_time"].get<int>()) * 1e6;
-  response.duration =
-    static_cast<uint64_t>(raw_response["duration"].get<int>()) * 1e6;
+  if (!raw_response["success"].get<bool>()) {
+    RCLCPP_INFO(
+      node_->get_logger(),
+      "Error in response to to [%s]",
+      msg.request_id.c_str());
+    return;
+  }
 
-  response.state.waypoint = raw_response["state"]["waypoint"].get<int>();
-  response.state.orientation = raw_response["state"]["orientation"].get<double>();
+  rmf_scheduler::task::EstimateResponse response;
+  nlohmann::json result = raw_response["result"];
+  response.deployment_time =
+    static_cast<uint64_t>(result["deployment_time"].get<int>()) * 1e6;
+  response.finish_time =
+    static_cast<uint64_t>(result["finish_time"].get<int>()) * 1e6;
+  response.duration =
+    static_cast<uint64_t>(result["duration"].get<int>()) * 1e6;
+
+  response.state.waypoint = result["state"]["waypoint"].get<int>();
+  response.state.orientation = result["state"]["orientation"].get<double>();
   response.state.consumables["battery_soc"] =
-    raw_response["state"]["battery_soc"].get<double>();
+    result["state"]["battery_soc"].get<double>();
 
   response_map_itr->second.set_value(response);
   response_map_.erase(response_map_itr);
