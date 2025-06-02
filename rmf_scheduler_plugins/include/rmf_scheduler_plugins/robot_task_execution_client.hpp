@@ -26,6 +26,7 @@
 #include "rmf_scheduler/schema_validator.hpp"
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
 
 #include "rmf_task_msgs/msg/api_request.hpp"
 #include "rmf_task_msgs/msg/api_response.hpp"
@@ -67,7 +68,7 @@ private:
   void update_loop();
 
   void handle_response(
-    const rmf_task_msgs::msg::ApiResponse & response);
+    const std_msgs::msg::String & response);
 
   std::unordered_map<std::string, std::tuple<std::string, TimePoint, double>> task_status_map_;
 
@@ -75,7 +76,7 @@ private:
 
   rclcpp::Publisher<rmf_task_msgs::msg::ApiRequest>::SharedPtr pause_resume_request_publisher_;
 
-  rclcpp::Subscription<rmf_task_msgs::msg::ApiResponse>::SharedPtr task_states_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr task_states_sub_;
 };
 
 }  // namespace rmf_scheduler_plugins
