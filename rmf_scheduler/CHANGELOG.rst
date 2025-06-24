@@ -4,7 +4,7 @@ Changelog for package rmf_scheduler
 
 Forthcoming
 -----------
-* Update install and setup documentation and add in quick demo (`#10 <https://github.com/ros-industrial/rmf_scheduler/issues/10>`_)
+* Update install and setup documentation and add in quick demo (`#10 <https://github.com/ros-industrial/rmf_scheduler/pull/10>`_)
   * Update install and setup documentation and add in quick demo
   * Remove documentation build instructions from root README
   * Docs cleanup.

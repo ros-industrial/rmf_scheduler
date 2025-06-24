@@ -4,6 +4,9 @@ Changelog for package rmf_scheduler_plugins
 
 Forthcoming
 -----------
+* Update schemas for estimate robot task request. (`#12 <https://github.com/ros-industrial/rmf_scheduler/pull/12>`_)
+* Fix wrong task state update topic (`#15 <https://github.com/ros-industrial/rmf_scheduler/pull/15>`_)
+* Contributors: Lum Kai Wen
 
 0.2.3
 -----
