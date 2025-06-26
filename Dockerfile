@@ -27,22 +27,16 @@ RUN pip3 install -U \
         uvicorn
 
 # Clone the repository
-WORKDIR /ros2_ws/src
-RUN mkdir rmf_scheduler
-COPY ./croncpp_vendor rmf_scheduler/croncpp_vendor
-COPY ./ortools_vendor rmf_scheduler/ortools_vendor
-COPY ./rmf_notification rmf_scheduler/rmf_notification
-COPY ./rmf_scheduler rmf_scheduler/rmf_scheduler
-COPY ./rmf_scheduler_plugins rmf_scheduler/rmf_scheduler_plugins
-COPY ./rmf_scheduler_ros2 rmf_scheduler/rmf_scheduler_ros2
-COPY ./taskflow_vendor rmf_scheduler/taskflow_vendor
+ENV RMF2_WS=/ros2_ws
+WORKDIR ${RMF2_WS}
+COPY . ${RMF2_WS}/src/rmf_scheduler
 
 # Set up the workspace
-WORKDIR /ros2_ws
-COPY rmf.repos rmf.repos
-RUN vcs import src < src/rmf_scheduler/rmf.repos && \
-  rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y && \
-  rm -rf /var/lib/apt/lists/*
+WORKDIR ${RMF2_WS}
+RUN vcs import src < src/rmf_scheduler/rmf.repos \
+    && apt-get update \
+    && rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # # Build the workspace
 ENV CXX=clang++
