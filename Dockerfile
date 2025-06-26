@@ -17,9 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
-RUN colcon mixin remove default
-RUN colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
-RUN colcon mixin update default
+RUN colcon mixin remove default && colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && colcon mixin update default
 
 RUN pip3 install -U \
         datamodel-code-generator \
