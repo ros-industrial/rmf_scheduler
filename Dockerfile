@@ -40,10 +40,9 @@ COPY ./taskflow_vendor rmf_scheduler/taskflow_vendor
 # Set up the workspace
 WORKDIR /ros2_ws
 COPY rmf.repos rmf.repos
-RUN vcs import src < rmf.repos
-RUN rosdep update
-RUN apt-get update && rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y \
-  && rm -rf /var/lib/apt/lists/*
+RUN vcs import src < src/rmf_scheduler/rmf.repos && \
+  rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y && \
+  rm -rf /var/lib/apt/lists/*
 
 # # Build the workspace
 ENV CXX=clang++
