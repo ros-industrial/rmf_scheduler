@@ -1,11 +1,9 @@
 name: docker
 
 on:
-  schedule:
-    - cron: "0 10 * * *"
   push:
     branches:
-      - "**"
+      - main
     tags:
       - "*.*.*"
   pull_request:
@@ -23,7 +21,6 @@ jobs:
             ghcr.io/${{ github.repository }}
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=schedule
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
