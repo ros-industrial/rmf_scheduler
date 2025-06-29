@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         lld \
         jq \
         ros-humble-rmw-cyclonedds-cpp \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-RUN colcon mixin remove default && colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && colcon mixin update default
+RUN colcon mixin remove default \
+  && colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml \
+  && colcon mixin update default
 
 RUN pip3 install -U \
         datamodel-code-generator \
@@ -34,9 +36,9 @@ COPY . ${RMF2_WS}/src/rmf_scheduler
 # Set up the workspace
 WORKDIR ${RMF2_WS}
 RUN vcs import src < src/rmf_scheduler/rmf.repos \
-    && apt-get update \
-    && rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get update \
+  && rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y \
+  && rm -rf /var/lib/apt/lists/*
 
 # # Build the workspace
 ENV CXX=clang++
