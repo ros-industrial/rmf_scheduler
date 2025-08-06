@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -38,14 +38,16 @@ router = APIRouter()
 )
 def read_processes(
     task_scheduler: SchedulerDep,
-    start_time: datetime = datetime.now(),
-    end_time: datetime = datetime.now() + timedelta(days=1),
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
     offset: int = 0,
     limit: int = 100,
 ) -> List[ProcessSchema]:
     schedule_cache: ScheduleCache = LockedScheduleRO(task_scheduler).cache()
+    query_start_time = Time(start_time) if start_time else Time(datetime.now() - timedelta(days=1))
+    query_end_time = Time(end_time) if end_time else Time(datetime.now() + timedelta(days=1))
 
-    tasks = schedule_cache.lookup_tasks(Time(start_time), Time(end_time))
+    tasks = schedule_cache.lookup_tasks(query_start_time, query_end_time)
 
     # if not result:
     #     raise HTTPException(status_code=404, detail=error)
