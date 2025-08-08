@@ -112,6 +112,7 @@ jazzy-gcc-tsan:
     TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
 
   script:
+    - sysctl vm.mmap_rnd_bits=28
     - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
     - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
     - .industrial_ci/gitlab.sh
