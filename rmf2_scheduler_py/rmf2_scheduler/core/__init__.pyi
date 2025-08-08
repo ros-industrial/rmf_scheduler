@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import typing
 
 from . import cache, data, storage, utils
@@ -130,7 +131,18 @@ class TaskExecutor:
         ...
     def build(self, arg0: data.Task) -> tuple[bool, str, ExecutorData]:
         ...
+    def notify_completion(self, arg0: str, arg1: bool, arg2: ExecutorData) -> None:
+        ...
     def start(self, arg0: str, arg1: ExecutorData) -> tuple[bool, str]:
+        ...
+    @typing.overload
+    def update(self, arg0: str, arg1: data.Duration) -> None:
+        ...
+    @typing.overload
+    def update(self, arg0: str, arg1: float) -> None:
+        ...
+    @typing.overload
+    def update(self, arg0: str, arg1: datetime.timedelta) -> None:
         ...
 class TaskExecutorManager:
     def __init__(self) -> None:

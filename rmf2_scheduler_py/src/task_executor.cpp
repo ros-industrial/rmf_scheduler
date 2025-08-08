@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <pybind11/stl.h>
+#include <pybind11/chrono.h>
 
 #include "rmf2_scheduler_py/task_executor.hpp"
 #include "rmf2_scheduler/task_executor.hpp"
@@ -25,6 +26,10 @@ class PyTaskExecutor : public TaskExecutor
 {
 public:
   using TaskExecutor::TaskExecutor;
+
+  using TaskExecutor::update;
+
+  using TaskExecutor::notify_completion;
 
   /// Trampoline
   bool build(
@@ -154,6 +159,34 @@ void init_task_executor_py(py::module & m)
       bool result = self.start(id, data, error);
       return std::make_tuple(result, error);
     }
+  )
+  .def(
+    "update",
+    &PyTaskExecutor::update
+  )
+  .def(
+    "update",
+    [](
+      PyTaskExecutor & self,
+      const std::string & id,
+      double seconds
+    ) {
+      self.update(id, data::Duration().from_seconds(seconds));
+    }
+  )
+  .def(
+    "update",
+    [](
+      PyTaskExecutor & self,
+      const std::string & id,
+      const std::chrono::system_clock::duration remaining_time
+    ) {
+      self.update(id, data::Duration(remaining_time));
+    }
+  )
+  .def(
+    "notify_completion",
+    &PyTaskExecutor::notify_completion
   )
   ;
 }
