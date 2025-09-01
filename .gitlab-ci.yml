@@ -8,137 +8,30 @@ workflow:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^develop/
 
-humble-gcc-coverage:
-  image:
-    name: ros:humble-ros-core
+.jazzy-setup:
+  image: ros:jazzy-ros-core
 
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
+.humble-setup:
+  image: ros:humble-ros-core
 
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "humble"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
+include:
+  - component: gitlab.com/ROSI-AP/rosi-ap_infrastructure/ci_templates/build-and-test@559983b81652d125ec2df7e5effd12085452ad62  # main
+    inputs:
+      job_name: jazzy
+      ros_distro: "jazzy"
+      setup_job_name: .jazzy-setup
+      run_coverage: false
 
-  script:
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-    # Upload coverage report
-    - ./coverage.sh ci
-    - curl -Os https://uploader.codecov.io/latest/linux/codecov
-    - chmod +x codecov
-    - ./codecov -f ./coverage.info
-  coverage: '/Total:\|(\d+\.?\d+\%)/'
-
-humble-clang:
-  image:
-    name: ros:humble-ros-core
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "humble"
-    ADDITIONAL_DEBS: "clang lld"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    CC: "clang"
-    CXX: "clang++"
-    TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
-
-  script:
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-jazzy-gcc:
-  image:
-    name: ros:jazzy-ros-core
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "jazzy"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-
-  script:
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-jazzy-gcc-asan:
-  image:
-    name: ros:jazzy-ros-core
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "jazzy"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=address' -DCMAKE_CXX_FLAGS='-fsanitize=address'"
-
-  script:
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-jazzy-gcc-tsan:
-  image:
-    name: ros:jazzy-ros-core
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "jazzy"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    TARGET_CMAKE_ARGS: "-DCMAKE_C_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS='-fsanitize=thread -O2 -g -fno-omit-frame-pointer'"
-
-  script:
-    - sysctl vm.mmap_rnd_bits=28
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
-
-jazzy-clang:
-  image:
-    name: ros:jazzy-ros-core
-
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - .ccache/
-
-  variables:
-    ISOLATION: "shell"
-    ROS_DISTRO: "jazzy"
-    ADDITIONAL_DEBS: "clang lld"
-    CCACHE_DIR: "${CI_PROJECT_DIR}/.ccache"
-    CC: "clang"
-    CXX: "clang++"
-    TARGET_CMAKE_ARGS: "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld"
-
-  script:
-    - apt-get update && apt-get install -y git curl libcurl4-openssl-dev
-    - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
-    - .industrial_ci/gitlab.sh
+  - component: gitlab.com/ROSI-AP/rosi-ap_infrastructure/ci_templates/build-and-test@559983b81652d125ec2df7e5effd12085452ad62  # main
+    inputs:
+      job_name: humble
+      ros_distro: "humble"
+      setup_job_name: .humble-setup
+      run_asan: false
+      run_tsan: false
+      coverage_exclude:
+        - "*/test/*"
+        - "*/examples/*"
 
 # Build API Documentation
 doxygen-docs:
@@ -187,5 +80,3 @@ sphinx-docs:
     paths:
       - docs/sphinx/build/html/
     expire_in: 1 day
-
-
