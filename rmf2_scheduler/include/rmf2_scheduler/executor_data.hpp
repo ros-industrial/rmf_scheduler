@@ -31,7 +31,7 @@ public:
   ExecutorData() = default;
   virtual ~ExecutorData() {}
 
-  /// Add/Retrieve request/respones body data.
+  /// Add/Retrieve request/response body data.
   void set_data(const void * data, size_t data_size);
   void set_data_as_string(const std::string & data);
   void set_data_as_c_string(const char * data);

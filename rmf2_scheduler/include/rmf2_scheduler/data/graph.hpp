@@ -127,6 +127,8 @@ public:
 
   [[nodiscard]] bool empty() const;
 
+  [[nodiscard]] std::size_t size() const;
+
   /// Generate DOT graph
   void dump(std::ostream & oss) const;
 

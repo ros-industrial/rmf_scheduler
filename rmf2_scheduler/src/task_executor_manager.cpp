@@ -198,6 +198,12 @@ void TaskExecutorManager::notify_completion(
       return;
     }
     task = itr->second;
+
+    auto sig_itr = ongoing_task_sig_.find(id);
+    if (sig_itr != ongoing_task_sig_.end()) {
+      sig_itr->second.set_value(true);
+      // TODO(anyone): Clean up map
+    }
   }  // Unlock
 
   if (update_callback_) {

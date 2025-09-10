@@ -169,6 +169,17 @@ target_compile_definitions(test_plugin_plugin_loader
 )
 
 # ROOT
+ament_add_gtest(test_process_executor_taskflow
+  test_process_executor_taskflow.cpp
+)
+target_include_directories(test_process_executor_taskflow
+  PRIVATE
+  test
+)
+target_link_libraries(test_process_executor_taskflow
+  ${PROJECT_NAME}
+)
+
 ament_add_gtest(test_system_time_executor
   test_system_time_executor.cpp
 )

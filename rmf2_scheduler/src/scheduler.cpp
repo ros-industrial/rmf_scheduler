@@ -59,21 +59,21 @@ Scheduler::Scheduler(
   if (!optimizer_) {
     LOG_WARN(
       "No Optimizer set for Scheduler, "
-      "Scheduler doesn't optimize tasks."
+      "Scheduler will not optimize tasks."
     );
   }
 
   if (!estimator_) {
     LOG_WARN(
-      "No Estimator set for Scheduler, "
-      "Scheduler doesn't estimate events."
+      "No Estimator set for Scheduler,"
+      "Scheduler will not estimate events."
     );
   }
 
   if (!process_executor_) {
     LOG_WARN(
-      "No ProcessExecutor set for Scheduler, "
-      "No doesn't execute processes."
+      "No ProcessExecutor set for Scheduler,"
+      "Scheduler will not execute processes."
     );
   }
 
@@ -116,7 +116,7 @@ Scheduler::Scheduler(
   } else {
     LOG_WARN(
       "No TaskExecutorManager set for Scheduler, "
-      "No doesn't execute tasks."
+      "Scheduler will not execute tasks."
     );
   }
 

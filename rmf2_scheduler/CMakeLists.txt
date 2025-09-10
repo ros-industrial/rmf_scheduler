@@ -49,6 +49,7 @@ add_library(${PROJECT_NAME}
   src/http/transport_curl.cpp
   src/http/transport_fake.cpp
   src/log.cpp
+  src/process_executor_taskflow.cpp
   src/scheduler.cpp
   src/scheduler_options.cpp
   src/storage/schedule_stream.cpp

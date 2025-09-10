@@ -262,6 +262,11 @@ bool Graph::empty() const
   return nodes_.empty();
 }
 
+std::size_t Graph::size() const
+{
+  return nodes_.size();
+}
+
 void Graph::dump(std::ostream & oss) const
 {
   std::vector<std::string> edges;
