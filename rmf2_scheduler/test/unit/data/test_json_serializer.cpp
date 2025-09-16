@@ -456,7 +456,10 @@ TEST_F(TestJSONSerializer, process) {
     json empty_process_json =
       R"({
       "id": "",
-      "graph": []
+      "graph": [],
+      "status": "",
+      "current_events" : [],
+      "process_details" : null
     })"_json;
 
     // Serialize empty process
@@ -491,7 +494,10 @@ TEST_F(TestJSONSerializer, process) {
         ] },
         { "id": "node_3", "needs": [{ "id": "node_2", "type": "hard"}] },
         { "id": "node_4", "needs": [{ "id": "node_2", "type": "soft"}] }
-      ]
+      ],
+      "status": "",
+      "current_events" : [],
+      "process_details" : null
     })"_json;
 
     // Serialize full process
@@ -676,7 +682,10 @@ TEST_F(TestJSONSerializer, schedule_action)
             ]
           }
         ],
-        "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
+        "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
+        "status": "",
+        "current_events" : [],
+        "process_details" : null
       },
       "node_id": "node_5",
       "source_id": "node_4",

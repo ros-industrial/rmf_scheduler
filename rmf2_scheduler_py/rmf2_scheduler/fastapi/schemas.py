@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Set
 
 from fastapi._compat import PYDANTIC_V2
 from pydantic import BaseModel, Extra, UUID4
@@ -111,10 +111,15 @@ class ProcessCreate(ProcessBase):
 class ProcessUpdate(ProcessBase):
     class Config:
         extra = Extra.forbid
+    status: Optional[str]
+    current_events: List[str]
 
 
 class Process(ProcessBase):
     id: str  # noqa: A003
+    status: Optional[str] = ''
+    process_details: Optional[JsonValue] = None
+    current_events: List[str] = []
 
 
 class Schedule(BaseModel):
@@ -144,6 +149,7 @@ class ProcessPayload(ProcessBase):
         extra = Extra.forbid
 
     id: UUID4  # noqa: A003
+    process_details: Optional[JsonValue] = {}
 
 
 class ScheduleAction(BaseModel):

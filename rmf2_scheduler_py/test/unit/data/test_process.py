@@ -63,7 +63,11 @@ def test_process():
         {'id': 'task_5', 'needs': [{'id': 'task_3', 'type': 'hard'}]},
     ]
     assert process.graph.json() == expected_graph_json
-    expected_process_json = {'id': process.id, 'graph': expected_graph_json}
+    expected_process_json = {'id': process.id,
+                             'graph': expected_graph_json,
+                             'process_details': None,
+                             'status': '',
+                             'current_events': []}
     assert process.json() == expected_process_json
 
     duplicate_process = Process.from_json(expected_process_json)

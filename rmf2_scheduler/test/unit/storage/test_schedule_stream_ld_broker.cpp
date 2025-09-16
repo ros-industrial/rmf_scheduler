@@ -364,7 +364,10 @@ TEST_F(TestStorageScheduleStreamLDBroker, read_schedule_event_and_process) {
                     "type": "hard"
                   }
                 }
-              ]
+              ],
+              "status": "",
+              "current_events" : [],
+              "process_details" : null
             }
           },
           "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
@@ -550,7 +553,10 @@ TEST_F(
                     "type": "hard"
                   }
                 }
-              ]
+              ],
+              "status": "",
+              "current_events" : [],
+              "process_details" : null
             }
           },
           "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
@@ -913,7 +919,10 @@ TEST_F(
               ]
             }
           ],
-          "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
+          "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
+          "status": "",
+          "current_events" : [],
+          "process_details" : null
         }
       },
       "type": "urn:rmf2:process"
@@ -1150,7 +1159,10 @@ TEST_F(
               ]
             }
           ],
-          "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a"
+          "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
+          "status": "",
+          "current_events" : [],
+          "process_details" : null
         }
       },
       "type": "urn:rmf2:process"

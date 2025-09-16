@@ -194,12 +194,15 @@ class Node:
 class Process:
     """
     
-        Additional information for a Task
+        Additional information for a Process
         
     """
     __hash__: typing.ClassVar[None] = None
+    current_events: set[str]
     graph: Graph
     id: str
+    process_details: json
+    status: str
     @staticmethod
     def from_json(arg0: json) -> Process:
         ...

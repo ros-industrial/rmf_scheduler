@@ -17,7 +17,9 @@
 
 #include <memory>
 #include <string>
+#include <set>
 
+#include "nlohmann/json.hpp"
 #include "rmf2_scheduler/data/graph.hpp"
 #include "rmf2_scheduler/macros.hpp"
 
@@ -33,11 +35,17 @@ struct Process
 
   std::string id;
   Graph graph;
+  std::string status;
+  std::set<std::string> current_events;
+  nlohmann::json process_details;
 
   inline bool operator==(const Process & rhs) const
   {
     if (this->id != rhs.id) {return false;}
     if (this->graph != rhs.graph) {return false;}
+    if (this->status != rhs.status) {return false;}
+    if (this->current_events != rhs.current_events) {return false;}
+    if (this->process_details != rhs.process_details) {return false;}
     return true;
   }
 

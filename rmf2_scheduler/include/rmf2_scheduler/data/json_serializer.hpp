@@ -359,10 +359,26 @@ inline void from_json(
 }
 
 /// Process serializer
-RS_JSON_DEFINE(
+RS_JSON_DESERIALIZER_DEFINE_TYPE(
+  Process,
+  RS_JSON_DESERIALIZER_REQUIRED_MEMBERS(
+    id,
+    graph
+  )
+  RS_JSON_DESERIALIZER_OPTIONAL_MEMBERS(
+    status,
+    current_events,
+    process_details
+  )
+)
+
+RS_JSON_SERIALIZER_DEFINE_TYPE(
   Process,
   id,
-  graph
+  graph,
+  status,
+  current_events,
+  process_details
 )
 
 /// Occurrence serializer

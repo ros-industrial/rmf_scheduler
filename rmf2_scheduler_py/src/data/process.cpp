@@ -36,7 +36,7 @@ void init_process_py(py::module & m)
     m_data,
     "Process",
     R"(
-    Additional information for a Task
+    Additional information for a Process
     )"
   )
   .def(py::init<>())
@@ -47,6 +47,18 @@ void init_process_py(py::module & m)
   .def_readwrite(
     "graph",
     &Process::graph
+  )
+  .def_readwrite(
+    "status",
+    &Process::status
+  )
+  .def_readwrite(
+    "current_events",
+    &Process::current_events
+  )
+  .def_readwrite(
+    "process_details",
+    &Process::process_details
   )
   .def(py::self == py::self)
   .def(py::self != py::self)
