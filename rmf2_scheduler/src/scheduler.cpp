@@ -403,8 +403,6 @@ void Scheduler::_tick()
     current_time + options_->runtime_tick_period()
   );
 
-  std::unordered_set<std::string> process_ids_pushed;
-
   for (auto & task : tasks) {
     // Check if task is completed
     if (task->status == "completed" ||
@@ -430,7 +428,7 @@ void Scheduler::_tick()
       data::Process::ConstPtr process = static_cache_->get_process(*task->process_id);
 
       std::string error;
-      if (process_ids_pushed.find(process->id) != process_ids_pushed.end()) {
+      if (process_ids_pushed_.find(process->id) != process_ids_pushed_.end()) {
         LOG_DEBUG(
           "Process [%s] already pushed"
         );
@@ -475,7 +473,7 @@ void Scheduler::_tick()
         process->id.c_str()
       );
 
-      process_ids_pushed.emplace(process->id);
+      process_ids_pushed_.emplace(process->id);
       continue;
     }
 

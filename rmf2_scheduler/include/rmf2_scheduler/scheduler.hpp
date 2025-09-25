@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "rmf2_scheduler/storage/schedule_stream.hpp"
 #include "rmf2_scheduler/data/schedule_action.hpp"
@@ -180,6 +181,8 @@ private:
   mutable std::shared_mutex mtx_;
 
   data::Time next_tick_time_;
+
+  std::unordered_set<std::string> process_ids_pushed_;
 
   friend class LockedScheduleRO;
   friend class LockedScheduleRW;
