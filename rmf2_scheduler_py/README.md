@@ -10,7 +10,7 @@ When changes are made to the `rmf2_scheduler`'s `router` module or structs from 
 3. Remove the existing `openapi.json` file
 4. Regenerate the `openapi.json` file by calling `python3 ./script/dump_openapi.py` from this current directory i.e(rmf2_scheduler/rmf2_scheduler_py)
 5. Generate the stubs by calling `./script.generate_stubs.sh` from this directory.
-6. Call isort to reorder the imports of the regenerated stubs by calling `isort -dt --multi-line 3 ./rmf2_scheduler/*.pyi` from this directory
+6. Call isort to reorder the imports of the regenerated stubs by calling `isort -dt --multi-line 3 --ext pyi ./rmf2_scheduler/` from this directory
 
 ### Changes to tests
 Changes to the structs in `scheduler::data` would require changes to the tests in both `rmf2_scheduler` and `rmfs_scheduler_py` packages. Additionally, resources would need to be regenerated, for the test resources in `rmf2_scheduler/test/resources`.

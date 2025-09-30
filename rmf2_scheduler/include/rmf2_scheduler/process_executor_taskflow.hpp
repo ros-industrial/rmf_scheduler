@@ -56,7 +56,7 @@ public:
     std::shared_ptr<TaskExecutorManager> tem,
     unsigned int concurrency = std::thread::hardware_concurrency()
   )
-  : tem_(tem), concurrency_(concurrency) {}
+  : ProcessExecutor(), tem_(tem), concurrency_(concurrency) {}
 
   virtual ~TaskflowProcessExecutor();
 

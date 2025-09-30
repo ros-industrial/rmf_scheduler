@@ -16,9 +16,10 @@ from rmf2_scheduler.core import (
     SystemTimeExecutor,
     TaskExecutor,
     TaskExecutorManager,
+    TaskflowProcessExecutor,
     utils
 )
 
 from . import core
 
-__all__ = ['Estimator', 'ExecutorData', 'LockedScheduleRO', 'LockedScheduleRW', 'Optimizer', 'ProcessExecutor', 'Scheduler', 'SchedulerOptions', 'SystemTimeAction', 'SystemTimeExecutor', 'TaskExecutor', 'TaskExecutorManager', 'cache', 'core', 'data', 'storage', 'utils']
+__all__ = ['Estimator', 'ExecutorData', 'LockedScheduleRO', 'LockedScheduleRW', 'Optimizer', 'ProcessExecutor', 'Scheduler', 'SchedulerOptions', 'SystemTimeAction', 'SystemTimeExecutor', 'TaskExecutor', 'TaskExecutorManager', 'TaskflowProcessExecutor', 'cache', 'core', 'data', 'storage', 'utils']

@@ -5,7 +5,7 @@ import typing
 
 from . import cache, data, storage, utils
 
-__all__ = ['Estimator', 'ExecutorData', 'LockedScheduleRO', 'LockedScheduleRW', 'Optimizer', 'ProcessExecutor', 'Scheduler', 'SchedulerOptions', 'SystemTimeAction', 'SystemTimeExecutor', 'TaskExecutor', 'TaskExecutorManager', 'cache', 'data', 'storage', 'utils']
+__all__ = ['Estimator', 'ExecutorData', 'LockedScheduleRO', 'LockedScheduleRW', 'Optimizer', 'ProcessExecutor', 'Scheduler', 'SchedulerOptions', 'SystemTimeAction', 'SystemTimeExecutor', 'TaskExecutor', 'TaskExecutorManager', 'TaskflowProcessExecutor', 'cache', 'data', 'storage', 'utils']
 class Estimator:
     pass
 class ExecutorData:
@@ -160,4 +160,7 @@ class TaskExecutorManager:
     def unload(self, arg0: str) -> None:
         ...
     def update(self, arg0: str, arg1: data.Duration) -> None:
+        ...
+class TaskflowProcessExecutor(ProcessExecutor):
+    def __init__(self, tem: TaskExecutorManager, concurrency: int = 20) -> None:
         ...

@@ -9,6 +9,7 @@ find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(pybind11_json_vendor REQUIRED)
 find_package(pybind11_json REQUIRED)
+find_package(taskflow_vendor REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -43,6 +44,7 @@ pybind11_add_module(core
   src/data/schedule_change_record.cpp
   src/executor_data.cpp
   src/process_executor.cpp
+  src/process_executor_taskflow.cpp
   src/py_utils.cpp
   src/scheduler.cpp
   src/scheduler_options.cpp
@@ -58,6 +60,7 @@ target_link_libraries(core
   ${rmf2_scheduler_LIBRARIES}
   nlohmann_json::nlohmann_json
   pybind11_json
+  Taskflow::Taskflow
 )
 
 target_include_directories(core
