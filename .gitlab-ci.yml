@@ -80,3 +80,15 @@ sphinx-docs:
     paths:
       - docs/sphinx/build/html/
     expire_in: 1 day
+
+# Deploy docker jazzy image
+docker-jazzy:
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    # Login to registry
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+  script:
+    - docker build . -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
