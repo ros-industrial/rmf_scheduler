@@ -83,9 +83,9 @@ sphinx-docs:
 
 # Deploy docker jazzy image
 docker-jazzy:
-  image: docker:stable
+  image: docker:28.5.0
   services:
-    - docker:dind
+    - docker:28.5.0-dind
   before_script:
     # Login to registry
     - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
