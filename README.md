@@ -1,8 +1,8 @@
 # RMF2 Task Scheduler
 
-[![CI](https://github.com/ros-industrial/rmf_scheduler/actions/workflows/build.yml/badge.svg?branch=develop/v1)](https://github.com/ros-industrial/rmf_scheduler/actions/workflows/build.yml)
-[![doc](https://app.readthedocs.org/projects/rmf-scheduler/badge/?version=develop-v1)](https://app.readthedocs.org/projects/rmf-scheduler/)
-[![codecov](https://codecov.io/gh/ros-industrial/rmf_scheduler/branch/develop/v1/graph/badge.svg?token=pKmw3Ifwft)](https://codecov.io/gh/ros-industrial/rmf_scheduler)
+[![CI](https://github.com/ros-industrial/rmf_scheduler/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ros-industrial/rmf_scheduler/actions/workflows/build.yml)
+[![doc](https://app.readthedocs.org/projects/rmf-scheduler/badge/?version=main)](https://app.readthedocs.org/projects/rmf-scheduler/)
+[![codecov](https://codecov.io/gh/ros-industrial/rmf_scheduler/branch/main/graph/badge.svg?token=pKmw3Ifwft)](https://codecov.io/gh/ros-industrial/rmf_scheduler)
 
 [![support level: consortium / vendor](https://img.shields.io/badge/support%20level-consortium-brightgreen.svg)](http://rosindustrial.org/news/2016/10/7/better-supporting-a-growing-ros-industrial-software-platform)
 
@@ -17,7 +17,7 @@ Manages task schedules for RMF and RMF2.
 
 ## Documentation
 
-See the [documentation](https://rmf-scheduler.readthedocs.io/en/develop-v1) on how to use it
+See the [documentation](https://rmf-scheduler.readthedocs.io/en/main) on how to use it
 
 ## Quick Setup
 
@@ -33,7 +33,7 @@ Download the source code.
 
 ```bash
 cd src
-git clone https://github.com/ros-industrial/rmf_scheduler.git --branch develop/v1
+git clone https://github.com/ros-industrial/rmf_scheduler.git --branch main
 ```
 
 Install dependencies.
