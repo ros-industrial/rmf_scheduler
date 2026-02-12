@@ -20,11 +20,11 @@ Manages task schedules for Open-RMF.
 
 ## Documentation
 
-Refer to the [documentation](https://rmf-scheduler.readthedocs.io/) for usage instructions.
+Refer to the [documentation](https://rmf-scheduler.readthedocs.io/en/v0/) for usage instructions.
 
 ## Quick Setup
 
-Full setup instructions with Open-RMF can be found in the above documentation [Setup Instructions - RMF Setup](https://rmf-scheduler.readthedocs.io/en/latest/setup/rmf_setup.html).
+Full setup instructions with Open-RMF can be found in the above documentation [Setup Instructions - RMF Setup](https://rmf-scheduler.readthedocs.io/en/v0/setup/rmf_setup.html).
 
 Create a colcon workspace.
 
