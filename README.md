@@ -17,7 +17,7 @@ Manages task schedules for RMF and RMF2.
 
 ## Documentation
 
-See the [documentation](https://rmf-scheduler.readthedocs.io/en/main) on how to use it
+See the [documentation](https://rmf-scheduler.readthedocs.io/en/latest) on how to use it
 
 ## Quick Setup
 
@@ -33,7 +33,7 @@ Download the source code.
 
 ```bash
 cd src
-git clone https://github.com/ros-industrial/rmf_scheduler.git --branch main
+git clone https://github.com/ros-industrial/rmf_scheduler.git
 ```
 
 Install dependencies.
