@@ -9,7 +9,6 @@ find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(pybind11_json_vendor REQUIRED)
 find_package(pybind11_json REQUIRED)
-find_package(taskflow_vendor REQUIRED)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -60,7 +59,6 @@ target_link_libraries(core
   ${rmf2_scheduler_LIBRARIES}
   nlohmann_json::nlohmann_json
   pybind11_json
-  Taskflow::Taskflow
 )
 
 target_include_directories(core

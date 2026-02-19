@@ -27,24 +27,26 @@
 #include "rmf2_scheduler/process_executor.hpp"
 #include "rmf2_scheduler/task_executor_manager.hpp"
 
-#include <taskflow/taskflow.hpp>
+namespace tf
+{
+
+class Executor;
+class Taskflow;
+
+template<typename T>
+class Future;
+
+}  // namespace tf
 
 namespace rmf2_scheduler
 {
 
-struct TaskflowEntry
+struct TaskflowContext
 {
   data::Process::ConstPtr process;
-  std::shared_ptr<tf::Executor> tf_executor;
+  std::shared_ptr<tf::Executor> taskflow_executor;
   std::shared_ptr<tf::Taskflow> taskflow;
-  tf::Future<void> future;
-
-  TaskflowEntry(
-    const data::Process::ConstPtr & proc,
-    std::shared_ptr<tf::Executor> tf_exec,
-    std::shared_ptr<tf::Taskflow> tf
-  )
-  : process(proc), tf_executor(std::move(tf_exec)), taskflow(std::move(tf)) {}
+  std::shared_ptr<tf::Future<void>> future;
 };
 
 class TaskflowProcessExecutor : public ProcessExecutor
@@ -76,7 +78,7 @@ private:
 
   std::shared_ptr<TaskExecutorManager> tem_;
   unsigned int concurrency_;
-  std::unordered_map<std::string, std::shared_ptr<TaskflowEntry>> taskflows_;
+  std::unordered_map<std::string, std::shared_ptr<TaskflowContext>> context_map_;
   std::mutex mtx_;
 
   const std::unordered_map<std::string, data::Task::ConstPtr> task_vector_to_map(

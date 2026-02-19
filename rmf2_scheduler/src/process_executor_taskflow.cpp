@@ -15,6 +15,7 @@
 #include "rmf2_scheduler/log.hpp"
 #include "rmf2_scheduler/macros.hpp"
 #include "rmf2_scheduler/process_executor_taskflow.hpp"
+#include "taskflow/taskflow.hpp"
 
 namespace rmf2_scheduler
 {
@@ -68,12 +69,15 @@ bool TaskflowProcessExecutor::run_async(
   }
 
   // Begin running the taskflow
-  auto entry = std::make_shared<TaskflowEntry>(process, tf_executor, taskflow);
-  entry->future = tf_executor->run(*taskflow);
+  auto context = std::make_shared<TaskflowContext>();
+  context->process = process;
+  context->taskflow_executor = tf_executor;
+  context->taskflow = taskflow;
+  context->future = std::make_shared<tf::Future<void>>(tf_executor->run(*taskflow));
 
   {  // Lock
     std::lock_guard lk(mtx_);
-    taskflows_.insert({process->id, entry});
+    context_map_.emplace(process->id, context);
   }  // Unlock
 
   return true;
@@ -89,15 +93,15 @@ std::shared_future<void> TaskflowProcessExecutor::cancel(const std::string & pro
   {  // Lock
     std::lock_guard lk(mtx_);
 
-    auto taskflow_itr = taskflows_.find(process_id);
-    if (taskflow_itr == taskflows_.end()) {
+    auto taskflow_itr = context_map_.find(process_id);
+    if (taskflow_itr == context_map_.end()) {
       // Invalid process ID
       return std::shared_future<void>();
     }
 
     // Return shared_future
-    taskflow_itr->second->future.cancel();
-    return taskflow_itr->second->future.share();
+    taskflow_itr->second->future->cancel();
+    return taskflow_itr->second->future->share();
   }  // Unlock
 }
 
@@ -157,7 +161,7 @@ std::function<void()> TaskflowProcessExecutor::make_work_function(
 
              {  // Lock
                std::lock_guard lk(mtx_);
-               taskflows_.at(process_id)->future.cancel();
+               context_map_.at(process_id)->future->cancel();
              }  // Unlock
 
              return;
@@ -179,9 +183,9 @@ std::function<void()> TaskflowProcessExecutor::make_work_function(
 
 void TaskflowProcessExecutor::wait_for_all()
 {
-  for (auto taskflow : taskflows_) {
-    if (taskflow.second->future.valid()) {
-      taskflow.second->future.get();
+  for (auto context : context_map_) {
+    if (context.second->future->valid()) {
+      context.second->future->get();
     }
   }
 }
