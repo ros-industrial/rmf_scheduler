@@ -18,7 +18,9 @@
 #include <fstream>
 #include <filesystem>
 
-#include "rmf2_scheduler/cache/action.hpp"
+#include "rmf2_scheduler/cache/schedule_cache.hpp"
+#include "rmf2_scheduler/cache/task_handler.hpp"
+#include "rmf2_scheduler/cache/process_handler.hpp"
 #include "rmf2_scheduler/data/json_serializer.hpp"
 #include "rmf2_scheduler/data/uuid.hpp"
 #include "rmf2_scheduler/storage/schedule_stream_simple.hpp"
@@ -151,20 +153,6 @@ bool ScheduleStream::read_schedule(
     time_window.end
   );
 
-  // Add tasks to cache
-  for (const auto & task : tasks) {
-    auto task_action = cache::Action::create(
-      data::action_type::TASK_ADD,
-      cache::ActionPayload().task(task)
-    );
-
-    if (task_action->validate(schedule_cache, error)) {
-      task_action->apply();
-    } else {
-      return false;
-    }
-  }
-
   // Retrieve relevant process to read
   std::unordered_set<std::string> query_process_ids;
   query_process_ids.reserve(tasks.size());
@@ -198,32 +186,33 @@ bool ScheduleStream::read_schedule(
     extra_tasks.push_back(backup_schedule->get_task(event_id));
   }
 
-  // Add extra tasks to cache
-  for (const auto & task : extra_tasks) {
-    auto task_action = cache::Action::create(
-      data::action_type::TASK_ADD,
-      cache::ActionPayload().task(task)
-    );
+  // Create handlers for direct cache manipulation
+  auto task_handler = schedule_cache->make_task_handler(
+    cache::ScheduleCache::TaskRestricted{});
+  auto process_handler = schedule_cache->make_process_handler(
+    cache::ScheduleCache::ProcessRestricted{});
 
-    if (task_action->validate(schedule_cache, error)) {
-      task_action->apply();
-    } else {
-      return false;
-    }
+  // Add tasks to cache
+  for (const auto & task : tasks) {
+    auto task_copy = data::Task::make_shared(*task);
+    task_handler->emplace(task_copy);
   }
 
-  // Add process to cache
-  for (const auto & process : processes) {
-    auto process_action = cache::Action::create(
-      data::action_type::PROCESS_ADD,
-      cache::ActionPayload().process(process)
-    );
-
-    if (process_action->validate(schedule_cache, error)) {
-      process_action->apply();
-    } else {
-      return false;
+  // Add extra tasks to cache
+  for (const auto & task : extra_tasks) {
+    cache::TaskHandler::TaskIterator itr;
+    // if extra tasks are already found skip
+    if (task_handler->find(task->id, itr)) {
+      continue;
     }
+    auto task_copy = data::Task::make_shared(*task);
+    task_handler->emplace(task_copy);
+  }
+
+  // Add processes to cache
+  for (const auto & process : processes) {
+    auto process_copy = data::Process::make_shared(*process);
+    process_handler->emplace(process_copy);
   }
 
   return true;
@@ -268,50 +257,32 @@ bool ScheduleStream::write_schedule(
     processes.push_back(schedule_cache->get_process(process_id));
   }
 
-  std::vector<cache::Action::Ptr> cache_actions;
+  // Create handlers for direct cache manipulation
+  auto task_handler = backup_schedule->make_task_handler(
+    cache::ScheduleCache::TaskRestricted{});
+  auto process_handler = backup_schedule->make_process_handler(
+    cache::ScheduleCache::ProcessRestricted{});
 
-  // Prepare task actions
-  for (auto & task : tasks) {
-    if (backup_schedule->has_task(task->id)) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::TASK_UPDATE,
-          cache::ActionPayload().task(task)
-      ));
+  // Apply task changes
+  for (const auto & task : tasks) {
+    auto task_copy = data::Task::make_shared(*task);
+    cache::TaskHandler::TaskIterator itr;
+    if (task_handler->find(task->id, itr)) {
+      task_handler->replace(itr, task_copy);
     } else {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::TASK_ADD,
-          cache::ActionPayload().task(task)
-      ));
+      task_handler->emplace(task_copy);
     }
   }
 
-  // Prepare process actions
-  for (auto & process : processes) {
-    if (backup_schedule->has_process(process->id)) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::PROCESS_UPDATE,
-          cache::ActionPayload().process(process)
-      ));
+  // Apply process changes
+  for (const auto & process : processes) {
+    auto process_copy = data::Process::make_shared(*process);
+    cache::ProcessHandler::ProcessIterator itr;
+    if (process_handler->find(process->id, itr)) {
+      process_handler->replace(itr, process_copy);
     } else {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::PROCESS_ADD,
-          cache::ActionPayload().process(process)
-      ));
+      process_handler->emplace(process_copy);
     }
-  }
-
-  // TODO(Briancbn): series
-
-  // Apply the Cache actions
-  for (auto & action : cache_actions) {
-    if (!action->validate(backup_schedule, error)) {
-      return false;
-    }
-    action->apply();
   }
 
   _write_schedule_to_backup(backup_schedule);
@@ -337,74 +308,48 @@ bool ScheduleStream::write_schedule(
   // Squash the changes
   auto squashed_action = data::ScheduleChangeRecord::squash(change_actions);
 
-  std::vector<cache::Action::Ptr> cache_actions;
+  // Create handlers for direct cache manipulation
+  auto task_handler = backup_schedule->make_task_handler(
+    cache::ScheduleCache::TaskRestricted{});
+  auto process_handler = backup_schedule->make_process_handler(
+    cache::ScheduleCache::ProcessRestricted{});
 
-  // Prepare task actions
-  for (auto & change_action : squashed_action.get(data::record_data_type::TASK)) {
+  // Apply task changes
+  for (const auto & change_action : squashed_action.get(data::record_data_type::TASK)) {
     if (change_action.action == data::record_action_type::ADD) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::TASK_ADD,
-          cache::ActionPayload().task(
-            cache->get_task(change_action.id)
-          )
-      ));
+      auto task_copy = data::Task::make_shared(*cache->get_task(change_action.id));
+      task_handler->emplace(task_copy);
     } else if (change_action.action == data::record_action_type::UPDATE) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::TASK_UPDATE,
-          cache::ActionPayload().task(
-            cache->get_task(change_action.id)
-          )
-      ));
+      auto task_copy = data::Task::make_shared(*cache->get_task(change_action.id));
+      cache::TaskHandler::TaskIterator itr;
+      if (task_handler->find(change_action.id, itr)) {
+        task_handler->replace(itr, task_copy);
+      }
     } else if (change_action.action == data::record_action_type::DELETE) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::TASK_DELETE,
-          cache::ActionPayload().id(change_action.id)
-      ));
-    } else {
-      assert(false);
+      cache::TaskHandler::TaskIterator itr;
+      if (task_handler->find(change_action.id, itr)) {
+        task_handler->erase(itr);
+      }
     }
   }
 
-  // Prepare process actions
-  for (auto & change_action : squashed_action.get(data::record_data_type::PROCESS)) {
+  // Apply process changes
+  for (const auto & change_action : squashed_action.get(data::record_data_type::PROCESS)) {
     if (change_action.action == data::record_action_type::ADD) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::PROCESS_ADD,
-          cache::ActionPayload().process(
-            cache->get_process(change_action.id)
-          )
-      ));
+      auto process_copy = data::Process::make_shared(*cache->get_process(change_action.id));
+      process_handler->emplace(process_copy);
     } else if (change_action.action == data::record_action_type::UPDATE) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::PROCESS_UPDATE,
-          cache::ActionPayload().process(
-            cache->get_process(change_action.id)
-          )
-      ));
+      auto process_copy = data::Process::make_shared(*cache->get_process(change_action.id));
+      cache::ProcessHandler::ProcessIterator itr;
+      if (process_handler->find(change_action.id, itr)) {
+        process_handler->replace(itr, process_copy);
+      }
     } else if (change_action.action == data::record_action_type::DELETE) {
-      cache_actions.push_back(
-        cache::Action::create(
-          data::action_type::PROCESS_DELETE,
-          cache::ActionPayload().id(change_action.id)
-      ));
-    } else {
-      assert(false);
+      cache::ProcessHandler::ProcessIterator itr;
+      if (process_handler->find(change_action.id, itr)) {
+        process_handler->erase(itr);
+      }
     }
-  }
-
-  // TODO(Briancbn): series
-
-  // Apply the Cache actions
-  for (auto & action : cache_actions) {
-    if (!action->validate(backup_schedule, error)) {
-      return false;
-    }
-    action->apply();
   }
 
   _write_schedule_to_backup(backup_schedule);
@@ -502,33 +447,20 @@ bool ScheduleStream::_load_backup(
     }
   }
 
-  std::vector<cache::Action::Ptr> cache_actions;
+  // Create handlers for direct cache manipulation
+  auto task_handler = schedule->make_task_handler(
+    cache::ScheduleCache::TaskRestricted{});
+  auto process_handler = schedule->make_process_handler(
+    cache::ScheduleCache::ProcessRestricted{});
 
-  // Prepare task actions
+  // Add tasks to cache
   for (auto & task : tasks) {
-    cache_actions.push_back(
-      cache::Action::create(
-        data::action_type::TASK_ADD,
-        cache::ActionPayload().task(task)
-    ));
+    task_handler->emplace(task);
   }
-  // Prepare process actions
+
+  // Add processes to cache
   for (auto & process : processes) {
-    cache_actions.push_back(
-      cache::Action::create(
-        data::action_type::PROCESS_ADD,
-        cache::ActionPayload().process(process)
-    ));
-  }
-
-  // TODO(Briancbn): series
-
-  // Apply the Cache actions
-  for (auto & action : cache_actions) {
-    if (!action->validate(schedule, error)) {
-      return false;
-    }
-    action->apply();
+    process_handler->emplace(process);
   }
 
   return true;
@@ -536,7 +468,7 @@ bool ScheduleStream::_load_backup(
 
 void ScheduleStream::_write_schedule_to_backup(cache::ScheduleCache::ConstPtr schedule)
 {
-  // Serialize the tasks
+  // Serialize the tasks and processes
   auto tasks = schedule->get_all_tasks();
   auto processes = schedule->get_all_processes();
 

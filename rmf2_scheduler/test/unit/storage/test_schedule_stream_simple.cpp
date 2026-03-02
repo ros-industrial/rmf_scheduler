@@ -463,3 +463,270 @@ TEST_F(TestStorageScheduleStreamSimple, write_schedule_record) {
     )
   );
 }
+
+TEST_F(TestStorageScheduleStreamSimple, write_schedule_record_delete_process) {
+  using namespace rmf2_scheduler::cache;  // NOLINT(build/namespaces)
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+  using namespace rmf2_scheduler::storage;  // NOLINT(build/namespaces)
+
+  std::string backup_folder_path = generate_backup_folder_path();
+  ScheduleStream::Ptr schedule_stream = std::make_shared<simple::ScheduleStream>(
+    5,
+    backup_folder_path
+  );
+
+  auto schedule_cache = ScheduleCache::make_shared();
+
+  // Add tasks and process
+  Task::Ptr task1 = std::make_shared<Task>();
+  task1->id = "task_1";
+  task1->type = "task_type";
+  task1->start_time = Time::from_ISOtime("2025-01-22T02:15:00Z");
+  task1->status = "ongoing";
+
+  Task::Ptr task2 = std::make_shared<Task>();
+  task2->id = "task_2";
+  task2->type = "task_type";
+  task2->start_time = Time::from_ISOtime("2025-01-22T04:15:00Z");
+  task2->status = "ongoing";
+
+  Task::Ptr task3 = std::make_shared<Task>();
+  task3->id = "task_3";
+  task3->type = "task_type";
+  task3->start_time = Time::from_ISOtime("2025-01-24T04:15:00Z");  // not in range
+  task3->status = "ongoing";
+
+  Process::Ptr process = std::make_shared<Process>();
+  process->id = "process_1";
+  process->graph.add_node("task_1");
+  process->graph.add_node("task_2");
+  process->graph.add_edge(
+    "task_1",
+    "task_2"
+  );
+
+  // Add tasks and process
+  Task::Ptr task4 = std::make_shared<Task>();
+  task4->id = "task_4";
+  task4->type = "task_type";
+  task4->start_time = Time::from_ISOtime("2025-01-22T02:15:00Z");
+  task4->status = "ongoing";
+
+  Task::Ptr task5 = std::make_shared<Task>();
+  task5->id = "task_5";
+  task5->type = "task_type";
+  task5->start_time = Time::from_ISOtime("2025-01-22T04:15:00Z");
+  task5->status = "ongoing";
+
+  Task::Ptr task6 = std::make_shared<Task>();
+  task6->id = "task_6";
+  task6->type = "task_type";
+  task6->start_time = Time::from_ISOtime("2025-01-24T04:15:00Z");  // not in range
+  task6->status = "ongoing";
+
+  std::vector<Task::Ptr> tasks {task1, task2, task3, task4, task5, task6};
+
+  Process::Ptr process2 = std::make_shared<Process>();
+  process2->id = "process_2";
+  process2->graph.add_node("task_4");
+  process2->graph.add_node("task_5");
+  process2->graph.add_edge(
+    "task_4",
+    "task_5"
+  );
+
+  std::vector<Process::Ptr> processes{process, process2};
+  std::vector<ScheduleChangeRecord> records;
+  std::string error;
+
+  for (auto & task : tasks) {
+    auto cache_action = Action::create(
+      action_type::TASK_ADD,
+      ActionPayload().task(task)
+    );
+
+    ASSERT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+    records.push_back(cache_action->record());
+  }
+
+  for (auto & process : processes) {
+    auto cache_action = Action::create(
+      action_type::PROCESS_ADD,
+      ActionPayload().process(process)
+    );
+
+    EXPECT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+    records.push_back(cache_action->record());
+  }
+
+  TimeWindow time_window;
+  time_window.start = Time::from_ISOtime("2025-01-21T10:00:00Z");
+  time_window.end = Time::from_ISOtime("2025-01-22T10:00:00Z");
+
+  EXPECT_TRUE(
+    schedule_stream->write_schedule(
+      schedule_cache,
+      records,
+      error
+  ));
+
+  // Delete all processes
+  records.clear();
+  for (auto & process : processes) {
+    auto cache_action = Action::create(
+      action_type::PROCESS_DELETE_ALL,
+      ActionPayload().id(process->id)
+    );
+    EXPECT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+    records.push_back(cache_action->record());
+  }
+
+  EXPECT_TRUE(
+    schedule_stream->write_schedule(
+      schedule_cache,
+      records,
+      error
+  ));
+
+  // Check newly generated schedule matches the sample
+  EXPECT_TRUE(
+    compare_backups(
+      backup_folder_path,
+      get_sample_folder_path("write-schedule-record-delete-process")
+    )
+  );
+}
+
+TEST_F(TestStorageScheduleStreamSimple, write_schedule_time_window_delete_process) {
+  using namespace rmf2_scheduler::cache;  // NOLINT(build/namespaces)
+  using namespace rmf2_scheduler::data;  // NOLINT(build/namespaces)
+  using namespace rmf2_scheduler::storage;  // NOLINT(build/namespaces)
+
+  std::string backup_folder_path = generate_backup_folder_path();
+  ScheduleStream::Ptr schedule_stream = std::make_shared<simple::ScheduleStream>(
+    5,
+    backup_folder_path
+  );
+
+  auto schedule_cache = ScheduleCache::make_shared();
+
+  // Add tasks and process
+  Task::Ptr task1 = std::make_shared<Task>();
+  task1->id = "task_1";
+  task1->type = "task_type";
+  task1->start_time = Time::from_ISOtime("2025-01-22T02:15:00Z");
+  task1->status = "ongoing";
+
+  Task::Ptr task2 = std::make_shared<Task>();
+  task2->id = "task_2";
+  task2->type = "task_type";
+  task2->start_time = Time::from_ISOtime("2025-01-22T04:15:00Z");
+  task2->status = "ongoing";
+
+  Task::Ptr task3 = std::make_shared<Task>();
+  task3->id = "task_3";
+  task3->type = "task_type";
+  task3->start_time = Time::from_ISOtime("2025-01-24T04:15:00Z");  // not in range
+  task3->status = "ongoing";
+
+  Process::Ptr process = std::make_shared<Process>();
+  process->id = "process_1";
+  process->graph.add_node("task_1");
+  process->graph.add_node("task_2");
+  process->graph.add_edge(
+    "task_1",
+    "task_2"
+  );
+
+  // Add tasks and process
+  Task::Ptr task4 = std::make_shared<Task>();
+  task4->id = "task_4";
+  task4->type = "task_type";
+  task4->start_time = Time::from_ISOtime("2025-01-22T02:15:00Z");
+  task4->status = "ongoing";
+
+  Task::Ptr task5 = std::make_shared<Task>();
+  task5->id = "task_5";
+  task5->type = "task_type";
+  task5->start_time = Time::from_ISOtime("2025-01-22T04:15:00Z");
+  task5->status = "ongoing";
+
+  Task::Ptr task6 = std::make_shared<Task>();
+  task6->id = "task_6";
+  task6->type = "task_type";
+  task6->start_time = Time::from_ISOtime("2025-01-24T04:15:00Z");  // not in range
+  task6->status = "ongoing";
+
+  std::vector<Task::Ptr> tasks {task1, task2, task3, task4, task5, task6};
+
+  Process::Ptr process2 = std::make_shared<Process>();
+  process2->id = "process_2";
+  process2->graph.add_node("task_4");
+  process2->graph.add_node("task_5");
+  process2->graph.add_edge(
+    "task_4",
+    "task_5"
+  );
+
+  std::vector<Process::Ptr> processes{process, process2};
+  std::string error;
+
+  for (auto & task : tasks) {
+    auto cache_action = Action::create(
+      action_type::TASK_ADD,
+      ActionPayload().task(task)
+    );
+
+    ASSERT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+  }
+
+  for (auto & process : processes) {
+    auto cache_action = Action::create(
+      action_type::PROCESS_ADD,
+      ActionPayload().process(process)
+    );
+
+    EXPECT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+  }
+
+  TimeWindow time_window;
+  time_window.start = Time::from_ISOtime("2025-01-21T10:00:00Z");
+  time_window.end = Time::from_ISOtime("2025-01-22T10:00:00Z");
+
+  EXPECT_TRUE(
+    schedule_stream->write_schedule(
+      schedule_cache,
+      time_window,
+      error
+  ));
+
+  // Delete all processes
+  for (auto & process : processes) {
+    auto cache_action = Action::create(
+      action_type::PROCESS_DELETE_ALL,
+      ActionPayload().id(process->id)
+    );
+    EXPECT_TRUE(cache_action->validate(schedule_cache, error));
+    cache_action->apply();
+  }
+
+  EXPECT_TRUE(
+    schedule_stream->write_schedule(
+      schedule_cache,
+      time_window,
+      error
+  ));
+
+  // Check newly generated schedule matches the sample
+  EXPECT_TRUE(
+    compare_backups(
+      backup_folder_path,
+      get_sample_folder_path("write-schedule-time-window-delete-process")
+    )
+  );
+}

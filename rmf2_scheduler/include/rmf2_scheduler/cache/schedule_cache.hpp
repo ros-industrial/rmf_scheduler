@@ -32,12 +32,19 @@
 namespace rmf2_scheduler
 {
 
+namespace storage
+{
+namespace simple
+{
+class ScheduleStream;
+}  // namespace simple
+}  // namespace storage
+
 namespace cache
 {
 
 class TaskHandler;
 class ProcessHandler;
-class SeriesHandler;
 
 class ScheduleCache : public std::enable_shared_from_this<ScheduleCache>
 {
@@ -142,6 +149,7 @@ private:
   friend class TaskAction;
   friend class ProcessAction;
   friend class TestScheduleCache;
+  friend class storage::simple::ScheduleStream;
 };
 
 class ScheduleCache::ProcessRestricted
@@ -152,6 +160,7 @@ private:
 
   friend class ProcessAction;
   friend class TestScheduleCache;
+  friend class storage::simple::ScheduleStream;
 };
 
 }  // namespace cache

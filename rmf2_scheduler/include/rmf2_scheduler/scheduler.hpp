@@ -99,7 +99,7 @@ public:
     int limit,
     std::vector<data::Task::ConstPtr> & tasks,
     std::vector<data::Process::ConstPtr> & processes,
-    std::vector<data::Series::ConstPtr> & serieses,
+    std::vector<data::Series::ConstPtr> & /*serieses*/,
     std::string & error
   );
 
