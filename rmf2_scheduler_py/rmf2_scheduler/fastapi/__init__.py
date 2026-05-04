@@ -15,7 +15,7 @@
 
 from fastapi import APIRouter
 
-from .endpoints import events, processes, schedule, schedule_legacy, tasks
+from .endpoints import events, processes, schedule, schedule_legacy, series, tasks
 
 scheduler_api_router = APIRouter()
 scheduler_api_router.include_router(
@@ -24,6 +24,9 @@ scheduler_api_router.include_router(
 scheduler_api_router.include_router(tasks.router, prefix='/tasks', tags=['Task'])
 scheduler_api_router.include_router(
     processes.router, prefix='/processes', tags=['Process']
+)
+scheduler_api_router.include_router(
+    series.router, prefix='/series', tags=['Series']
 )
 scheduler_api_router.include_router(
     schedule_legacy.router, prefix='/schedule_legacy', tags=['[Legacy] Schedule']

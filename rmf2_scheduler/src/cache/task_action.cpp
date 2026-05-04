@@ -160,13 +160,15 @@ bool TaskAction::_validate_task_update(
   // Don't allow setting series and process ID through TASK_UPDATE
   auto old_task = task_itr_->second;
   if (task->series_id != old_task->series_id) {
-    error = "TASK_UPDATE warning, task [" + task->id + "]'s new series_id is ignored.";
+    error = "TASK_UPDATE warning, task [" + task->id + "]'s new series_id update is not allowed.";
     task->series_id = old_task->series_id;
+    return false;
   }
 
   if (task->process_id != old_task->process_id) {
-    error = "TASK_UPDATE warning, task [" + task->id + "]'s new process_id is ignored.";
+    error = "TASK_UPDATE warning, task [" + task->id + "]'s new process_id update is not allowed.";
     task->process_id = old_task->process_id;
+    return false;
   }
 
   return true;

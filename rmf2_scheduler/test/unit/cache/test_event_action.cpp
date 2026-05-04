@@ -17,6 +17,7 @@
 #include "rmf2_scheduler/cache/event_action.hpp"
 #include "rmf2_scheduler/cache/process_handler.hpp"
 #include "rmf2_scheduler/cache/schedule_cache.hpp"
+#include "../../utils/gtest_macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -413,6 +414,8 @@ TEST_F(TestCacheEventAction, event_update) {
   {  // Isolated event, series ID warning and removal
     ScheduleCache::Ptr schedule_cache = TestScheduleCache::create_preset_cache1();
 
+    const auto original_event = schedule_cache->get_event("isolated_event_1");
+
     // Create event with series ID
     auto event_to_update = std::make_shared<Event>(
       "isolated_event_1",
@@ -428,23 +431,24 @@ TEST_F(TestCacheEventAction, event_update) {
 
     // Validate
     std::string warning;
-    EXPECT_TRUE(event_action.validate(schedule_cache, warning));
+    EXPECT_FALSE(event_action.validate(schedule_cache, warning));
     EXPECT_EQ(
       warning,
-      "EVENT_UPDATE warning, event [isolated_event_1]'s new series_id is ignored."
+      "EVENT_UPDATE warning, event [isolated_event_1] is part of a series"
+      " changing series id is not allowed."
     );
 
     // Apply
-    event_action.apply();
+    EXPECT_THROW_EQ(
+      event_action.apply(),
+      std::runtime_error("Action invalid!"));
 
     // Check updateded event
     event_to_update->series_id.reset();
-    EXPECT_EQ(*schedule_cache->get_event("isolated_event_1"), *event_to_update);
+    EXPECT_EQ(*schedule_cache->get_event("isolated_event_1"), *original_event);
 
     // Check record
-    std::vector<ChangeAction> expected_record {
-      {"isolated_event_1", "update"},
-    };
+    std::vector<ChangeAction> expected_record {};
     EXPECT_EQ(
       event_action.record().get("event"),
       expected_record

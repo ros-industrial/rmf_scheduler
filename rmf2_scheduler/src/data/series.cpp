@@ -178,6 +178,77 @@ Occurrence Series::get_occurrence(const std::string & id) const
   );
 }
 
+std::optional<Occurrence> Series::get_prev_occurrence(const std::string & id) const
+{
+  for (auto itr = occurrence_lookup_.begin(); itr != occurrence_lookup_.end(); ++itr) {
+    if (itr->second == id) {
+      // There is no previous occurrence
+      if (itr == occurrence_lookup_.begin()) {
+        return {};
+      }
+      auto prev_itr = std::prev(itr);
+      return Occurrence{prev_itr->first, prev_itr->second};
+    }
+  }
+  throw std::out_of_range(
+          "Series get_occurrence failed, ID "
+          "[" + id + "] doesn't exist."
+  );
+}
+
+std::optional<Occurrence> Series::get_prev_occurrence(const Time & time) const
+{
+  auto itr = occurrence_lookup_.find(time.nanoseconds());
+  if (itr == occurrence_lookup_.end()) {
+    throw std::out_of_range(
+            "Series get_occurrence failed, time "
+            "[" + std::string(time.to_localtime()) + "] doesn't exist."
+    );
+  } else {
+    if (itr == occurrence_lookup_.begin()) {
+      return {};
+    }
+    auto prev_itr = std::prev(itr);
+    return Occurrence{prev_itr->first, prev_itr->second};
+  }
+}
+
+std::optional<Occurrence> Series::get_next_occurrence(const std::string & id) const
+{
+  for (auto itr = occurrence_lookup_.begin(); itr != occurrence_lookup_.end(); ++itr) {
+    if (itr->second == id) {
+      // There is no next occurrence (this is the last)
+      if (itr == std::prev(occurrence_lookup_.end())) {
+        return {};
+      }
+      auto next_itr = std::next(itr);
+      return Occurrence{next_itr->first, next_itr->second};
+    }
+  }
+  throw std::out_of_range(
+          "Series get_occurrence failed, ID "
+          "[" + id + "] doesn't exist."
+  );
+}
+
+std::optional<Occurrence> Series::get_next_occurrence(const Time & time) const
+{
+  auto itr = occurrence_lookup_.find(time.nanoseconds());
+  if (itr == occurrence_lookup_.end()) {
+    throw std::out_of_range(
+            "Series get_occurrence failed, time "
+            "[" + std::string(time.to_localtime()) + "] doesn't exist."
+    );
+  } else {
+    if (itr == std::prev(occurrence_lookup_.end())) {
+      return {};
+    }
+    auto next_itr = std::next(itr);
+    return Occurrence{next_itr->first, next_itr->second};
+  }
+}
+
+
 Occurrence Series::get_last_occurrence() const
 {
   if (!*this) {
@@ -269,6 +340,24 @@ std::vector<Occurrence> Series::expand_until(const Time & time)
   }
 
   return result;
+}
+
+std::vector<Occurrence> Series::expand_another(const uint64_t num)
+{
+  if (num == 0) {
+    return {};
+  }
+
+  ScopedTimezone scoped_tz(tz_.c_str());
+
+  auto last_itr = occurrence_lookup_.rbegin();
+  time_t until_time_s = Time(last_itr->first).seconds();
+
+  for (uint64_t i = 0; i < num; i++) {
+    until_time_s = cron::cron_next(*cron_, until_time_s);
+  }
+
+  return expand_until(Time(until_time_s, 0));
 }
 
 void Series::update_id(const std::string & new_id)
@@ -473,6 +562,24 @@ void Series::delete_occurrence(const Time & time)
     observer->on_delete_occurrence(
       Occurrence{time, occurrence_id});
   }
+}
+
+void Series::delete_occurrence(const std::string & id)
+{
+  for (auto & itr : occurrence_lookup_) {
+    if (itr.second == id) {
+      _safe_delete(itr.first);
+      for (auto & observer : observers_) {
+        observer->on_delete_occurrence(
+          Occurrence{itr.first, itr.second});
+      }
+      return;
+    }
+  }
+  throw std::out_of_range(
+          "Series get_occurrence failed, ID "
+          "[" + id + "] doesn't exist."
+  );
 }
 
 bool Series::_validate_time(

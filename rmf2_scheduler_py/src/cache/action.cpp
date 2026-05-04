@@ -76,6 +76,26 @@ void init_action_py(py::module & m)
     "data",
     &ActionPayload::data
   )
+  .def(
+    "series",
+    &ActionPayload::series
+  )
+  .def(
+    "until",
+    &ActionPayload::until
+  )
+  .def(
+    "cron",
+    &ActionPayload::cron
+  )
+  .def(
+    "occurrence_id",
+    &ActionPayload::occurrence_id
+  )
+  .def(
+    "occurrence_time",
+    &ActionPayload::occurrence_time
+  )
   ;
 
   // Action

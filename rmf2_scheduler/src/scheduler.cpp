@@ -415,6 +415,11 @@ void Scheduler::_tick()
       continue;
     }
 
+    if (task_ids_pushed_.find(task->id) != task_ids_pushed_.end()) {
+      LOG_DEBUG("Skipping task [%s] - %s.", task->id.c_str(), task->status.c_str());
+      continue;
+    }
+
     // Check if task belong to a process
     if (task->process_id.has_value()) {
       if (!process_executor_) {
@@ -507,6 +512,7 @@ void Scheduler::_tick()
         }
       };
     system_time_executor_->add_action(run_task_action);
+    task_ids_pushed_.insert(task->id);
   }
 }
 

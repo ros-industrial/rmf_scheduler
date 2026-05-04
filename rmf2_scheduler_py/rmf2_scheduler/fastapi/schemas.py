@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Literal, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from fastapi._compat import PYDANTIC_V2
 from pydantic import BaseModel, Extra, UUID4
@@ -118,6 +118,7 @@ class ProcessUpdate(ProcessBase):
 class Process(ProcessBase):
     id: str  # noqa: A003
     status: Optional[str] = ''
+    series_id: Optional[str] = ''
     process_details: Optional[JsonValue] = None
     current_events: List[str] = []
 
@@ -152,6 +153,58 @@ class ProcessPayload(ProcessBase):
     process_details: Optional[JsonValue] = {}
 
 
+class Occurrence(BaseModel):
+    id: str  # noqa: A003
+    time: datetime
+
+
+class SeriesBase(BaseModel):
+    type: str  # noqa: A003
+    cron: str  # noqa: A003
+    timezone: str  # noqa: A003
+    until: Optional[datetime] = None
+
+
+class Series(SeriesBase):
+    class Config:
+        extra = Extra.forbid
+
+    occurrences: List[Occurrence]
+    exception_ids: Optional[List[str]] = []
+    id: UUID4  # noqa: A003
+
+
+class SeriesPayload(SeriesBase):
+    id: UUID4  # noqa: A003
+    occurrences: List[Occurrence]
+
+
+class SeriesCreate(SeriesPayload):
+    class Config:
+        extra = Extra.forbid
+
+
+# Series helper classes
+class SeriesExpandUntil(BaseModel):
+    series_id: str  # noqa: A003
+
+
+class SeriesUpdateCron(BaseModel):
+    series_id: str  # noqa: A003
+    cron_string: str  # noqa: A003
+
+
+class SeriesUpdateOccurrenceTime(BaseModel):
+    series_id: str  # noqa: A003
+    occurrence_id: str  # noqa: A003
+    time: datetime
+
+
+class SeriesDeleteOccurrence(BaseModel):
+    series_id: str  # noqa: A003
+    occurrence_id: str  # noqa: A003
+
+
 class ScheduleAction(BaseModel):
     class Config:
         extra = Extra.forbid
@@ -166,9 +219,15 @@ class ScheduleAction(BaseModel):
     source_id: Optional[str] = None
     destination_id: Optional[str] = None
     edge_type: Optional[str] = None
+    series_add: Optional[SeriesPayload] = None
+    series_expand_until: Optional[SeriesExpandUntil] = None
+    series_update_cron: Optional[SeriesUpdateCron] = None
+    series_update_occurrence_time: Optional[SeriesUpdateOccurrenceTime] = None
+    series_delete_occurrence: Optional[SeriesDeleteOccurrence] = None
+    series_delete: Optional[str] = None
 
 
 class Message(BaseModel):
     """Schema for Message."""
 
-    message: str
+    message: str  # noqa: A003

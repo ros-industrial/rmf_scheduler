@@ -15,6 +15,7 @@
 #include "rmf2_scheduler/cache/action.hpp"
 #include "rmf2_scheduler/cache/event_action.hpp"
 #include "rmf2_scheduler/cache/task_action.hpp"
+#include "rmf2_scheduler/cache/series_action.hpp"
 #include "rmf2_scheduler/cache/process_action.hpp"
 
 namespace rmf2_scheduler
@@ -34,6 +35,8 @@ std::shared_ptr<Action> Action::create(
     return TaskAction::make_shared(type, payload);
   } else if (type.find(data::action_type::PROCESS_PREFIX) == 0) {
     return ProcessAction::make_shared(type, payload);
+  } else if (type.find(data::action_type::SERIES_PREFIX) == 0) {
+    return SeriesAction::make_shared(type, payload);
   } else {
     throw std::runtime_error("Invalid action type");
   }

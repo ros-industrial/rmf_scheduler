@@ -139,6 +139,7 @@ def batch_edit_schedule(
 ) -> Message:
     cache_actions = []
     for action in actions:
+        print(action.json())
         action_j = action.model_dump(mode='json')
         if 'task' in action_j and action_j['task']:
             action_j['task']['status'] = ''

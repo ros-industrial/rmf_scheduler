@@ -115,6 +115,7 @@ private:
 
   friend class ScheduleCache;
   friend class TestTaskHandler;
+  friend class SeriesHandler;
 };
 
 }  // namespace cache

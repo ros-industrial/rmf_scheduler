@@ -101,6 +101,11 @@ ament_add_gtest(test_cache_process_action
 )
 target_link_libraries(test_cache_process_action ${PROJECT_NAME})
 
+ament_add_gtest(test_cache_series_action
+  cache/test_series_action.cpp
+)
+target_link_libraries(test_cache_series_action ${PROJECT_NAME})
+
 # STORAGE
 ament_add_gtest(test_storage_schedule_stream_ld_broker
   storage/test_schedule_stream_ld_broker.cpp

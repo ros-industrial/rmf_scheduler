@@ -38,6 +38,7 @@ struct Process
   std::string status;
   std::set<std::string> current_events;
   nlohmann::json process_details;
+  std::string series_id;
 
   inline bool operator==(const Process & rhs) const
   {
@@ -46,6 +47,7 @@ struct Process
     if (this->status != rhs.status) {return false;}
     if (this->current_events != rhs.current_events) {return false;}
     if (this->process_details != rhs.process_details) {return false;}
+    if (this->series_id != rhs.series_id) {return false;}
     return true;
   }
 

@@ -21,6 +21,7 @@
 #include "rmf2_scheduler/cache/schedule_cache.hpp"
 #include "rmf2_scheduler/cache/task_handler.hpp"
 #include "rmf2_scheduler/cache/process_handler.hpp"
+#include "rmf2_scheduler/cache/series_handler.hpp"
 #include "rmf2_scheduler/data/json_serializer.hpp"
 #include "rmf2_scheduler/data/uuid.hpp"
 #include "rmf2_scheduler/storage/schedule_stream_simple.hpp"
@@ -183,14 +184,42 @@ bool ScheduleStream::read_schedule(
   std::vector<data::Task::ConstPtr> extra_tasks;
   extra_tasks.reserve(query_extra_event_ids.size());
   for (auto & event_id : query_extra_event_ids) {
+    // if extra tasks are already found skip
     extra_tasks.push_back(backup_schedule->get_task(event_id));
   }
+
+  // Retrieve relevant series to read
+  std::unordered_set<std::string> query_series_ids;
+  for (const auto & task : tasks) {
+    if (task->series_id.has_value()) {
+      query_series_ids.emplace(*task->series_id);
+    }
+  }
+  for (const auto & task : extra_tasks) {
+    if (task->series_id.has_value()) {
+      query_series_ids.emplace(*task->series_id);
+    }
+  }
+  for (const auto & process : processes) {
+    if (!process->series_id.empty()) {
+      query_series_ids.emplace(process->series_id);
+    }
+  }
+
+  std::vector<data::Series::ConstPtr> series_list;
+  series_list.reserve(query_series_ids.size());
+  for (const auto & series_id : query_series_ids) {
+    series_list.push_back(backup_schedule->get_series(series_id));
+  }
+
 
   // Create handlers for direct cache manipulation
   auto task_handler = schedule_cache->make_task_handler(
     cache::ScheduleCache::TaskRestricted{});
   auto process_handler = schedule_cache->make_process_handler(
     cache::ScheduleCache::ProcessRestricted{});
+  auto series_handler = schedule_cache->make_series_handler(
+    cache::ScheduleCache::SeriesRestricted{});
 
   // Add tasks to cache
   for (const auto & task : tasks) {
@@ -201,7 +230,6 @@ bool ScheduleStream::read_schedule(
   // Add extra tasks to cache
   for (const auto & task : extra_tasks) {
     cache::TaskHandler::TaskIterator itr;
-    // if extra tasks are already found skip
     if (task_handler->find(task->id, itr)) {
       continue;
     }
@@ -213,6 +241,12 @@ bool ScheduleStream::read_schedule(
   for (const auto & process : processes) {
     auto process_copy = data::Process::make_shared(*process);
     process_handler->emplace(process_copy);
+  }
+
+  // Add series to cache
+  for (const auto & series : series_list) {
+    auto series_copy = data::Series::make_shared(*series);
+    series_handler->emplace(series_copy);
   }
 
   return true;
@@ -257,11 +291,26 @@ bool ScheduleStream::write_schedule(
     processes.push_back(schedule_cache->get_process(process_id));
   }
 
+  // Find the relevant series
+  std::unordered_set<std::string> series_ids;
+  for (const auto & task : tasks) {
+    if (task->series_id.has_value()) {
+      series_ids.insert(*task->series_id);
+    }
+  }
+  std::vector<data::Series::ConstPtr> series_list;
+  series_list.reserve(series_ids.size());
+  for (const auto & series_id : series_ids) {
+    series_list.push_back(schedule_cache->get_series(series_id));
+  }
+
   // Create handlers for direct cache manipulation
   auto task_handler = backup_schedule->make_task_handler(
     cache::ScheduleCache::TaskRestricted{});
   auto process_handler = backup_schedule->make_process_handler(
     cache::ScheduleCache::ProcessRestricted{});
+  auto series_handler = backup_schedule->make_series_handler(
+    cache::ScheduleCache::SeriesRestricted{});
 
   // Apply task changes
   for (const auto & task : tasks) {
@@ -282,6 +331,17 @@ bool ScheduleStream::write_schedule(
       process_handler->replace(itr, process_copy);
     } else {
       process_handler->emplace(process_copy);
+    }
+  }
+
+  // Apply series changes
+  for (const auto & series : series_list) {
+    auto series_copy = data::Series::make_shared(*series);
+    cache::SeriesHandler::SeriesIterator itr;
+    if (series_handler->find(series->id(), itr)) {
+      series_handler->replace(itr, series_copy);
+    } else {
+      series_handler->emplace(series_copy);
     }
   }
 
@@ -313,6 +373,8 @@ bool ScheduleStream::write_schedule(
     cache::ScheduleCache::TaskRestricted{});
   auto process_handler = backup_schedule->make_process_handler(
     cache::ScheduleCache::ProcessRestricted{});
+  auto series_handler = backup_schedule->make_series_handler(
+    cache::ScheduleCache::SeriesRestricted{});
 
   // Apply task changes
   for (const auto & change_action : squashed_action.get(data::record_data_type::TASK)) {
@@ -348,6 +410,25 @@ bool ScheduleStream::write_schedule(
       cache::ProcessHandler::ProcessIterator itr;
       if (process_handler->find(change_action.id, itr)) {
         process_handler->erase(itr);
+      }
+    }
+  }
+
+  // Apply series changes
+  for (const auto & change_action : squashed_action.get(data::record_data_type::SERIES)) {
+    if (change_action.action == data::record_action_type::ADD) {
+      auto series_copy = data::Series::make_shared(*cache->get_series(change_action.id));
+      series_handler->emplace(series_copy);
+    } else if (change_action.action == data::record_action_type::UPDATE) {
+      auto series_copy = data::Series::make_shared(*cache->get_series(change_action.id));
+      cache::SeriesHandler::SeriesIterator itr;
+      if (series_handler->find(change_action.id, itr)) {
+        series_handler->replace(itr, series_copy);
+      }
+    } else if (change_action.action == data::record_action_type::DELETE) {
+      cache::SeriesHandler::SeriesIterator itr;
+      if (series_handler->find(change_action.id, itr)) {
+        series_handler->erase(itr);
       }
     }
   }
@@ -407,6 +488,7 @@ bool ScheduleStream::_load_backup(
 
   std::vector<data::Task::Ptr> tasks;
   std::vector<data::Process::Ptr> processes;
+  std::vector<data::Series::Ptr> series_list;
 
   nlohmann::json j_from_bson;
   try {
@@ -447,11 +529,25 @@ bool ScheduleStream::_load_backup(
     }
   }
 
+  if (j_from_bson.contains("series")) {
+    try {
+      j_from_bson.at("series").get_to(series_list);
+    } catch (const std::exception & e) {
+      error = "Backup file ";
+      error += backup_filepath.c_str();
+      error += " SERIES loading failure\n";
+      error += e.what();
+      return false;
+    }
+  }
+
   // Create handlers for direct cache manipulation
   auto task_handler = schedule->make_task_handler(
     cache::ScheduleCache::TaskRestricted{});
   auto process_handler = schedule->make_process_handler(
     cache::ScheduleCache::ProcessRestricted{});
+  auto series_handler = schedule->make_series_handler(
+    cache::ScheduleCache::SeriesRestricted{});
 
   // Add tasks to cache
   for (auto & task : tasks) {
@@ -463,18 +559,25 @@ bool ScheduleStream::_load_backup(
     process_handler->emplace(process);
   }
 
+  // Add series to cache
+  for (auto & series : series_list) {
+    series_handler->emplace(series);
+  }
+
   return true;
 }
 
 void ScheduleStream::_write_schedule_to_backup(cache::ScheduleCache::ConstPtr schedule)
 {
-  // Serialize the tasks and processes
+  // Serialize the tasks, processes, and series
   auto tasks = schedule->get_all_tasks();
   auto processes = schedule->get_all_processes();
+  auto series_list = schedule->get_all_series();
 
   nlohmann::json j;
   j["tasks"] = nlohmann::json(tasks);
   j["processes"] = nlohmann::json(processes);
+  j["series"] = nlohmann::json(series_list);
   std::vector<uint8_t> data = nlohmann::json::to_bson(j);
 
   std::string uuid_to_add = data::gen_uuid();

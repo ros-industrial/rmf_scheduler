@@ -84,6 +84,36 @@ public:
     return *this;
   }
 
+  ActionPayload & series(const data::Series::ConstPtr & series)
+  {
+    data_.series = data::Series::make_shared(*series);
+    return *this;
+  }
+
+  ActionPayload & until(const data::Time & until)
+  {
+    data_.until = until;
+    return *this;
+  }
+
+  ActionPayload & cron(const std::string & cron)
+  {
+    data_.cron = cron;
+    return *this;
+  }
+
+  ActionPayload & occurrence_id(const std::string & occurrence_id)
+  {
+    data_.occurrence_id = occurrence_id;
+    return *this;
+  }
+
+  ActionPayload & occurrence_time(const data::Time & time)
+  {
+    data_.occurrence_time = time;
+    return *this;
+  }
+
   data::ScheduleAction data(
     const std::string & type
   ) const

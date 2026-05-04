@@ -368,7 +368,8 @@ RS_JSON_DESERIALIZER_DEFINE_TYPE(
   RS_JSON_DESERIALIZER_OPTIONAL_MEMBERS(
     status,
     current_events,
-    process_details
+    process_details,
+    series_id
   )
 )
 
@@ -378,7 +379,8 @@ RS_JSON_SERIALIZER_DEFINE_TYPE(
   graph,
   status,
   current_events,
-  process_details
+  process_details,
+  series_id
 )
 
 /// Occurrence serializer
@@ -399,7 +401,12 @@ RS_JSON_SERIALIZER_DEFINE_TYPE(
   node_id,
   source_id,
   destination_id,
-  edge_type
+  edge_type,
+  series,
+  until,
+  cron,
+  occurrence_id,
+  occurrence_time
 )
 
 RS_JSON_DESERIALIZER_DEFINE_TYPE(
@@ -415,7 +422,12 @@ RS_JSON_DESERIALIZER_DEFINE_TYPE(
     node_id,
     source_id,
     destination_id,
-    edge_type
+    edge_type,
+    series,
+    until,
+    cron,
+    occurrence_id,
+    occurrence_time
   )
 )
 
@@ -435,7 +447,6 @@ inline void adl_serializer<rmf2_scheduler::data::Series>::from_json(
 {
   std::string id;
   std::string type;
-  std::vector<rmf2_scheduler::data::Occurrence> occurrences;
   std::string cron;
   std::string timezone;
   rmf2_scheduler::data::Time until = rmf2_scheduler::data::Time::max();
@@ -443,12 +454,28 @@ inline void adl_serializer<rmf2_scheduler::data::Series>::from_json(
 
   j.at("id").get_to(id);
   j.at("type").get_to(type);
-  j.at("occurrences").get_to(occurrences);
   j.at("cron").get_to(cron);
   j.at("timezone").get_to(timezone);
-  if (j.contains("until")) {
+  if (j.contains("until") && !j["until"].is_null()) {
     j.at("until").get_to(until);
   }
+  // Create Series JSON
+  if (j.contains("occurrence")) {
+    rmf2_scheduler::data::Occurrence occurrence;
+    j.at("occurrence").get_to(occurrence);
+    series = rmf2_scheduler::data::Series(
+      id,
+      type,
+      occurrence,
+      cron,
+      timezone,
+      until
+    );
+    return;
+  }
+
+  std::vector<rmf2_scheduler::data::Occurrence> occurrences;
+  j.at("occurrences").get_to(occurrences);
   if (j.contains("exception_ids")) {
     j.at("exception_ids").get_to(exception_ids);
   }

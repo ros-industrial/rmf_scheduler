@@ -160,8 +160,18 @@ bool EventAction::_validate_event_update(
   // Don't allow setting series and process ID through EVENT_UPDATE
   auto old_event = event_itr_->second;
   if (event->series_id != old_event->series_id) {
-    error = "EVENT_UPDATE warning, event [" + event->id + "]'s new series_id is ignored.";
+    error = "EVENT_UPDATE warning, event [" + event->id +
+      "] is part of a series changing series id is not allowed.";
     event->series_id = old_event->series_id;
+    return false;
+  }
+
+  // currently not supported
+  // TODO(Anyone): support update events that are part of series.
+  if (event->series_id.has_value()) {
+    error = "EVENT_UPDATE warning, event [" + event->id + "]'s is part of series [" +
+      event->series_id.value() + "]. Update using update occurrence.";
+    return false;
   }
 
   if (event->process_id != old_event->process_id) {
@@ -195,7 +205,7 @@ bool EventAction::_validate_event_delete(
   auto event = event_itr_->second;
   if (event->series_id.has_value()) {
     error = "EVENT_DELETE failed, event [" +
-      event->id + "] is part of a series, please detach it first.";
+      event->id + "] is part of a series, use the series it first.";
     return false;
   }
 

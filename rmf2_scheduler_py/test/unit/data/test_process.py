@@ -67,6 +67,7 @@ def test_process():
                              'graph': expected_graph_json,
                              'process_details': None,
                              'status': '',
+                             'series_id': '',
                              'current_events': []}
     assert process.json() == expected_process_json
 

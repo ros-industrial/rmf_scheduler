@@ -17,6 +17,7 @@
 #include "rmf2_scheduler/cache/schedule_cache.hpp"
 #include "rmf2_scheduler/cache/task_handler.hpp"
 #include "rmf2_scheduler/cache/process_handler.hpp"
+#include "rmf2_scheduler/cache/series_handler.hpp"
 #include "rmf2_scheduler/utils/dag_helper.hpp"
 
 namespace rmf2_scheduler
@@ -188,6 +189,53 @@ size_t ScheduleCache::process_size() const
   return process_map.size();
 }
 
+// Series
+data::Series::ConstPtr ScheduleCache::get_series(const std::string & series_id) const
+{
+  auto series_itr = series_map.find(series_id);
+  if (series_itr == series_map.end()) {
+    throw std::invalid_argument(
+            "ScheduleCache get_series failed, series [" + series_id + "] doesn't exist."
+    );
+  }
+  return series_itr->second;
+}
+
+std::vector<data::Series::ConstPtr> ScheduleCache::lookup_series(
+  const data::Time & start_time
+) const
+{
+  std::vector<data::Series::ConstPtr> series_vec;
+  for (const auto & series : series_map) {
+    if (series.second->get_first_occurrence().time >= start_time) {
+      series_vec.push_back(data::Series::make_shared(*series.second));
+    }
+  }
+  return series_vec;
+}
+
+std::vector<data::Series::ConstPtr> ScheduleCache::get_all_series() const
+{
+  std::vector<data::Series::ConstPtr> result;
+  result.reserve(series_map.size());
+
+  for (auto & itr : series_map) {
+    result.push_back(itr.second);
+  }
+
+  return result;
+}
+
+size_t ScheduleCache::series_size() const
+{
+  return series_map.size();
+}
+
+bool ScheduleCache::has_series(const std::string & series_id) const
+{
+  return series_map.find(series_id) != series_map.end();
+}
+
 // UTILITIES
 ScheduleCache::Ptr ScheduleCache::clone() const
 {
@@ -225,6 +273,12 @@ std::shared_ptr<ProcessHandler> ScheduleCache::make_process_handler(const Proces
   return ProcessHandler::make_shared(shared_from_this(), token);
 }
 
+std::shared_ptr<SeriesHandler> ScheduleCache::make_series_handler(const SeriesRestricted &)
+{
+  SeriesHandler::Restricted token;
+  return SeriesHandler::make_shared(shared_from_this(), token);
+}
+
 // TOKEN CLASS
 ScheduleCache::TaskRestricted::TaskRestricted()
 {
@@ -239,6 +293,14 @@ ScheduleCache::ProcessRestricted::ProcessRestricted()
 }
 
 ScheduleCache::ProcessRestricted::~ProcessRestricted()
+{
+}
+
+ScheduleCache::SeriesRestricted::SeriesRestricted()
+{
+}
+
+ScheduleCache::SeriesRestricted::~SeriesRestricted()
 {
 }
 

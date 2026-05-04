@@ -29,6 +29,8 @@ add_library(${PROJECT_NAME}
   src/cache/task_handler.cpp
   src/cache/process_action.cpp
   src/cache/process_handler.cpp
+  src/cache/series_action.cpp
+  src/cache/series_handler.cpp
   src/cache/schedule_cache.cpp
   src/data/duration.cpp
   src/data/time.cpp

@@ -19,12 +19,15 @@
 #include "rmf2_scheduler_py/cache/process_action.hpp"
 #include "rmf2_scheduler_py/cache/schedule_cache.hpp"
 #include "rmf2_scheduler_py/cache/task_action.hpp"
+#include "rmf2_scheduler_py/cache/series_action.hpp"
 #include "rmf2_scheduler_py/data/edge.hpp"
 #include "rmf2_scheduler_py/data/event.hpp"
 #include "rmf2_scheduler_py/data/duration.hpp"
 #include "rmf2_scheduler_py/data/graph.hpp"
 #include "rmf2_scheduler_py/data/node.hpp"
 #include "rmf2_scheduler_py/data/process.hpp"
+#include "rmf2_scheduler_py/data/series.hpp"
+#include "rmf2_scheduler_py/data/occurrence.hpp"
 #include "rmf2_scheduler_py/data/schedule_action.hpp"
 #include "rmf2_scheduler_py/data/schedule_change_record.hpp"
 #include "rmf2_scheduler_py/data/task.hpp"
@@ -53,6 +56,8 @@ PYBIND11_MODULE(core, m)
   rmf2_scheduler_py::data::init_node_py(m);
   rmf2_scheduler_py::data::init_graph_py(m);
   rmf2_scheduler_py::data::init_process_py(m);
+  rmf2_scheduler_py::data::init_series_py(m);
+  rmf2_scheduler_py::data::init_occurrence_py(m);
   rmf2_scheduler_py::data::init_schedule_action_py(m);
   rmf2_scheduler_py::data::init_schedule_change_record_py(m);
 
@@ -62,6 +67,7 @@ PYBIND11_MODULE(core, m)
   rmf2_scheduler_py::cache::init_event_action_py(m);
   rmf2_scheduler_py::cache::init_task_action_py(m);
   rmf2_scheduler_py::cache::init_process_action_py(m);
+  rmf2_scheduler_py::cache::init_series_action_py(m);
 
   // STORAGE
   rmf2_scheduler_py::storage::init_schedule_stream_py(m);

@@ -18,10 +18,13 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "rmf2_scheduler/data/event.hpp"
 #include "rmf2_scheduler/data/task.hpp"
 #include "rmf2_scheduler/data/process.hpp"
+#include "rmf2_scheduler/data/series.hpp"
+#include "rmf2_scheduler/data/time.hpp"
 #include "rmf2_scheduler/utils/utils.hpp"
 
 namespace rmf2_scheduler
@@ -64,6 +67,7 @@ extern const char SERIES_EXPAND_UNTIL[];
 extern const char SERIES_UPDATE_CRON[];
 extern const char SERIES_UPDATE_UNTIL[];
 extern const char SERIES_UPDATE_OCCURRENCE[];
+extern const char SERIES_UPDATE_OCCURRENCE_TIME[];
 extern const char SERIES_DELETE_OCCURRENCE[];
 extern const char SERIES_DELETE[];
 extern const char SERIES_DELETE_ALL[];
@@ -91,6 +95,13 @@ struct ScheduleAction
   std::optional<std::string> destination_id;
   std::optional<std::string> edge_type;
 
+  // Series specific
+  std::shared_ptr<Series> series;
+  std::optional<Time> until;
+  std::optional<std::string> cron;
+  std::optional<std::string> occurrence_id;
+  std::optional<Time> occurrence_time;
+
   inline bool operator==(const ScheduleAction & rhs) const
   {
     if (this->type != rhs.type) {return false;}
@@ -102,6 +113,11 @@ struct ScheduleAction
     if (this->source_id != rhs.source_id) {return false;}
     if (this->destination_id != rhs.destination_id) {return false;}
     if (this->edge_type != rhs.edge_type) {return false;}
+    if (!utils::is_deep_equal(this->series, rhs.series)) {return false;}
+    if (this->until != rhs.until) {return false;}
+    if (this->cron != rhs.cron) {return false;}
+    if (this->occurrence_id != rhs.occurrence_id) {return false;}
+    if (this->occurrence_time != rhs.occurrence_time) {return false;}
     return true;
   }
 

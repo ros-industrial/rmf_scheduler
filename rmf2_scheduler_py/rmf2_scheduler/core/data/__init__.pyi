@@ -5,7 +5,7 @@ import typing
 
 from . import action_type, record_action_type, record_data_type
 
-__all__ = ['ChangeAction', 'Duration', 'Edge', 'Event', 'Graph', 'Node', 'Process', 'ScheduleAction', 'ScheduleChangeRecord', 'Task', 'Time', 'TimeWindow', 'action_type', 'record_action_type', 'record_data_type']
+__all__ = ['ChangeAction', 'Duration', 'Edge', 'Event', 'Graph', 'Node', 'Occurrence', 'Process', 'ScheduleAction', 'ScheduleChangeRecord', 'Series', 'SeriesDeleteOccurrence', 'SeriesExpandUntil', 'SeriesUpdateCron', 'SeriesUpdateOccurrenceTime', 'Task', 'Time', 'TimeWindow', 'action_type', 'record_action_type', 'record_data_type']
 class ChangeAction:
     """
     
@@ -191,6 +191,28 @@ class Node:
         ...
     def outbound_edges(self) -> dict[str, Edge]:
         ...
+class Occurrence:
+    """
+    
+        Additional information for a Process
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> Occurrence:
+        ...
+    def __eq__(self, arg0: Occurrence) -> bool:
+        ...
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, _time: Time, id: str) -> None:
+        ...
+    def __ne__(self, arg0: Occurrence) -> bool:
+        ...
+    def json(self: Series) -> json:
+        ...
 class Process:
     """
     
@@ -227,6 +249,16 @@ class ScheduleAction:
     id: str | None
     node_id: str | None
     process: Process
+    series_add: Series
+    series_delete: str | None
+    series_delete_occurrence: SeriesDeleteOccurrence | None
+    series_expand_until: SeriesExpandUntil | None
+    series_update: Series | None
+    series_update_cron: SeriesUpdateCron | None
+    series_update_occurrence_process: tuple[str, Process] | None
+    series_update_occurrence_task: tuple[str, Task] | None
+    series_update_occurrence_time: SeriesUpdateOccurrenceTime | None
+    series_update_until: tuple[str, Time] | None
     source_id: str | None
     task: Task
     type: str
@@ -253,6 +285,102 @@ class ScheduleChangeRecord:
     def add(self, arg0: str, arg1: list[ChangeAction]) -> None:
         ...
     def get(self, arg0: str) -> list[ChangeAction]:
+        ...
+class Series:
+    """
+    
+        Additional information for a Process
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> Series:
+        ...
+    def __eq__(self, arg0: Series) -> bool:
+        ...
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, id: str, type: str, occurrence: ..., cron: str, timezone: str, until: Time = ...) -> None:
+        ...
+    def __ne__(self, arg0: Series) -> bool:
+        ...
+    def id(self) -> str:
+        ...
+    def json(self) -> json:
+        ...
+class SeriesDeleteOccurrence:
+    """
+    
+        Information to delete an occurrence
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> SeriesDeleteOccurrence:
+        ...
+    def __eq__(self, arg0: SeriesDeleteOccurrence) -> bool:
+        ...
+    def __init__(self) -> None:
+        ...
+    def __ne__(self, arg0: SeriesDeleteOccurrence) -> bool:
+        ...
+    def json(self) -> json:
+        ...
+class SeriesExpandUntil:
+    """
+    
+        Information for expanding series
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> SeriesExpandUntil:
+        ...
+    def __eq__(self, arg0: SeriesExpandUntil) -> bool:
+        ...
+    def __init__(self) -> None:
+        ...
+    def __ne__(self, arg0: SeriesExpandUntil) -> bool:
+        ...
+    def json(self) -> json:
+        ...
+class SeriesUpdateCron:
+    """
+    
+        Information for updating a series' cron
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> SeriesUpdateCron:
+        ...
+    def __eq__(self, arg0: SeriesUpdateCron) -> bool:
+        ...
+    def __init__(self) -> None:
+        ...
+    def __ne__(self, arg0: SeriesUpdateCron) -> bool:
+        ...
+    def json(self) -> json:
+        ...
+class SeriesUpdateOccurrenceTime:
+    """
+    
+        Information to update an occurrence's time
+        
+    """
+    __hash__: typing.ClassVar[None] = None
+    @staticmethod
+    def from_json(arg0: json) -> SeriesUpdateOccurrenceTime:
+        ...
+    def __eq__(self, arg0: SeriesUpdateOccurrenceTime) -> bool:
+        ...
+    def __init__(self) -> None:
+        ...
+    def __ne__(self, arg0: SeriesUpdateOccurrenceTime) -> bool:
+        ...
+    def json(self) -> json:
         ...
 class Task(Event):
     """

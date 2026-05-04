@@ -184,6 +184,8 @@ private:
 
   std::unordered_set<std::string> process_ids_pushed_;
 
+  std::unordered_set<std::string> task_ids_pushed_;
+
   friend class LockedScheduleRO;
   friend class LockedScheduleRW;
 };

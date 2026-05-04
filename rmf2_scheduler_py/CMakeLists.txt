@@ -27,6 +27,7 @@ pybind11_add_module(core
   src/cache/action.cpp
   src/cache/event_action.cpp
   src/cache/process_action.cpp
+  src/cache/series_action.cpp
   src/cache/schedule_cache.cpp
   src/cache/task_action.cpp
   src/core.cpp
@@ -37,6 +38,8 @@ pybind11_add_module(core
   src/data/node.cpp
   src/data/process.cpp
   src/data/task.cpp
+  src/data/series.cpp
+  src/data/occurrence.cpp
   src/data/time.cpp
   src/data/time_window.cpp
   src/data/schedule_action.cpp

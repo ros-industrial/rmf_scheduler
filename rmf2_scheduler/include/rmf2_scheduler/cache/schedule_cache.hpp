@@ -45,6 +45,7 @@ namespace cache
 
 class TaskHandler;
 class ProcessHandler;
+class SeriesHandler;
 
 class ScheduleCache : public std::enable_shared_from_this<ScheduleCache>
 {
@@ -111,6 +112,23 @@ public:
   /// Number of processes in the cache
   size_t process_size() const;
 
+  // SERIES
+  /// Get series
+  data::Series::ConstPtr get_series(const std::string & series_id) const;
+
+  // Look up series
+  std::vector<data::Series::ConstPtr> lookup_series(
+    const data::Time & start_time
+  ) const;
+
+  /// Get all series
+  std::vector<data::Series::ConstPtr> get_all_series() const;
+
+  size_t series_size() const;
+
+  /// Has series
+  bool has_series(const std::string & series_id) const;
+
   /// Create a deep copy of the cache
   ScheduleCache::Ptr clone() const;
 
@@ -122,6 +140,8 @@ public:
   std::shared_ptr<TaskHandler> make_task_handler(const TaskRestricted &);
 
   std::shared_ptr<ProcessHandler> make_process_handler(const ProcessRestricted &);
+
+  std::shared_ptr<SeriesHandler> make_series_handler(const SeriesRestricted &);
 
   // SeriesMap & series_handler(const SeriesRestricted &);
 
@@ -148,6 +168,8 @@ private:
   friend class EventAction;
   friend class TaskAction;
   friend class ProcessAction;
+  friend class SeriesAction;
+  friend class CacheActionUtils;
   friend class TestScheduleCache;
   friend class storage::simple::ScheduleStream;
 };
@@ -159,6 +181,23 @@ private:
   virtual ~ProcessRestricted();
 
   friend class ProcessAction;
+  friend class SeriesAction;
+  friend class CacheActionUtils;
+  friend class TestScheduleCache;
+  friend class storage::simple::ScheduleStream;
+};
+
+class ScheduleCache::SeriesRestricted
+{
+private:
+  SeriesRestricted();
+  virtual ~SeriesRestricted();
+
+  friend class ProcessAction;
+  friend class TaskAction;
+  friend class ProcessAction;
+  friend class SeriesAction;
+  friend class CacheActionUtils;
   friend class TestScheduleCache;
   friend class storage::simple::ScheduleStream;
 };

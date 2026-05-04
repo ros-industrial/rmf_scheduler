@@ -236,3 +236,24 @@ def delete_process(
         raise HTTPException(status_code=404, detail=error)
 
     return Message(message='Process delete successfully!')
+
+
+@router.get(
+    '/process_completion/{uuid}',
+    response_model=bool,
+    response_model_exclude_unset=True,
+    response_model_exclude_none=True,
+)
+def process_completion(task_scheduler: SchedulerDep, uuid: str) -> bool:
+    schedule_cache: ScheduleCache = LockedScheduleRO(task_scheduler).cache()
+
+    if not schedule_cache.has_process(uuid):
+        raise HTTPException(status_code=404, detail="Process doesn't exist")
+
+    process = schedule_cache.get_process(uuid)
+    tasks = process.graph.get_all_nodes()
+    for task_id in tasks:
+        task = schedule_cache.get_task(task_id)
+        if task.status != 'completed':
+            return False
+    return True

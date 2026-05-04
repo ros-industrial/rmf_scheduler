@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <optional>
 
 #include "rmf2_scheduler/data/time.hpp"
 #include "rmf2_scheduler/data/occurrence.hpp"
@@ -36,6 +37,17 @@ class cronexpr;
 
 namespace rmf2_scheduler
 {
+namespace data
+{
+
+class Task;
+class Process;
+
+}  // namespace data
+}  // namespace rmf2_scheduler
+
+namespace rmf2_scheduler
+{
 
 namespace data
 {
@@ -45,7 +57,7 @@ class Series
 public:
   RS_SMART_PTR_DEFINITIONS(Series)
 
-
+  // Observer Class
   class ObserverBase
   {
 public:
@@ -68,6 +80,8 @@ public:
   Series & operator=(const Series &);
   Series(Series &&);
   Series & operator=(Series && rhs);
+
+  static Series::Ptr serie_create();
 
   virtual ~Series();
 
@@ -126,6 +140,14 @@ public:
 
   Occurrence get_occurrence(const std::string & id) const;
 
+  std::optional<Occurrence> get_prev_occurrence(const std::string & id) const;
+
+  std::optional<Occurrence> get_prev_occurrence(const Time & time) const;
+
+  std::optional<Occurrence> get_next_occurrence(const std::string & id) const;
+
+  std::optional<Occurrence> get_next_occurrence(const Time & time) const;
+
   Occurrence get_last_occurrence() const;
 
   Occurrence get_first_occurrence() const;
@@ -142,6 +164,10 @@ public:
 
   std::vector<Occurrence> expand_until(
     const Time & time
+  );
+
+  std::vector<Occurrence> expand_another(
+    const uint64_t num
   );
 
   void update_id(const std::string & new_id);
@@ -166,6 +192,8 @@ public:
   void update_until(const Time & time);
 
   void delete_occurrence(const Time & time);
+
+  void delete_occurrence(const std::string & id);
 
   // Observer for consolidating with event / dag handling
   template<typename Observer, typename ... ArgsT>

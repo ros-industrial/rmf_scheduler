@@ -459,7 +459,8 @@ TEST_F(TestJSONSerializer, process) {
       "graph": [],
       "status": "",
       "current_events" : [],
-      "process_details" : null
+      "process_details" : null,
+      "series_id" : ""
     })"_json;
 
     // Serialize empty process
@@ -497,7 +498,8 @@ TEST_F(TestJSONSerializer, process) {
       ],
       "status": "",
       "current_events" : [],
-      "process_details" : null
+      "process_details" : null,
+      "series_id" : ""
     })"_json;
 
     // Serialize full process
@@ -555,7 +557,12 @@ TEST_F(TestJSONSerializer, schedule_action)
       "node_id": null,
       "source_id": null,
       "destination_id": null,
-      "edge_type": null
+      "edge_type": null,
+      "series": null,
+      "until": null,
+      "cron": null,
+      "occurrence_id": null,
+      "occurrence_time": null
     })"_json;
 
     json schedule_action_json_wo_null =
@@ -685,12 +692,18 @@ TEST_F(TestJSONSerializer, schedule_action)
         "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
         "status": "",
         "current_events" : [],
-        "process_details" : null
+        "process_details" : null,
+        "series_id" : ""
       },
       "node_id": "node_5",
       "source_id": "node_4",
       "destination_id": "node_5",
-      "edge_type": "soft"
+      "edge_type": "soft",
+      "series": null,
+      "until": null,
+      "cron": null,
+      "occurrence_id": null,
+      "occurrence_time": null
     })"_json;
 
     // Serialization

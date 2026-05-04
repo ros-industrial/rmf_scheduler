@@ -93,6 +93,27 @@ void init_schedule_cache_py(py::module & m)
     &ScheduleCache::has_process
   )
   .def(
+    "lookup_series",
+    &ScheduleCache::lookup_series,
+    py::arg("start_time")
+  )
+  .def(
+    "get_all_series",
+    &ScheduleCache::get_all_series
+  )
+  .def(
+    "get_series",
+    &ScheduleCache::get_series
+  )
+  .def(
+    "series_size",
+    &ScheduleCache::series_size
+  )
+  .def(
+    "has_series",
+    &ScheduleCache::has_series
+  )
+  .def(
     "clone",
     &ScheduleCache::clone
   )

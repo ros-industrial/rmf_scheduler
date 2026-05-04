@@ -17,6 +17,7 @@
 #include "rmf2_scheduler/cache/process_handler.hpp"
 #include "rmf2_scheduler/cache/task_action.hpp"
 #include "rmf2_scheduler/cache/schedule_cache.hpp"
+#include "../../utils/gtest_macros.hpp"
 
 namespace rmf2_scheduler
 {
@@ -406,23 +407,23 @@ TEST_F(TestCacheTaskAction, task_update) {
 
     // Validate
     std::string warning;
-    EXPECT_TRUE(task_action.validate(schedule_cache, warning));
+    EXPECT_FALSE(task_action.validate(schedule_cache, warning));
     EXPECT_EQ(
       warning,
-      "TASK_UPDATE warning, task [isolated_task_1]'s new process_id is ignored."
+      "TASK_UPDATE warning, task [isolated_task_1]'s new process_id update is not allowed."
     );
 
     // Apply
-    task_action.apply();
+    EXPECT_THROW_EQ(
+      task_action.apply(),
+      std::runtime_error("Action invalid!"));
 
     // Check updateded task
     task_to_update->process_id.reset();
     EXPECT_EQ(*schedule_cache->get_task("isolated_task_1"), *task_to_update);
 
     // Check record
-    std::vector<ChangeAction> expected_record {
-      {"isolated_task_1", "update"},
-    };
+    std::vector<ChangeAction> expected_record {};
     EXPECT_EQ(
       task_action.record().get("task"),
       expected_record
@@ -448,23 +449,23 @@ TEST_F(TestCacheTaskAction, task_update) {
 
     // Validate
     std::string warning;
-    EXPECT_TRUE(task_action.validate(schedule_cache, warning));
+    EXPECT_FALSE(task_action.validate(schedule_cache, warning));
     EXPECT_EQ(
       warning,
-      "TASK_UPDATE warning, task [isolated_task_1]'s new series_id is ignored."
+      "TASK_UPDATE warning, task [isolated_task_1]'s new series_id update is not allowed."
     );
 
     // Apply
-    task_action.apply();
+    EXPECT_THROW_EQ(
+      task_action.apply(),
+      std::runtime_error("Action invalid!"));
 
     // Check updateded task
     task_to_update->series_id.reset();
     EXPECT_EQ(*schedule_cache->get_task("isolated_task_1"), *task_to_update);
 
     // Check record
-    std::vector<ChangeAction> expected_record {
-      {"isolated_task_1", "update"},
-    };
+    std::vector<ChangeAction> expected_record {};
     EXPECT_EQ(
       task_action.record().get("task"),
       expected_record
@@ -511,9 +512,12 @@ TEST_F(TestCacheTaskAction, task_update) {
   {  // Process task, process ID warning
     ScheduleCache::Ptr schedule_cache = TestScheduleCache::create_preset_cache1();
 
+    const std::string task_id_of_interest = "process_task_1";
+    const auto original_task = schedule_cache->get_task(task_id_of_interest);
+
     // Create task with process ID
     auto task_to_update = std::make_shared<Task>(
-      "process_task_1",
+      task_id_of_interest,
       "test_isolated_task",
       Time(10 * 60),
       "draft"
@@ -527,23 +531,23 @@ TEST_F(TestCacheTaskAction, task_update) {
 
     // Validate
     std::string warning;
-    EXPECT_TRUE(task_action.validate(schedule_cache, warning));
+    EXPECT_FALSE(task_action.validate(schedule_cache, warning));
     EXPECT_EQ(
       warning,
-      "TASK_UPDATE warning, task [process_task_1]'s new process_id is ignored."
+      "TASK_UPDATE warning, task [process_task_1]'s new process_id update is not allowed."
     );
 
     // Apply
-    task_action.apply();
+    EXPECT_THROW_EQ(
+      task_action.apply(),
+      std::runtime_error("Action invalid!"));
 
     // Check updateded task
     task_to_update->process_id = "process_1";
-    EXPECT_EQ(*schedule_cache->get_task("process_task_1"), *task_to_update);
+    EXPECT_EQ(*schedule_cache->get_task("process_task_1"), *original_task);
 
     // Check record
-    std::vector<ChangeAction> expected_record {
-      {"process_task_1", "update"},
-    };
+    std::vector<ChangeAction> expected_record {};
     EXPECT_EQ(
       task_action.record().get("task"),
       expected_record

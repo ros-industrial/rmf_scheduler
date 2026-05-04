@@ -113,6 +113,61 @@ void init_schedule_action_py(py::module & m)
     "PROCESS_DELETE_ALL",
     action_type::PROCESS_DELETE_ALL
   );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_PREFIX",
+    action_type::SERIES_PREFIX
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_ADD",
+    action_type::SERIES_ADD
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_UPDATE",
+    action_type::SERIES_UPDATE
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_EXPAND_UNTIL",
+    action_type::SERIES_EXPAND_UNTIL
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_UPDATE_CRON",
+    action_type::SERIES_UPDATE_CRON
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_UPDATE_UNTIL",
+    action_type::SERIES_UPDATE_UNTIL
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_UPDATE_OCCURRENCE",
+    action_type::SERIES_UPDATE_OCCURRENCE
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_UPDATE_OCCURRENCE_TIME",
+    action_type::SERIES_UPDATE_OCCURRENCE_TIME
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_DELETE_OCCURRENCE",
+    action_type::SERIES_DELETE_OCCURRENCE
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_DELETE",
+    action_type::SERIES_DELETE
+  );
+  py_utils::def_str_const(
+    m_action_type,
+    "SERIES_DELETE_ALL",
+    action_type::SERIES_DELETE_ALL
+  );
 
   // ScheduleAction
   py::class_<ScheduleAction>(
@@ -158,6 +213,30 @@ void init_schedule_action_py(py::module & m)
   .def_readwrite(
     "edge_type",
     &ScheduleAction::edge_type
+  )
+  .def_readwrite(
+    "edge_type",
+    &ScheduleAction::edge_type
+  )
+  .def_readwrite(
+    "series",
+    &ScheduleAction::series
+  )
+  .def_readwrite(
+    "until",
+    &ScheduleAction::until
+  )
+  .def_readwrite(
+    "cron",
+    &ScheduleAction::cron
+  )
+  .def_readwrite(
+    "occurrence_id",
+    &ScheduleAction::occurrence_id
+  )
+  .def_readwrite(
+    "occurrence_time",
+    &ScheduleAction::occurrence_time
   )
   .def(py::self == py::self)
   .def(py::self != py::self)

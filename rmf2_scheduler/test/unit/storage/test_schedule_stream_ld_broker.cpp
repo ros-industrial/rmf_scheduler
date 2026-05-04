@@ -922,7 +922,8 @@ TEST_F(
           "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
           "status": "",
           "current_events" : [],
-          "process_details" : null
+          "process_details" : null,
+          "series_id" : ""
         }
       },
       "type": "urn:rmf2:process"
@@ -1162,7 +1163,8 @@ TEST_F(
           "id": "13aa1c62-64ca-495d-a4b7-84de6a00f56a",
           "status": "",
           "current_events" : [],
-          "process_details" : null
+          "process_details" : null,
+          "series_id": ""
         }
       },
       "type": "urn:rmf2:process"
